@@ -7,8 +7,8 @@
 (defn compute-matrix-index [sizes indices]
   (assert (count sizes)
           (count indices))
-  (loop [S sizes
-         I indices
+  (loop [S (vec sizes)
+         I (vec indices)
          i 0]
     (if (empty? I)
       i
