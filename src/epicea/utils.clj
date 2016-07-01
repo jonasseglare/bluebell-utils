@@ -5,8 +5,8 @@
     (every? (fn [v] (contains? ks v)) (keys x))))
 
 (defn compute-matrix-index [sizes indices]
-  (assert (count sizes)
-          (count indices))
+  (assert (= (count sizes)
+             (count indices)))
   (loop [S (vec sizes)
          I (vec indices)
          i 0]
