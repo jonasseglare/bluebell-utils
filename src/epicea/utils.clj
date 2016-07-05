@@ -14,3 +14,15 @@
       i
       (recur (pop S) (pop I) (+ (* i (last S)) (last I))))))
       
+;; Macro to define an initial value and the keys
+(defmacro def-map [map-name empty-map]
+  `(do
+     (def ~(symbol (str "empty-" map-name)) ~empty-map)
+     (defn ~(symbol (str map-name "?")) [x#]
+       (map-with-keys? x# ~(set (keys empty-map))))))
+       
+(defn provide-argument [fun index value]
+  (fn [& args0]
+    (let [args (vec args0)
+          args2 (concat (subvec args 0 index) [value] (subvec args index))]
+      (apply fun args2))))
