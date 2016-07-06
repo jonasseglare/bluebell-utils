@@ -15,3 +15,12 @@
     (is (= 1 (compute-matrix-index [3 4] [1 0])))
     (is (= 3 (compute-matrix-index [3 4] [0 1])))
     (is (= 4 (compute-matrix-index [3 4] [1 1])))))
+
+(deftest provide-arguments-test
+  (testing "Providing arguments"
+    (let [f (provide-arguments get [[{:a 3 :b 4}] nil])]
+      (is (= 3 (f :a)))
+      (is (= 4 (f :b))))
+    (let [f (provide-arguments get [nil [:a]])]
+      (is (= 9 (f {:a 9})))
+      (is (= 12 (f {:a 12}))))))
