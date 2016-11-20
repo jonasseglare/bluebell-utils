@@ -1,4 +1,30 @@
-(ns epicea.utils)
+(ns epicea.utils
+  (:require [clojure.set]))
+
+(defn map-map [f m]
+  (into {} (map f m)))
+
+(defn map-vals [f m]
+  (map-map (fn [[k v]] [k (f v)]) m))
+
+(defn map-keys [f m]
+  (map-map (fn [[k v]] [(f k) v]) m))
+
+(defn map-map-with-state [f state m] ;; f: state x item -> [new-state new-item]
+  (reduce 
+   (fn [[state m] kv-pair]
+     (let [[new-state new-item] (f state kv-pair)]
+       [new-state (conj m new-item)]))
+   [state {}]
+   m))
+
+(defn map-vals-with-state [f state m]
+  (map-map-with-state
+   (fn [state [k v]]
+     (let [[new-state new-value] (f state v)]
+       [new-state [k new-value]]))
+   state m))
+   
 
 (defn map-with-keys? [x ks]
   (if (map? x)
