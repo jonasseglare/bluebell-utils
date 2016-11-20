@@ -2,7 +2,7 @@
 
 (defn map-with-keys? [x ks]
   (if (map? x)
-    (every? (fn [v] (contains? ks v)) (keys x))))
+    (= ks (clojure.set/intersection (set (keys x)) ks))))
 
 (defn compute-matrix-index [sizes indices]
   (assert (= (count sizes)
@@ -39,7 +39,7 @@
         defargs default-args0
         args args0]
     (if (empty? defargs)
-      result
+      (reduce conj result args)
       (if (default-arg? (first defargs))
         (recur (conj result (ffirst defargs))
                (rest defargs)
@@ -54,4 +54,3 @@
   (assert (valid-partial-args? partial-args))
   (fn [& args0]
     (apply fun (merge-args partial-args args0))))
-
