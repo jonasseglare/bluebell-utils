@@ -4,7 +4,7 @@
 
 (deftest map-with-keys-test
   (testing "Testing map with keys"
-    (is (map-with-keys? {:rulle 119} #{:rull :rulle}))
+    (is (map-with-keys? {:rulle 119} #{:rulle}))
     (is (map-with-keys? {:rulle 119} #{:rulle}))
     (is (not (map-with-keys? {:rulle 119} #{:rull})))
     (is (not (map-with-keys? [:rulle] #{:rulle})))))
