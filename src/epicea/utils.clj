@@ -1,6 +1,17 @@
 (ns epicea.utils
   (:require [clojure.set]))
 
+(defn flatten-map-hierarchy [mh]
+  (reduce
+   into {}
+   (map 
+    (fn [k m]
+      (map (fn [[k2 v]] [[k k2] v])
+           (vec m)))
+    (keys mh)
+    (vals mh))))
+
+
 (defn map-map [f m]
   (into {} (map f m)))
 

@@ -24,3 +24,8 @@
     (let [f (provide-arguments get [nil [:a]])]
       (is (= 9 (f {:a 9})))
       (is (= 12 (f {:a 12}))))))
+
+(deftest map-hierarchy-test
+  (testing "Flattening..."
+    (is (= (flatten-map-hierarchy {:a {1 :c 2 :d} :b {3 :k}})
+           {[:a 1] :c, [:a 2] :d, [:b 3] :k}))))
