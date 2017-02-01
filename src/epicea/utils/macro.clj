@@ -79,7 +79,7 @@
   (try
     (let [ar (resolve a)
           br (resolve b)]
-    (and (= ar br) (not (nil? ar)) (not (nil? br)))
+      (and (= ar br) (not (nil? ar)) (not (nil? br))))
     (catch Throwable _ false)))
 
 (def special-forms {'if :if ; OK
