@@ -5,6 +5,9 @@
 (defn error [& s]
   (throw (RuntimeException. (apply str s))))
 
+(defn warning [& s]
+  (println (str "WARNING: " (apply str s))))
+
 (spec/def ::if-sym #(= 'if %))
 (spec/def ::expr (constantly true))
 (spec/def ::if-form (spec/cat :if-sym ::if-sym
