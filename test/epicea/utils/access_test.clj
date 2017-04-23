@@ -7,6 +7,10 @@
 
 (def kw (compose k w))
 
+(def set-k (setter k))
+(def update-k (updater k))
+(def update-kw (updater kw))
+
 (deftest access-test
   (is (accessor? (map-accessor :k)))
   (is (not (accessor? {})))
@@ -16,4 +20,8 @@
 
 (deftest compose-test
   (is (has? kw {:k {:w 3}}))
-  (is (= 3 (getx kw {:k {:w 3}}))))
+  (is (= 3 (getx kw {:k {:w 3}})))
+  (is (= {:r 3 
+          :k {:w 4}} (setx kw {:r 3} 4)))
+  (is (= {:k 4} (update-k {:k 3} inc)))
+  (is (= {:k {:w 4}} (update-kw {:k {:w 3}} inc))))
