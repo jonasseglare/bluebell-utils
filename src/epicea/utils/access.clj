@@ -3,15 +3,31 @@
 
 (defn accessor? [x]
   (and (map? x)
-       (every? #(contains? x %) [:id :default-parent :set :get :has?])))
+       (every? #(contains? x %) [:id :default-parent :set :get :has?])
+       (or (contains? x :id)
+           (contains? x :parts))))
 
 ;;;;; Standard accessors
-(defn map-accessor [key]
-  {:id [[::map-accessor key]]
-   :default-parent {}
-   :get key
-   :has? #(contains? % key)
-   :set (fn [obj x] (assoc obj key x))})
+(defn map-accessor 
+  ([key dp]
+   {:id [::map-accessor key dp]
+    :default-parent dp
+    :get key
+    :has? #(contains? % key)
+    :set (fn [obj x] (assoc obj key x))})
+  ([key] (map-accessor key {})))
+
+(defn vector-accessor 
+  ([index dp]
+   (let [valid? #(and (vector? %)
+                      (< index (count %)))]
+     (assert (valid? dp))
+     {:id [::vector-accessor index dp]
+      :default-parent dp
+      :get #(nth % index)
+      :has? valid?
+      :set (fn [obj x] 
+             (assoc (if (valid? obj) obj dp) index x))})))
           
 ;;;;; Utilities
 (defn getx [accessor obj]
@@ -58,9 +74,20 @@
   (fn [obj x] 
     (setx a obj (setx b (getx-or-default a obj) x))))
 
+(defn parts [accessor]
+  (if (contains? accessor :parts)
+    (:parts accessor) 
+    [accessor]))
+
+(defn id [accessor]
+  (if (contains? accessor :id) 
+    (:id accessor)
+    (map id (:parts accessor))))
+
 (defn compose [a b]
-  {:id (concat (:id a) (:id b))
+  {:parts (concat (parts a) (parts b))
    :default-parent (:default-parent a)
    :get (compose-getx (:get a) (:get b))
    :has? (compose-has? a b)
    :set (compose-setx a b)})
+

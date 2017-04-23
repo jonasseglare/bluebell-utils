@@ -25,3 +25,9 @@
           :k {:w 4}} (setx kw {:r 3} 4)))
   (is (= {:k 4} (update-k {:k 3} inc)))
   (is (= {:k {:w 4}} (update-kw {:k {:w 3}} inc))))
+
+(def sec (vector-accessor 1 [nil nil nil nil]))
+
+(deftest vector-test
+  (is (= [nil 3 nil nil] (setx sec nil 3)))
+  (is (= [nil 4 nil nil] (updatex sec [nil 3 nil nil] inc))))
