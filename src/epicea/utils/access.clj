@@ -77,6 +77,9 @@
 (defn simple? [accessor]
   (not (simple? accessor)))
 
+(defn size [x]
+  (count (parts x)))
+
 ;;;;; Composition
 
 (defn compose-getx [a b]
@@ -90,12 +93,35 @@
   (fn [obj x] 
     (setx a obj (setx b (getx-or-default a obj) x))))
 
+(defn catparts [a b]
+  (vec (concat a b)))
+
 (defn compose [a b]
-  {:parts (concat (parts a) (parts b))
+  {:parts (catparts (parts a) (parts b))
    :default-parent (:default-parent a)
    :get (compose-getx (:get a) (:get b))
    :has? (compose-has? a b)
    :set (compose-setx a b)})
 
-(defn size [x]
-  (count (parts x)))
+
+;;;;; Slicing, etc
+(defn slice [accessor from to]
+  (reduce compose (subvec (parts accessor) from to)))
+
+(defn diff-ancestors [a b]
+  (loop [result []
+         ap (parts a)
+         bp (parts b)]
+    (if (or (empty? ap) 
+            (empty? bp)
+            (not= (first ap) (first bp)))
+      {:common result
+       :a ap
+       :b bp}
+      (recur (conj result (first ap))
+             (rest ap)
+             (rest bp)))))
+
+      
+            
+            

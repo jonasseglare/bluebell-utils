@@ -26,7 +26,10 @@
   (is (= {:k 4} (update-k {:k 3} inc)))
   (is (= {:k {:w 4}} (update-kw {:k {:w 3}} inc)))
   (is (= 2 (size kw)))
-  (is (= 1 (size k))))
+  (is (= 1 (size k)))
+  (is (= (id w) (id (slice kw 1 2))))
+  (is (not (empty? (:common (diff-ancestors kw k)))))
+  (is (empty? (:common (diff-ancestors kw w)))))
 
 (def sec (vector-accessor 1 [nil nil nil nil]))
 
