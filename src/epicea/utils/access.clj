@@ -122,6 +122,25 @@
              (rest ap)
              (rest bp)))))
 
+;;;;;; Constructor
+
+(defn constructor 
+  ([init accessors]
+   (fn [& args]
+     (reduce
+      (fn [obj f]
+        (f obj))
+      init
+      (map (fn [accessor arg]
+             (fn [obj] 
+               ((:set accessor) 
+                obj arg)))
+           accessors args))))
+  ([accessors]
+   (constructor (:default-parent (first accessors))
+                accessors)))
+
+
       
             
             

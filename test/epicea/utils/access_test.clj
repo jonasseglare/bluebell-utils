@@ -36,3 +36,19 @@
 (deftest vector-test
   (is (= [nil 3 nil nil] (setx sec nil 3)))
   (is (= [nil 4 nil nil] (updatex sec [nil 3 nil nil] inc))))
+
+(def x (map-accessor :x))
+(def y (map-accessor :y))
+(def make-xy (constructor {} [x y]))
+
+(deftest constructor-test
+  (is (= {:x 3 :y 4} (make-xy 3 4))))
+
+
+(def empty-xy2 [nil nil])
+(def x2 (vector-accessor 0 empty-xy2))
+(def y2 (vector-accessor 1 empty-xy2))
+(def make-xy2 (constructor [x2 y2]))
+
+(deftest constructor-test2
+  (is (= [9 20] (make-xy2 9 20))))
