@@ -85,6 +85,23 @@
                (rest defargs)
                (rest args))))))
 
+(defn tuple-generator [n]
+  (let [m (- n 1)]
+    (fn [[acc p] x]
+      (if (= m (count p))
+        [(conj acc (conj p x)) []]
+        [acc (conj p x)]))))
+
+(defn form-tuples [tuple-size data]
+  (first
+   (reduce 
+    (tuple-generator tuple-size)
+    [[] []]
+    data)))
+
+(defn form-pairs [data]
+  (form-tuples 2 data))
+
 ;; EXAMPLE: (def f (provide-arguments get [[{:a 1 :b 2 :c 3}] nil]))
 ;; EXAMPLE: (def f (provide-arguments get [nil [:a]]))
 (defn provide-arguments [fun partial-args]
