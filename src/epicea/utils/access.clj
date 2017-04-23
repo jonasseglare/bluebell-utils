@@ -61,6 +61,22 @@
 (defn updater [accessor]
   (fn [obj f] (updatex accessor obj f)))
 
+(defn parts [accessor]
+  (if (contains? accessor :parts)
+    (:parts accessor) 
+    [accessor]))
+
+(defn id [accessor]
+  (if (contains? accessor :id) 
+    (:id accessor)
+    (map id (:parts accessor))))
+
+(defn complex? [accessor]
+  (contains? accessor :parts))
+
+(defn simple? [accessor]
+  (not (simple? accessor)))
+
 ;;;;; Composition
 
 (defn compose-getx [a b]
@@ -74,16 +90,6 @@
   (fn [obj x] 
     (setx a obj (setx b (getx-or-default a obj) x))))
 
-(defn parts [accessor]
-  (if (contains? accessor :parts)
-    (:parts accessor) 
-    [accessor]))
-
-(defn id [accessor]
-  (if (contains? accessor :id) 
-    (:id accessor)
-    (map id (:parts accessor))))
-
 (defn compose [a b]
   {:parts (concat (parts a) (parts b))
    :default-parent (:default-parent a)
@@ -91,3 +97,5 @@
    :has? (compose-has? a b)
    :set (compose-setx a b)})
 
+(defn size [x]
+  (count (parts x)))

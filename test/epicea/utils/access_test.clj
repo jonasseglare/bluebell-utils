@@ -24,7 +24,9 @@
   (is (= {:r 3 
           :k {:w 4}} (setx kw {:r 3} 4)))
   (is (= {:k 4} (update-k {:k 3} inc)))
-  (is (= {:k {:w 4}} (update-kw {:k {:w 3}} inc))))
+  (is (= {:k {:w 4}} (update-kw {:k {:w 3}} inc)))
+  (is (= 2 (size kw)))
+  (is (= 1 (size k))))
 
 (def sec (vector-accessor 1 [nil nil nil nil]))
 
