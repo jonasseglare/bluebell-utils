@@ -19,13 +19,11 @@
                           :get ::get))
 (spec/def ::exprs (spec/coll-of ::expr))
 
-(spec/def ::arglist (spec/or :fixed-size (spec/coll-of ::expr)
-                             :var-size (spec/cat :main-args (spec/* ::expr)
-                                                 :and ::restargs-start
-                                                 :rest-args (spec/+ ::expr))))
-                                        
-
-
+(spec/def ::arglist 
+  (spec/cat :main (spec/* (spec/or :expr ::expr
+                                   :exprs ::exprs))
+            :rest (spec/? (spec/cat :and ::restargs-start
+                                    :args ::expr))))
 
 
 
