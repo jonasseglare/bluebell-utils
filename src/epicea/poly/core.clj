@@ -2,6 +2,36 @@
   (:require [clojure.spec :as spec]
             [epicea.utils.access :as access]))
 
+;;;;;; Spec
+
+
+(spec/def ::get (spec/cat :prefix #(contains? #{:get :access} %)
+                                 :getter (constantly true)
+                                 :exprs (spec/+ ::expr)))
+                          
+(spec/def ::predicate (spec/cat :prefix #(= % :pred)
+                                :fn (constantly true)))
+
+(spec/def ::restargs-start #(= '& %))
+(spec/def ::binding #(and (symbol? %) (not= '& %)))
+(spec/def ::expr (spec/or :binding ::binding
+                          :predicate ::predicate
+                          :get ::get))
+(spec/def ::exprs (spec/coll-of ::expr))
+
+(spec/def ::arglist (spec/or :fixed-size (spec/coll-of ::expr)
+                             :var-size (spec/cat :main-args (spec/* ::expr)
+                                                 :and ::restargs-start
+                                                 :rest-args (spec/+ ::expr))))
+                                        
+
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Main impl
 (declare multi-fn)
 
 (def empty-method-list [])
@@ -31,4 +61,5 @@
   (update-in m [name] #(add-method % (make-method arglist body-forms))))
 
 (defmacro defpoly [name arglist & body-forms]
-  (swap! method-map #(register-poly % name arglist body-forms)))
+  (swap! method-map #(register-poly % name arglist body-forms))
+  nil)
