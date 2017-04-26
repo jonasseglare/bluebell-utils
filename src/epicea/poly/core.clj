@@ -4,7 +4,6 @@
 
 ;;;;;; Spec
 
-
 (spec/def ::get (spec/cat :prefix #(contains? #{:get :access} %)
                           :getter (constantly true)
                           :exprs (spec/+ ::expr)))
@@ -30,8 +29,19 @@
 (defmethod get-expr-bindings :get [expr]
   (reduce into [] (map get-expr-bindings (:exprs expr))))
 
-(defmethod get-expr-bindings :binding [expr] [expr])
+(defmethod get-expr-bindings :binding [expr] [(second expr)])
 
+(defmethod get-expr-bindings :default [_] [])
+
+(defn get-exprs-bindings [exprs]
+  (reduce into (map #(-> % second get-expr-bindings) exprs)))
+
+(defn get-arglist-bindings [arglist]
+  (let [b (get-exprs-bindings (:main arglist))]
+    (if (contains? arglist :rest)
+      (into b (get-expr-bindings (-> arglist :rest :args)))
+      b)))
+   
 
 ;; (defn get-exprs [main]
 ;;   (if (contains? main :expr)
