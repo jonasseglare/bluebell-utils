@@ -10,8 +10,12 @@
 
 
 (def args ['a [:pred number?] 'b 'c '& 'd])
+(def args2 ['a [:pred number?] 'b])
 
 (def parsed (spec/conform ::poly/arglist args))
+(def parsed2 (spec/conform ::poly/arglist args2))
+
 (deftest get-expr-bindings-test
   (is (= ['a 'b 'c] (get-exprs-bindings (:main parsed))))
-  (is (= ['a 'b 'c 'd] (get-arglist-bindings parsed))))
+  (is (= ['a 'b 'c 'd] (get-arglist-bindings parsed)))
+  (is (= ['a 'b] (get-arglist-bindings parsed2))))

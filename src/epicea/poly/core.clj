@@ -37,10 +37,8 @@
   (reduce into (map #(-> % second get-expr-bindings) exprs)))
 
 (defn get-arglist-bindings [arglist]
-  (let [b (get-exprs-bindings (:main arglist))]
-    (if (contains? arglist :rest)
-      (into b (get-expr-bindings (-> arglist :rest :args)))
-      b)))
+  (into (get-exprs-bindings (:main arglist)) 
+        (get-expr-bindings (-> arglist :rest :args))))
    
 
 ;; (defn get-exprs [main]
