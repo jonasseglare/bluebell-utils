@@ -84,3 +84,6 @@
 (defmacro defpoly [name arglist & body-forms]
   (swap! method-map #(register-poly % name arglist body-forms))
   nil)
+
+;; (declpoly rulle (fn [& args] :no-impl))
+;; (defpoly rulle [x] (* x x))
