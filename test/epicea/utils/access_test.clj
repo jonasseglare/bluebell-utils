@@ -1,6 +1,7 @@
 (ns epicea.utils.access-test
   (:require [clojure.test :refer :all]
-            [epicea.utils.access :refer :all]))
+            [epicea.utils.access :refer :all]
+            [epicea.utils.optional :refer [optional]]))
 
 (def k (map-accessor :k))
 (def w (map-accessor :w))
@@ -52,3 +53,15 @@
 
 (deftest constructor-test2
   (is (= [9 20] (make-xy2 9 20))))
+
+(def even-access
+  {:id :even-number
+   :default-parent 0
+   :get identity
+   :has? even?
+   :set (fn [a b] b)})
+
+(deftest even-access-test
+  (is (= 2 (getx even-access 2)))
+  (is (= (optional 2) (getx-optional even-access 2)))
+  (is (= (optional) (getx-optional even-access 3))))

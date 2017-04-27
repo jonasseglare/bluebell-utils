@@ -15,7 +15,8 @@
 (spec/def ::binding #(and (symbol? %) (not= '& %)))
 (spec/def ::expr (spec/or :binding ::binding
                           :predicate ::predicate
-                          :get ::get))
+                          :get ::get
+                          :group ::exprs))
 (spec/def ::exprs (spec/coll-of ::expr))
 
 (spec/def ::arglist 
@@ -28,6 +29,9 @@
 
 (defmethod get-expr-bindings :get [expr]
   (reduce into [] (map get-expr-bindings (:exprs expr))))
+
+(defmethod get-expr-bindings :group [expr]
+  (reduce into [] (map get-expr-bindings (second expr))))
 
 (defmethod get-expr-bindings :binding [expr] [(second expr)])
 

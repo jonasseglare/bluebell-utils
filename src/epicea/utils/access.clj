@@ -1,5 +1,6 @@
 (ns epicea.utils.access
-  (:require [epicea.utils.debug :as dbg]))
+  (:require [epicea.utils.debug :as dbg]
+            [epicea.utils.optional :refer [optional]]))
 
 (defn accessor? [x]
   (and (map? x)
@@ -43,9 +44,16 @@
   ((:has? accessor) obj))
 
 (defn getx-or-default [accessor obj]
+  ((:get accessor) 
+   (if ((:has? accessor) obj)
+     obj
+     (:default-parent obj))))
+
+(defn getx-optional [accessor obj]
   (if ((:has? accessor) obj)
-    ((:get accessor) obj)
-    (:default-parent obj)))
+    (optional ((:get accessor) obj))
+    (optional)))
+
 
 (defn er [which]
   (fn [accessor]
