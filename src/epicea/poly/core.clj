@@ -25,10 +25,14 @@
             :rest (spec/? (spec/cat :and ::restargs-start
                                     :args ::expr))))
 
+;;;; get-expr-bindings
 (defmulti get-expr-bindings first)
 
+(defn get-expr-bindings-get-access [expr]
+  (reduce into [] (map get-expr-bindings (-> expr second :exprs))))
+
 (defmethod get-expr-bindings :get [expr]
-  (reduce into [] (map get-expr-bindings (:exprs expr))))
+  (get-expr-bindings-get-access expr))
 
 (defmethod get-expr-bindings :group [expr]
   (reduce into [] (map get-expr-bindings (second expr))))
@@ -36,6 +40,16 @@
 (defmethod get-expr-bindings :binding [expr] [(second expr)])
 
 (defmethod get-expr-bindings :default [_] [])
+
+;;;; eval-expr-bindings
+(defmulti eval-expr-bindings (fn [dst x] (first x)))
+
+;(defmethod eval-expr-bindings :get [expr]
+;  (let [body (second expr)]
+;    (if-let [[result]] (eval-optional (:prefix expr
+
+
+
 
 (defn get-exprs-bindings [exprs]
   (reduce into (map #(-> % second get-expr-bindings) exprs)))

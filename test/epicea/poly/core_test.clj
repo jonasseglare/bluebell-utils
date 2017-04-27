@@ -19,3 +19,7 @@
   (is (= ['a 'b 'c] (get-exprs-bindings (:main parsed))))
   (is (= ['a 'b 'c 'd] (get-arglist-bindings parsed)))
   (is (= ['a 'b] (get-arglist-bindings parsed2))))
+
+(deftest test-get-expr
+  (is (= ['a]
+         (get-expr-bindings (spec/conform ::poly/expr [:get number? 'a])))))
