@@ -64,30 +64,19 @@
   (if ((:fn pred?) x) dst))
 
 (defn eval-exprs-bindings [dst src exprs]
-  (println "eval-exprs-bindings")
-  (debug/dout dst)
-  (debug/dout src)
-  (debug/dout exprs)
   (reduce 
    (fn [acc ex] 
-     (debug/dout acc)
-     (debug/dout ex)
-     (if acc (eval-expr-bindings acc ex src)))
+     (if acc 
+       (eval-expr-bindings 
+        acc ex src)))
    dst exprs))
 
 (defmethod eval-expr-bindings :group [dst [_ exprs] x]
-  (println "eval-exprs-bindings-group")
-  (debug/dout exprs)
-  (debug/dout x)
   (eval-exprs-bindings dst x exprs))
 
 (defmethod eval-expr-bindings :get [dst expr x]
   (when-let [[result] (eval-optional expr x)]
     (eval-exprs-bindings dst result (:exprs (second expr)))))
-            
-
-
-
 
 (defn get-exprs-bindings [exprs]
   (reduce into (map #(-> % second get-expr-bindings) exprs)))
@@ -95,26 +84,6 @@
 (defn get-arglist-bindings [arglist]
   (into (get-exprs-bindings (:main arglist)) 
         (get-expr-bindings (-> arglist :rest :args))))
-   
-
-;; (defn get-exprs [main]
-;;   (if (contains? main :expr)
-;;     [(:expr main)]
-;;     (:exprs main)))
-
-;; (defn get-expr-bindings [acc expr]
-;;   acc)
-
-;; (defn get-main-bindings [exprs]
-;;   (reduce get-expr-bindings [] exprs))
-
-;; (defn list-arglist-bindings [arglist]
-;;   (concat (-> arglist :main get-exprs get-main-bindings)
-;;           (get-expr-bindings [] (-> arglist :rest :args))))
-  
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Main impl
 (declare multi-fn)
