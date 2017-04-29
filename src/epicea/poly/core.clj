@@ -1,5 +1,6 @@
 (ns epicea.poly.core
   (:require [clojure.spec :as spec]
+            [epicea.utils.debug :as debug]
             [epicea.utils.access :as access]))
 
 ;;;;;; Spec
@@ -42,11 +43,48 @@
 (defmethod get-expr-bindings :default [_] [])
 
 ;;;; eval-expr-bindings
-(defmulti eval-expr-bindings (fn [dst x] (first x)))
+;; Where 
+;;  - 
+(defmulti eval-expr-bindings (fn [acc expr x] (first expr)))
 
-;(defmethod eval-expr-bindings :get [expr]
-;  (let [body (second expr)]
-;    (if-let [[result]] (eval-optional (:prefix expr
+(defn get-prefix [[tag k]]
+  (:prefix k))
+(defmulti eval-optional (fn [expr k] (get-prefix expr)))
+
+(defmethod eval-optional :get [expr x]
+  [((-> expr second :getter) x)])
+
+(defmethod eval-optional :access [expr x]
+  (access/getx-optional (-> expr second :getter) x))
+
+(defmethod eval-expr-bindings :binding [dst [_ _] x] 
+  (conj dst x))
+
+(defmethod eval-expr-bindings :predicate [dst [_ pred?] x]
+  (if ((:fn pred?) x) dst))
+
+(defn eval-exprs-bindings [dst src exprs]
+  (println "eval-exprs-bindings")
+  (debug/dout dst)
+  (debug/dout src)
+  (debug/dout exprs)
+  (reduce 
+   (fn [acc ex] 
+     (debug/dout acc)
+     (debug/dout ex)
+     (if acc (eval-expr-bindings acc ex src)))
+   dst exprs))
+
+(defmethod eval-expr-bindings :group [dst [_ exprs] x]
+  (println "eval-exprs-bindings-group")
+  (debug/dout exprs)
+  (debug/dout x)
+  (eval-exprs-bindings dst x exprs))
+
+(defmethod eval-expr-bindings :get [dst expr x]
+  (when-let [[result] (eval-optional expr x)]
+    (eval-exprs-bindings dst result (:exprs (second expr)))))
+            
 
 
 
