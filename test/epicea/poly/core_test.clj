@@ -39,6 +39,9 @@
 (def test-expr7 (spec/conform ::poly/expr [[:get :mjao [:pred number?] 'a] 
                                            [:access katt [:get :skit 'b]]]))
 
+(deftest get-exprs-test
+  (is (vector? (get-exprs test-expr7))))
+
 (deftest test-access 
   (is (= [3] (eval-optional test-expr {:katt 3})))
   (is (= [121] (eval-optional test-expr2 120)))
@@ -55,6 +58,8 @@
                 [] test-expr7 
                 {:mjao 9 :katt {:skit 3}})))
   (is (nil? (eval-expr-bindings [] test-expr7 {:mjao 9})))
+  (is (= [[:binding 'a] [:binding 'b]]
+         (access/getx expr-x (spec/conform ::poly/expr ['a 'b]))))
   (is (nil? (eval-expr-bindings [] test-expr7 {:mjao :a :katt {:skit 3}}))))
 
 

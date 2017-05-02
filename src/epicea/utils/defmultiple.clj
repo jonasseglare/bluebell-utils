@@ -14,9 +14,14 @@
                     :dispatch-value ::dispatch-value
                     :function (spec/* ::whatever)))
 
+(spec/def ::default (spec/cat
+                     :default-key #(= % :default)
+                     :value (constantly true)))
+
 (spec/def ::defmultiple (spec/cat 
                          :name ::name
                          :dispatch-fun ::dispatch-fun
+                         :default (spec/? ::default)
                          :methods (spec/* (spec/spec ::method)))) ;; explicit call to spec/spec.
 
 (defn make-method [entry]

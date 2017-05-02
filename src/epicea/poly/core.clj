@@ -1,9 +1,16 @@
 (ns epicea.poly.core
   (:require [clojure.spec :as spec]
             [epicea.utils.debug :as debug]
-            [epicea.utils.access :as access]))
+            [epicea.utils.access :as access]
+            [epicea.utils.defmultiple :refer [defmultiple]]))
 
 ;;;;;; Spec
+
+(def keys-to-eval #{:getter :fn})
+
+(def expr-x (access/vector-accessor 1 [nil nil]))
+(def exprs-x (access/map-accessor :exprs {}))
+(def expr-exprs (access/compose expr-x exprs-x))
 
 (spec/def ::get (spec/cat :prefix #(contains? #{:get :access} %)
                           :getter (constantly true)
@@ -25,6 +32,19 @@
                                    :exprs ::exprs))
             :rest (spec/? (spec/cat :and ::restargs-start
                                     :args ::expr))))
+
+(defmultiple get-exprs first
+  (:binding [_] [])
+  (:predicate [_] [])
+  (:get [x] (-> x second :exprs))
+  (:group [x] (-> x second)))
+
+(defmultiple set-exprs (fn [k _] (first k))
+  (:binding [b _] b)
+  (:predicate [p _] p)
+  (:get [g exprs] (access/updatex expr-x (fn [m] (assoc m :exprs exprs))))
+  (:group [g exprs] (access/setx expr-x exprs)))
+  
 
 ;;;; get-expr-bindings
 (defmulti get-expr-bindings first)
