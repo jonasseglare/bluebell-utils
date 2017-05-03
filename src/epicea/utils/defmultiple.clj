@@ -31,15 +31,23 @@
 (defn make-method-map [methods]
   (reduce merge (map make-method methods)))
 
+(defn eval-multi [dispatch-value method-map default-key args]
+  (cond
+    (contains? method-map dispatch-value) (apply (get method-map dispatch-value) args)
+    (contains? method-map default-key) (apply (get method-map default-key) args)
+    :default (throw (RuntimeException. (str "No method for dispatch value '" dispatch-value "'. "
+                                            "Methods are " (keys method-map))))))
+                                                 
+
 (defn defmultiple-sub [x]
   `(let [dispatch-fun# ~(eval (:dispatch-fun x))
-         method-map# ~(make-method-map (:methods x))]
+         method-map# ~(make-method-map (:methods x))
+         default-key# ~(eval (-> x :default :value))]
      (defn ~(:name x) [& args#]
-       (let [dv# (apply dispatch-fun# args#)
-             m# (get method-map# dv#)]
-         (if (nil? m#) 
-           (throw (RuntimeException. (str "No dispatch value for '" dv# "'")))
-           (apply m# args#))))))
+       (eval-multi (apply dispatch-fun# args#)
+                   method-map#
+                   default-key#
+                   args#))))
 
 (defmacro defmultiple [& args]
   (let [parsed (spec/conform ::defmultiple args)]
