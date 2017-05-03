@@ -32,10 +32,11 @@
   (is (not (empty? (:common (diff-ancestors kw k)))))
   (is (empty? (:common (diff-ancestors kw w)))))
 
-(def sec (vector-accessor 1 [nil nil nil nil]))
+(def default-vec [nil nil nil nil])
+(def sec (vector-accessor 1 {:default-parent default-vec}))
 
 (deftest vector-test
-  (is (= [nil 3 nil nil] (setx sec nil 3)))
+  (is (= [nil 3 nil nil] (setx sec default-vec 3)))
   (is (= [nil 4 nil nil] (updatex sec [nil 3 nil nil] inc))))
 
 (def x (map-accessor :x))
@@ -47,8 +48,8 @@
 
 
 (def empty-xy2 [nil nil])
-(def x2 (vector-accessor 0 empty-xy2))
-(def y2 (vector-accessor 1 empty-xy2))
+(def x2 (vector-accessor 0 {:default-parent empty-xy2}))
+(def y2 (vector-accessor 1 {:default-parent empty-xy2}))
 (def make-xy2 (constructor [x2 y2]))
 
 (deftest constructor-test2

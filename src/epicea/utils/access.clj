@@ -9,26 +9,38 @@
            (contains? x :parts))))
 
 ;;;;; Standard accessors
+
+(def default-obj {})
+(def default-map-opts {:default-parent {} :make-default (fn [_] default-obj)})
+
+;; Assumptions:
+;;  - Always a valid input object.
+
 (defn map-accessor 
-  ([key dp]
-   {:id [::map-accessor key dp]
-    :default-parent dp
-    :get key
-    :has? #(contains? % key)
-    :set (fn [obj x] (assoc obj key x))})
+  ([key map-opts]
+   (merge default-map-opts map-opts
+          {:id [::map-accessor key map-opts]
+           :get key
+           :valid-parent? map?
+           :has? #(contains? % key)
+           :set (fn [obj x] (assoc obj key x))}))
   ([key] (map-accessor key {})))
 
+(def default-vector-opts {})
+
 (defn vector-accessor 
-  ([index dp]
-   (let [valid? #(and (vector? %)
-                      (< index (count %)))]
-     (assert (valid? dp))
-     {:id [::vector-accessor index dp]
-      :default-parent dp
-      :get #(nth % index)
-      :has? valid?
-      :set (fn [obj x] 
-             (assoc (if (valid? obj) obj dp) index x))})))
+  ([index opts]
+   (merge default-vector-opts 
+          opts
+          (let [valid? #(and (vector? %) (< index (count %)))]
+            (assert (valid? (:default-parent opts)))
+            {:id [::vector-accessor index opts]
+             :get #(nth % index)
+             :valid-parent? valid?
+             :has? valid?
+             :set (fn [obj x] 
+                    (assert (valid? obj))
+                    (assoc obj index x))}))))
           
 ;;;;; Utilities
 (defn getx [accessor obj]
