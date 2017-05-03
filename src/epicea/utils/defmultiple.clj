@@ -42,7 +42,9 @@
 (defn defmultiple-sub [x]
   `(let [dispatch-fun# ~(eval (:dispatch-fun x))
          method-map# ~(make-method-map (:methods x))
-         default-key# ~(eval (-> x :default :value))]
+         default-key# ~(if (contains? x :default)
+                         (eval (-> x :default :value))
+                         :default)]
      (defn ~(:name x) [& args#]
        (eval-multi (apply dispatch-fun# args#)
                    method-map#

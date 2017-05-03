@@ -34,14 +34,27 @@
                                     :args ::expr))))
 
 (defmultiple get-exprs first
-  (:default [])
+  (:default [x] [])
   (:get [x] (-> x second :exprs))
   (:group [x] (-> x second)))
 
 (defmultiple set-exprs (fn [k _] (first k))
   (:default [b _] b)
-  (:get [g exprs] (access/updatex expr-x (fn [m] (assoc m :exprs exprs))))
-  (:group [g exprs] (access/setx expr-x exprs)))
+  (:get [g exprs] (access/updatex expr-x g (fn [m] (assoc m :exprs exprs))))
+  (:group [g exprs] (access/setx expr-x g exprs)))
+
+;(defmultiple compile-expr first
+;  (:default [x] x)
+;  (:get [x] (access/updatex expr-x x #()
+
+(def expr-access {:get get-exprs :set set-exprs :has? (constantly true)})
+(def update-exprs (access/updater expr-access))
+
+(defn visit-exprs [root-expr post-fn]
+  (post-fn
+   (update-exprs 
+    root-expr
+    #(map (fn [e] (visit-exprs e post-fn)) %))))
   
 
 ;;;; get-expr-bindings
