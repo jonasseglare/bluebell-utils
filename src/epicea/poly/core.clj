@@ -43,9 +43,13 @@
   (:get [g exprs] (access/updatex expr-x g (fn [m] (assoc m :exprs exprs))))
   (:group [g exprs] (access/setx expr-x g exprs)))
 
-;(defmultiple compile-expr first
-;  (:default [x] x)
-;  (:get [x] (access/updatex expr-x x #()
+(def get-getter (access/compose expr-x (access/map-accessor :getter)))
+(def predicate-fn (access/compose expr-x (access/map-accessor :fn)))
+
+(defmultiple compile-expr first
+  (:default [x] x)
+  (:get [x] (access/updatex get-getter x eval))
+  (:predicate [x] (access/updatex predicate-fn x eval)))
 
 (def expr-access {:get get-exprs :set set-exprs :has? (constantly true)})
 (def update-exprs (access/updater expr-access))
@@ -55,6 +59,8 @@
    (update-exprs 
     root-expr
     #(map (fn [e] (visit-exprs e post-fn)) %))))
+
+(defn compile-exprs [e] (visit-exprs e compile-expr))
   
 
 ;;;; get-expr-bindings
@@ -149,5 +155,7 @@
   (swap! method-map #(register-poly % name arglist body-forms))
   nil)
 
+
 ;; (declpoly rulle (fn [& args] :no-impl))
 ;; (defpoly rulle [x] (* x x))
+;;(def v (visit-exprs test-expr7 #(conj % :kattskit)))
