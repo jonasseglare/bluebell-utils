@@ -120,6 +120,7 @@
 (defn compose [a b]
   {:parts (catparts (parts a) (parts b))
    :default-parent (:default-parent a)
+   :make-default (:make-default b)
    :get (compose-getx (:get a) (:get b))
    :has? (compose-has? a b)
    :set (compose-setx a b)})
