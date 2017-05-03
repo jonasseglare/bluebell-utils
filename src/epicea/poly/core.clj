@@ -34,14 +34,12 @@
                                     :args ::expr))))
 
 (defmultiple get-exprs first
-  (:binding [_] [])
-  (:predicate [_] [])
+  (:default [])
   (:get [x] (-> x second :exprs))
   (:group [x] (-> x second)))
 
 (defmultiple set-exprs (fn [k _] (first k))
-  (:binding [b _] b)
-  (:predicate [p _] p)
+  (:default [b _] b)
   (:get [g exprs] (access/updatex expr-x (fn [m] (assoc m :exprs exprs))))
   (:group [g exprs] (access/setx expr-x exprs)))
   
