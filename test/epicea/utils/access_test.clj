@@ -66,3 +66,10 @@
   (is (= 2 (getx even-access 2)))
   (is (= (optional 2) (getx-optional even-access 2)))
   (is (= (optional) (getx-optional even-access 3))))
+
+(def whiskers2 (map-accessor :whiskers {:default-parent {:type :cat :whiskers []}}))
+(def whiskers3 (map-accessor :whiskers {:make-default (fn [_] [1 2 3])}))
+
+(deftest cat-test
+  (is (= [] (getx-or-default whiskers2 {})))
+  (is (= [1 2 3] (getx-or-default whiskers3 {}))))

@@ -11,7 +11,8 @@
 ;;;;; Standard accessors
 
 (def default-obj {})
-(def default-map-opts {:default-parent {} :make-default (fn [_] default-obj)})
+(def default-opts {})
+(def default-map-opts (merge default-opts {:default-parent {}}))
 
 ;; Assumptions:
 ;;  - Always a valid input object.
@@ -26,7 +27,7 @@
            :set (fn [obj x] (assoc obj key x))}))
   ([key] (map-accessor key {})))
 
-(def default-vector-opts {})
+(def default-vector-opts default-opts)
 
 (defn vector-accessor 
   ([index opts]
@@ -56,10 +57,10 @@
   ((:has? accessor) obj))
 
 (defn getx-or-default [accessor obj]
-  ((:get accessor) 
-   (if ((:has? accessor) obj)
-     obj
-     (:default-parent obj))))
+  (cond 
+    ((:has? accessor) obj) ((:get accessor) obj)
+    (contains? accessor :make-default) ((:make-default accessor) obj)
+    :default ((:get accessor) (:default-parent accessor))))
 
 (defn getx-optional [accessor obj]
   (if ((:has? accessor) obj)
