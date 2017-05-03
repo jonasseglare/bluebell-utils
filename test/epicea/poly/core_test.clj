@@ -40,7 +40,9 @@
                                            [:access katt [:get :skit 'b]]]))
 
 (deftest get-exprs-test
-  (is (vector? (get-exprs test-expr7))))
+  (is (vector? (get-exprs test-expr7)))
+  (is (= [[:binding 'a]] (get-exprs test-expr5))))
+
 
 (deftest test-access 
   (is (= [3] (eval-optional test-expr {:katt 3})))
