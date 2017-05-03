@@ -8,7 +8,7 @@
 
 (def keys-to-eval #{:getter :fn})
 
-(def expr-x (access/vector-accessor 1 [nil nil]))
+(def expr-x (access/vector-accessor 1 {:default-parent [nil nil]}))
 (def exprs-x (access/map-accessor :exprs {}))
 (def expr-exprs (access/compose expr-x exprs-x))
 
