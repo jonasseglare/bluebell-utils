@@ -4,9 +4,7 @@
 
 (defn accessor? [x]
   (and (map? x)
-       (every? #(contains? x %) [:id :default-parent :set :get :has?])
-       (or (contains? x :id)
-           (contains? x :parts))))
+       (every? #(contains? x %) [:set :get :has?])))
 
 ;;;;; Standard accessors
 
@@ -20,8 +18,7 @@
 (defn map-accessor 
   ([key map-opts]
    (merge default-map-opts map-opts
-          {:id [::map-accessor key map-opts]
-           :get key
+          {:get key
            :valid-parent? map?
            :has? #(contains? % key)
            :set (fn [obj x] (assoc obj key x))}))
@@ -35,8 +32,7 @@
           opts
           (let [valid? #(and (vector? %) (< index (count %)))]
             (assert (valid? (:default-parent opts)))
-            {:id [::vector-accessor index opts]
-             :get #(nth % index)
+            {:get #(nth % index)
              :valid-parent? valid?
              :has? valid?
              :set (fn [obj x] 
@@ -86,11 +82,6 @@
   (if (contains? accessor :parts)
     (:parts accessor) 
     [accessor]))
-
-(defn id [accessor]
-  (if (contains? accessor :id) 
-    (:id accessor)
-    (map id (:parts accessor))))
 
 (defn complex? [accessor]
   (contains? accessor :parts))
