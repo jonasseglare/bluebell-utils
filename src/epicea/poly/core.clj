@@ -61,23 +61,21 @@
     #(map (fn [e] (visit-exprs e post-fn)) %))))
 
 (defn compile-exprs [e] (visit-exprs e compile-expr))
-  
 
+(declare get-expr-bindings-get-access)
+(declare get-expr-bindings)
 ;;;; get-expr-bindings
-(defmulti get-expr-bindings first)
+(defmultiple get-expr-bindings first
+  (:get [expr]
+        (get-expr-bindings-get-access expr))
+  (:group [expr]
+          (reduce into [] (map get-expr-bindings (second expr))))
+  (:binding [expr] [(second expr)])
+  (:default [_] []))
 
 (defn get-expr-bindings-get-access [expr]
   (reduce into [] (map get-expr-bindings (-> expr second :exprs))))
 
-(defmethod get-expr-bindings :get [expr]
-  (get-expr-bindings-get-access expr))
-
-(defmethod get-expr-bindings :group [expr]
-  (reduce into [] (map get-expr-bindings (second expr))))
-
-(defmethod get-expr-bindings :binding [expr] [(second expr)])
-
-(defmethod get-expr-bindings :default [_] [])
 
 
 (declare eval-exprs-bindings)
@@ -99,9 +97,6 @@
         (when-let [[result] (eval-optional expr x)]
           (eval-exprs-bindings dst result (:exprs (second expr))))))
 
-
-
-
 (defn eval-exprs-bindings [dst src exprs]
   (reduce 
    (fn [acc ex] 
@@ -113,6 +108,19 @@
 
 (defn get-exprs-bindings [exprs]
   (reduce into (map #(-> % second get-expr-bindings) exprs)))
+
+(defn regroup-args [parsed-arglist args]
+  (let [vargs (vec args)
+        main-bindings (get-exprs-bindings (:main parsed-arglist))
+        n (count vargs)
+        m (count main-bindings)]
+    (if (contains? parsed-arglist :rest)
+      (if (<= m n)
+        (conj (subvec vargs 0 m)
+              (subvec vargs m)))
+      (if (= m n)
+        vargs))))
+
 
 (defn get-arglist-bindings [arglist]
   (into (get-exprs-bindings (:main arglist)) 

@@ -16,6 +16,14 @@
 (def parsed (spec/conform ::poly/arglist args))
 (def parsed2 (spec/conform ::poly/arglist args2))
 
+(deftest regroup-test
+  (is (= [0 1 2 [3 4]] (regroup-args parsed (range 5))))
+  (is (= [0 1 2 []] (regroup-args parsed (range 3))))
+  (is (nil? (regroup-args parsed (range 2))))
+  (is (= [0 1] (regroup-args parsed2 (range 2))))
+  (is (nil? (regroup-args parsed2 (range 1))))
+  (is (nil? (regroup-args parsed2 (range 3)))))
+
 (deftest get-expr-bindings-test
   (is (= ['a 'b 'c] (get-exprs-bindings (:main parsed))))
   (is (= ['a 'b 'c 'd] (get-arglist-bindings parsed)))
