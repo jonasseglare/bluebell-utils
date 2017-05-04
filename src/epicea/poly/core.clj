@@ -79,26 +79,28 @@
 
 (defmethod get-expr-bindings :default [_] [])
 
+
+(declare eval-exprs-bindings)
 ;;;; eval-expr-bindings
 ;; Where 
 ;;  - 
-(defmulti eval-expr-bindings (fn [acc expr x] (first expr)))
-
 (defn get-prefix [[tag k]]
   (:prefix k))
-(defmulti eval-optional (fn [expr k] (get-prefix expr)))
 
-(defmethod eval-optional :get [expr x]
-  [((-> expr second :getter) x)])
+(defmultiple eval-optional (fn [expr k] (get-prefix expr))
+  (:get [expr x] [((-> expr second :getter) x)])
+  (:access [expr x] (access/getx-optional (-> expr second :getter) x)))
 
-(defmethod eval-optional :access [expr x]
-  (access/getx-optional (-> expr second :getter) x))
+(defmultiple eval-expr-bindings (fn [acc expr x] (first expr))
+  (:binding [dst [_ _] x] (conj dst x))
+  (:predicate [dst [_ pred?] x] (if ((:fn pred?) x) dst))
+  (:group [dst [_ exprs] x] (eval-exprs-bindings dst x exprs))
+  (:get [dst expr x]
+        (when-let [[result] (eval-optional expr x)]
+          (eval-exprs-bindings dst result (:exprs (second expr))))))
 
-(defmethod eval-expr-bindings :binding [dst [_ _] x] 
-  (conj dst x))
 
-(defmethod eval-expr-bindings :predicate [dst [_ pred?] x]
-  (if ((:fn pred?) x) dst))
+
 
 (defn eval-exprs-bindings [dst src exprs]
   (reduce 
@@ -108,12 +110,6 @@
         acc ex src)))
    dst exprs))
 
-(defmethod eval-expr-bindings :group [dst [_ exprs] x]
-  (eval-exprs-bindings dst x exprs))
-
-(defmethod eval-expr-bindings :get [dst expr x]
-  (when-let [[result] (eval-optional expr x)]
-    (eval-exprs-bindings dst result (:exprs (second expr)))))
 
 (defn get-exprs-bindings [exprs]
   (reduce into (map #(-> % second get-expr-bindings) exprs)))
