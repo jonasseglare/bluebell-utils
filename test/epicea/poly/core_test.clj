@@ -25,7 +25,7 @@
   (is (nil? (regroup-args parsed2 (range 3)))))
 
 (deftest get-expr-bindings-test
-  (is (= ['a 'b 'c] (get-exprs-bindings (:main parsed))))
+  (is (= ['a 'b 'c] (get-main-expr-bindings parsed)))
   (is (= ['a 'b 'c 'd] (get-arglist-bindings parsed)))
   (is (= ['a 'b] (get-arglist-bindings parsed2))))
 

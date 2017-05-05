@@ -114,9 +114,12 @@
 (defn get-exprs-bindings [exprs]
   (reduce into (map #(-> % second get-expr-bindings) exprs)))
 
+(defn get-main-expr-bindings [arglist]
+  (reduce into [] (map get-expr-bindings (:main arglist))))
+
 (defn regroup-args [parsed-arglist args]
   (let [vargs (vec args)
-        main-bindings (get-exprs-bindings (:main parsed-arglist))
+        main-bindings (get-main-expr-bindings parsed-arglist)
         n (count vargs)
         m (count main-bindings)]
     (if (contains? parsed-arglist :rest)
@@ -128,7 +131,7 @@
 
 
 (defn get-arglist-bindings [arglist]
-  (into (get-exprs-bindings (:main arglist)) 
+  (into (get-main-expr-bindings arglist)
         (get-expr-bindings (-> arglist :rest :args))))
 
 
