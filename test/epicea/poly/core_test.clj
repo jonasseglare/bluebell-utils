@@ -72,7 +72,16 @@
          (access/getx expr-x (spec/conform ::poly/expr ['a 'b]))))
   (is (nil? (eval-expr-bindings [] test-expr7 {:mjao :a :katt {:skit 3}}))))
 
+(def expr8 (spec/conform ::poly/expr [[:pred 'number?] 'a]))
 
+(deftest compile-test
+  (is (= [:group [[:predicate {:prefix :pred, 
+                                :fn number?}]
+                   [:binding 'a]]]
+         (compile-exprs expr8))))
 
-  
+(def expr9 (spec/conform ::poly/arglist ['a 'b '& 'c]))
+
+;(deftest get-all-test
+;  (
 

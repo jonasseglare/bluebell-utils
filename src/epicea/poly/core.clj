@@ -2,7 +2,8 @@
   (:require [clojure.spec :as spec]
             [epicea.utils.debug :as debug]
             [epicea.utils.access :as access]
-            [epicea.utils.defmultiple :refer [defmultiple]]))
+            [epicea.utils.defmultiple :refer [defmultiple]]
+            [epicea.utils.optional :as optional]))
 
 ;;;;;; Spec
 
@@ -28,8 +29,7 @@
 (spec/def ::exprs (spec/coll-of ::expr))
 
 (spec/def ::arglist 
-  (spec/cat :main (spec/* (spec/or :expr ::expr
-                                   :exprs ::exprs))
+  (spec/cat :main (spec/* ::expr)
             :rest (spec/? (spec/cat :and ::restargs-start
                                     :args ::expr))))
 
@@ -46,7 +46,7 @@
 (def get-getter (access/compose expr-x (access/map-accessor :getter)))
 (def predicate-fn (access/compose expr-x (access/map-accessor :fn)))
 
-(defmultiple compile-expr first
+(defmultiple compile-expr-sub first
   (:default [x] x)
   (:get [x] (access/updatex get-getter x eval))
   (:predicate [x] (access/updatex predicate-fn x eval)))
@@ -60,7 +60,7 @@
     root-expr
     #(map (fn [e] (visit-exprs e post-fn)) %))))
 
-(defn compile-exprs [e] (visit-exprs e compile-expr))
+(defn compile-exprs [e] (visit-exprs e compile-expr-sub))
 
 (declare get-expr-bindings-get-access)
 (declare get-expr-bindings)
@@ -97,6 +97,11 @@
         (when-let [[result] (eval-optional expr x)]
           (eval-exprs-bindings dst result (:exprs (second expr))))))
 
+(defn get-all-exprs [arglist]
+  (if (contains? arglist :rest)
+    (conj (:main arglist) (-> arglist :rest :args))
+    (:main arglist)))
+
 (defn eval-exprs-bindings [dst src exprs]
   (reduce 
    (fn [acc ex] 
@@ -125,6 +130,31 @@
 (defn get-arglist-bindings [arglist]
   (into (get-exprs-bindings (:main arglist)) 
         (get-expr-bindings (-> arglist :rest :args))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Making a function
+
+(defn compile-arg-parser [arglist]
+  nil)
+
+(defn compile-body-fun [arglist body-forms]
+  nil)
+
+(defn compile-matching-fn [label raw-arglist raw-body-forms]
+  (let [parsed-arglist (spec/conform ::arglist raw-arglist)]
+    (if (= ::spec/invalid parsed-arglist)
+      (throw 
+       (RuntimeException. 
+        (str "Invalid arglist to " label ": " 
+             (spec/explain ::arglist raw-arglist))))
+      (let [arg-parser (compile-arg-parser parsed-arglist)
+            body-fun (compile-body-fun parsed-arglist raw-body-forms)]
+        (fn [& args]
+          (if-let [parsed-args (arg-parser args)]
+            (apply body-fun parsed-args)
+            (optional/optional)))))))
+                   
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Main impl
 (declare multi-fn)
