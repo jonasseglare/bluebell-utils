@@ -72,3 +72,6 @@
 (deftest cat-test
   (is (= [] (getx-or-default whiskers2 {})))
   (is (= [1 2 3] (getx-or-default whiskers3 {}))))
+
+(deftest vec1-accessor-test
+  (is (= 4 (updatex vec1-accessor 3 (fn [k] (map inc k))))))

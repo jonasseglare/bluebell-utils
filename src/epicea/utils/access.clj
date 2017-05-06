@@ -38,6 +38,11 @@
              :set (fn [obj x] 
                     (assert (valid? obj))
                     (assoc obj index x))}))))
+
+;; Wraps an element in a vector
+(def vec1-accessor (merge default-opts {:get (fn [x] [x]) 
+                                        :set (fn [x y] (first y))
+                                        :has? (constantly true)}))
           
 ;;;;; Utilities
 (defn getx [accessor obj]
@@ -47,7 +52,9 @@
   ((:set accessor) obj x))
 
 (defn updatex [accessor obj f]
-  ((:set accessor) obj (f ((:get accessor) obj))))
+  (if ((:has? accessor) obj)
+    ((:set accessor) obj (f ((:get accessor) obj)))
+    obj))
 
 (defn has? [accessor obj]
   ((:has? accessor) obj))
@@ -108,7 +115,7 @@
 (defn catparts [a b]
   (vec (concat a b)))
 
-(defn compose [a b]
+(defn compose2 [a b]
   {:parts (catparts (parts a) (parts b))
    :default-parent (:default-parent a)
    :make-default (:make-default b)
@@ -116,6 +123,8 @@
    :has? (compose-has? a b)
    :set (compose-setx a b)})
 
+(defn compose [& args]
+  (reduce compose2 args))
 
 ;;;;; Slicing, etc
 (defn slice [accessor from to]

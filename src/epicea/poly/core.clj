@@ -62,6 +62,23 @@
 
 (defn compile-exprs [e] (visit-exprs e compile-expr-sub))
 
+(def main-exprs (access/map-accessor :main))
+(def rest-exprs (access/compose (access/map-accessor :rest)
+                               (access/map-accessor :args)
+                               access/vec1-accessor))
+
+(def update-main-exprs (access/updater main-exprs))
+(def update-rest-exprs (access/updater rest-exprs))
+
+(defn update-arglist-exprs [arglist f]
+  (-> arglist
+      (update-main-exprs f)
+      (update-rest-exprs f)))
+
+(defn compile-arglist-exprs [arglist]
+  (update-arglist-exprs arglist compile-exprs))
+
+
 (declare get-expr-bindings-get-access)
 (declare get-expr-bindings)
 ;;;; get-expr-bindings
@@ -101,6 +118,8 @@
   (if (contains? arglist :rest)
     (conj (:main arglist) (-> arglist :rest :args))
     (:main arglist)))
+
+
 
 (defn eval-exprs-bindings [dst src exprs]
   (reduce 
@@ -143,8 +162,15 @@
 (defn compile-body-fun [arglist body-forms]
   nil)
 
+(defn parse-and-compile-arglist [arglist]
+  (let [parsed (spec/conform ::arglist arglist)]
+    (if (= parsed ::spec/invalid)
+      ::spec/invalid
+
+      nil)))
+
 (defn compile-matching-fn [label raw-arglist raw-body-forms]
-  (let [parsed-arglist (spec/conform ::arglist raw-arglist)]
+  (let [parsed-arglist (parse-and-compile-arglist raw-arglist)]
     (if (= ::spec/invalid parsed-arglist)
       (throw 
        (RuntimeException. 
