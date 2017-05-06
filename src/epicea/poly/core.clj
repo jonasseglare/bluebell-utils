@@ -56,13 +56,22 @@
 (def update-exprs (access/updater expr-access))
 
 (defn visit-exprs [root-expr post-fn]
+  (println "The root expr is " root-expr)
   (post-fn
    (update-exprs 
     root-expr
-    #(map (fn [e] (visit-exprs e post-fn)) %))))
+    #(map (fn [e] 
+            (println "Mapping e=" e)
+            (visit-exprs e post-fn)) 
+          %))))
 
-(defn compile-exprs [e] 
-  (visit-exprs e #(do (println "COMPILE " %) (compile-expr-sub %))))
+(defn compile-exprs [expr-list] 
+  (map
+   (fn [expr]
+     (visit-exprs 
+      expr 
+      #(do (println "COMPILE " %) (compile-expr-sub %))))
+   expr-list))
 
 (def main-exprs (access/map-accessor :main))
 (def rest-exprs (access/compose (access/map-accessor :rest)
