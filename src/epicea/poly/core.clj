@@ -65,8 +65,8 @@
 
 (def main-exprs (access/map-accessor :main))
 (def rest-exprs (access/compose (access/map-accessor :rest)
-                               (access/map-accessor :args)
-                               access/vec1-accessor))
+                                (access/map-accessor :args)
+                                access/vec1-accessor))
 
 (def update-main-exprs (access/updater main-exprs))
 (def update-rest-exprs (access/updater rest-exprs))
@@ -126,8 +126,8 @@
   (reduce 
    (fn [acc ex] 
      (if acc 
-       (eval-expr-bindings 
-        acc ex src)))
+       (debug/dout (eval-expr-bindings 
+                    acc ex src))))
    dst exprs))
 
 
@@ -158,7 +158,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Making a function
 
 (defn compile-arg-parser [arglist]
-  nil)
+  (let [exprs (get-all-exprs arglist)]
+    (fn [args] 
+      (if (= (count args) (count exprs))
+        (map (fn [expr arg]
+               (eval-expr-bindings [] expr arg))
+             exprs args)))))
+               
 
 (defn compile-body-fun [arglist body-forms]
   nil)
