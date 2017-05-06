@@ -109,9 +109,6 @@
 
 (defmultiple eval-expr-bindings 
   (fn [acc expr x] 
-    (debug/dout acc)
-    (debug/dout expr)
-    (debug/dout x)
     (first expr))
   (:binding [dst [_ _] x] (conj dst x))
   (:predicate [dst [_ pred?] x] (if ((:fn pred?) x) dst))
@@ -169,13 +166,11 @@
   (let [exprs (get-all-exprs arglist)]
     (fn [args0] 
       (let [args (regroup-args arglist args0)]
-        (debug/dout args)
-        (debug/dout exprs)
-        (if (= (debug/dout (count args)) (debug/dout (count exprs)))
+        (if (= (count args) (count exprs))
           (reduce
            into-or-nil
            [] (map (fn [expr arg]
-                     (debug/dout (eval-expr-bindings [] expr arg)))
+                     (eval-expr-bindings [] expr arg))
                    exprs args)))))))
                
 
