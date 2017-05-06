@@ -56,12 +56,10 @@
 (def update-exprs (access/updater expr-access))
 
 (defn visit-exprs [root-expr post-fn]
-  (println "The root expr is " root-expr)
   (post-fn
    (update-exprs 
     root-expr
     #(map (fn [e] 
-            (println "Mapping e=" e)
             (visit-exprs e post-fn)) 
           %))))
 
@@ -71,7 +69,7 @@
     (fn [expr]
       (visit-exprs 
        expr 
-       #(do (println "COMPILE " %) (compile-expr-sub %))))
+       compile-expr-sub))
     expr-list)))
 
 (def main-exprs (access/map-accessor :main))
@@ -88,7 +86,6 @@
       (update-rest-exprs f)))
 
 (defn compile-arglist-exprs [arglist]
-  (println "COMPILE THIS ARGLIST: " arglist)
   (update-arglist-exprs arglist compile-exprs))
 
 
@@ -170,7 +167,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Making a function
 
 (defn into-or-nil [a b]
-  (println "into-or-nil with" a "and" b)
   (if (or (nil? a) (nil? b))
     nil
     (into a b)))
@@ -183,8 +179,6 @@
           (reduce
            into-or-nil
            [] (map (fn [expr arg]
-                     (println "expr = " expr)
-                     (println "arg = " arg)
                      (eval-expr-bindings [] expr arg))
                    exprs args)))))))
 
@@ -194,9 +188,6 @@
         fform `(fn ~bindings ~@body-forms)
         handler (eval fform)]
     (fn [args]
-      (println "arglist = " arglist)
-      (println "args = " args)
-      (println "the values = " (arg-parser args))
       (if-let [values (arg-parser args)]
         (optional/optional (apply handler values))
         (optional/optional)))))
@@ -216,7 +207,6 @@
                               :methods (spec/* (spec/spec ::method))))
 
 (defn compile-method [method]
-  (println "COMPILING METHOD.....")
   (compile-body-fun 
    (compile-arglist-exprs (:arglist method))
    (:body method)))
