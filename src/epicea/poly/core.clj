@@ -60,7 +60,8 @@
     root-expr
     #(map (fn [e] (visit-exprs e post-fn)) %))))
 
-(defn compile-exprs [e] (visit-exprs e compile-expr-sub))
+(defn compile-exprs [e] 
+  (visit-exprs e compile-expr-sub))
 
 (def main-exprs (access/map-accessor :main))
 (def rest-exprs (access/compose (access/map-accessor :rest)
