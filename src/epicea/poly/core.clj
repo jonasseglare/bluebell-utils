@@ -157,13 +157,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Making a function
 
+(defn into-or-nil [a b]
+  (if (or (nil? a) (nil? b))
+    nil
+    (into a b)))
+
 (defn compile-arg-parser [arglist]
   (let [exprs (get-all-exprs arglist)]
     (fn [args] 
       (if (= (count args) (count exprs))
-        (map (fn [expr arg]
-               (eval-expr-bindings [] expr arg))
-             exprs args)))))
+        (reduce
+         into-or-nil
+         [] (map (fn [expr arg]
+                   (eval-expr-bindings [] expr arg))
+                 exprs args))))))
                
 
 (defn compile-body-fun [arglist body-forms]

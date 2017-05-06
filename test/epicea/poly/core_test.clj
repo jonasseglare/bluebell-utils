@@ -100,3 +100,9 @@
 
 
 (def f10 (compile-arg-parser (compile-arglist-exprs expr10)))
+
+(deftest compile-args-test
+  (is (= [3 4] (f10 [3 4])))
+  (is (nil? (f10 [3 :a])))
+  (is (nil? (f10 [3])))
+  (is (nil? (f10 [3 4 5]))))
