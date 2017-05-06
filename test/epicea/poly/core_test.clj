@@ -114,3 +114,8 @@
   (is (nil? (f10 [3 4 5]))))
 
 (def f11 (compile-arg-parser (compile-arglist-exprs expr11)))
+
+(deftest compile-args-test2
+  (is (= [3 4 [5]] (f11 [3 4 5])))
+  (is (= [3 4 [5 6]] (f11 [3 4 5 6])))
+  (is (nil? (f11 [3 4 :a]))))
