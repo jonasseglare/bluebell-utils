@@ -176,7 +176,8 @@
 (defn compile-body-fun [arglist body-forms]
   (let [arg-parser (compile-arg-parser arglist)
         bindings (get-arglist-bindings arglist)
-        handler (eval `(fn ~bindings ~@body-forms))]
+        fform (debug/dout `(fn ~bindings ~@body-forms))
+        handler (eval fform)]
     (fn [args]
       (if-let [values (arg-parser args)]
         (optional/optional (apply handler values))
@@ -193,7 +194,7 @@
 (spec/def ::body-form (constantly true))
 (spec/def ::default (spec/cat 
                      :default-key #(= % :default)
-                     :value (constantly true)))
+                     :fn (constantly true)))
                      
 (spec/def ::method (spec/cat
                     :arglist (spec/spec ::arglist)
@@ -203,3 +204,46 @@
                               :poly-name ::poly-name
                               :default (spec/? ::default)
                               :methods (spec/* (spec/spec ::method))))
+
+(defn compile-method [method]
+  (compile-body-fun 
+   (parse-and-compile-arglist (:arglist method))
+   (:body method)))
+
+(defn compile-methods [dp]
+  (map compile-method (:methods methods)))
+
+(defn get-default-method [dp]
+  (if (contains? dp :default)
+    (-> dp :default :fn)
+    (fn [& args]
+      (throw (RuntimeException. 
+              (str "No defpoly method for " (:poly-name dp) " found for "
+                   (with-out-str (clojure.pprint/pprint args))))))))
+    
+(def extra-methods (atom {}))
+
+(defn get-extra-methods [sym]
+  (let [extra (deref extra-methods)]
+    (if-let [e (get extra sym)]
+      e
+      [])))
+
+(defn defpoly-parsed [parsed]
+  (let [name (:poly-name parsed)]
+    `(let [methods# ~(compile-methods parsed)
+           default# ~(get-default-method parsed)]
+       `(defn ~name [& args#]
+          (first (or (eval-matching-method methods# args#)
+                     (eval-matching-method (get-extra-methods ~name) args#)
+                     (eval-matching-method [default#] args#)))))))
+
+`(defmacro defpoly [& args]
+   (let [parsed (spec/conform ::defpoly args)]
+     (if (= parsed ::spec/invalid)
+       (throw 
+        (RuntimeException. 
+         (str "Failed to parse defpoly macro on "
+              (spec/explain-str ::defpoly args))))
+       (defpoly-parsed parsed))))
+            

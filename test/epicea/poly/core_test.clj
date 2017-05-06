@@ -139,4 +139,17 @@
   (is (spec/valid? ::poly/method
                    '([a b] (+ a b) (* a b))))
   (is (spec/valid? ::poly/method
-                   '([a b]))))
+                   '([a b])))
+  (is (spec/valid? ::poly/defpoly
+                   '(defpoly kattskit :default mjao
+                      ([a b] (+ a b))
+                      ([a] (* a a)))))
+  (is (spec/valid? ::poly/defpoly
+                   '(defpoly kattskit :default mjao
+                      ([[[:pred number?] a] b] (+ a b))
+                      ([a] (* a a))))))
+(defpoly my-add 
+  ([[[:pred number?] a]
+    [[:pred number?] b]]
+    (+ a b))
+  ([a b] (str a " + " b)))
