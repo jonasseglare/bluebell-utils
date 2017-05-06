@@ -107,7 +107,12 @@
   (:get [expr x] [((-> expr second :getter) x)])
   (:access [expr x] (access/getx-optional (-> expr second :getter) x)))
 
-(defmultiple eval-expr-bindings (fn [acc expr x] (first expr))
+(defmultiple eval-expr-bindings 
+  (fn [acc expr x] 
+    (debug/dout acc)
+    (debug/dout expr)
+    (debug/dout x)
+    (first expr))
   (:binding [dst [_ _] x] (conj dst x))
   (:predicate [dst [_ pred?] x] (if ((:fn pred?) x) dst))
   (:group [dst [_ exprs] x] (eval-exprs-bindings dst x exprs))
@@ -120,14 +125,12 @@
     (conj (:main arglist) (-> arglist :rest :args))
     (:main arglist)))
 
-
-
 (defn eval-exprs-bindings [dst src exprs]
   (reduce 
    (fn [acc ex] 
      (if acc 
-       (debug/dout (eval-expr-bindings 
-                    acc ex src))))
+       (eval-expr-bindings 
+        acc ex src)))
    dst exprs))
 
 
@@ -164,13 +167,16 @@
 
 (defn compile-arg-parser [arglist]
   (let [exprs (get-all-exprs arglist)]
-    (fn [args] 
-      (if (= (count args) (count exprs))
-        (reduce
-         into-or-nil
-         [] (map (fn [expr arg]
-                   (eval-expr-bindings [] expr arg))
-                 exprs args))))))
+    (fn [args0] 
+      (let [args (regroup-args arglist args0)]
+        (debug/dout args)
+        (debug/dout exprs)
+        (if (= (debug/dout (count args)) (debug/dout (count exprs)))
+          (reduce
+           into-or-nil
+           [] (map (fn [expr arg]
+                     (debug/dout (eval-expr-bindings [] expr arg)))
+                   exprs args)))))))
                
 
 (defn compile-body-fun [arglist body-forms]

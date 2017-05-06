@@ -81,7 +81,13 @@
          (compile-exprs expr8))))
 
 (def expr10 (spec/conform ::poly/arglist ['a [[:pred number?] 'b]]))
-(def expr11 (spec/conform ::poly/arglist ['a [[:pred number?] 'b] '& [[:pred number?] 'c]]))
+
+(defn vector-of-numbers? [x]
+  (and (vector? x)
+       (every? number? x)))
+
+(def expr11 (spec/conform ::poly/arglist ['a [[:pred number?] 'b] 
+                                          '& [[:pred vector-of-numbers?] 'c]]))
 
 (deftest compile-arglist
   (is (= (compile-arglist-exprs expr11)
@@ -90,7 +96,7 @@
                           [:binding 'b]]]], 
           :rest {:and '&, 
                  :args [:group [[:predicate 
-                                 {:prefix :pred, :fn number?}] 
+                                 {:prefix :pred, :fn vector-of-numbers?}] 
                                 [:binding 'c]]]}}))
   (is (= (compile-arglist-exprs expr10)
          {:main [[:binding 'a] 
@@ -106,3 +112,5 @@
   (is (nil? (f10 [3 :a])))
   (is (nil? (f10 [3])))
   (is (nil? (f10 [3 4 5]))))
+
+(def f11 (compile-arg-parser (compile-arglist-exprs expr11)))

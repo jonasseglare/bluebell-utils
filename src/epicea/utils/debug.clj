@@ -2,9 +2,8 @@
 
 (defn dout-sub [label x]
   `(let [x# ~x]
-     (println (str "\n<<<<<<<<<<<<<<<<<(" ~label ")---------"))
-     (println ~(str x) "=\n" x#)
-     (println ">>>>>>>>>>>>>>>>\n")
+     (println (str "--> " ~label " ="))
+     (clojure.pprint/pprint x#)
      x#))
 
 (defmacro dout 
