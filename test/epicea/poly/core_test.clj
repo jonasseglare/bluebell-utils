@@ -126,12 +126,12 @@
          (fn10 [9 :a]))))
 
 (deftest defpoly-parse
-  (is (not= ::spec/invalid (spec/conform ::poly/defpoly '(defpoly kattskit))))
+  (is (not= ::spec/invalid (spec/conform ::poly/defpoly '(kattskit))))
   (is (not= ::spec/invalid (spec/conform 
                             ::poly/defpoly 
-                            '(defpoly kattskit :default :kattskit))))
+                            '(kattskit :default :kattskit))))
   (is (not (spec/valid? ::poly/defpoly 
-                        '(defpoly kattskit :kattskit))))
+                        '(kattskit :kattskit))))
   (is (spec/valid? ::poly/method
                    '([a b] inc)))
   (is (not (spec/valid? ::poly/method
@@ -141,15 +141,15 @@
   (is (spec/valid? ::poly/method
                    '([a b])))
   (is (spec/valid? ::poly/defpoly
-                   '(defpoly kattskit :default mjao
+                   '(kattskit :default mjao
                       ([a b] (+ a b))
                       ([a] (* a a)))))
   (is (spec/valid? ::poly/defpoly
-                   '(defpoly kattskit :default mjao
+                   '(kattskit :default mjao
                       ([[[:pred number?] a] b] (+ a b))
                       ([a] (* a a))))))
 (defpoly my-add 
-  ([[[:pred number?] a]
-    [[:pred number?] b]]
-    (+ a b))
-  ([a b] (str a " + " b)))
+   ([[[:pred number?] aa]
+     [[:pred number?] bb]]
+     (+ aa bb))
+   ([aa bb] (str aa " + " bb)))

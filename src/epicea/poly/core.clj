@@ -118,6 +118,7 @@
           (eval-exprs-bindings dst result (:exprs (second expr))))))
 
 (defn get-all-exprs [arglist]
+  (println "get-all-exprs arglist: " arglist)
   (if (contains? arglist :rest)
     (conj (:main arglist) (-> arglist :rest :args))
     (:main arglist)))
@@ -163,6 +164,7 @@
     (into a b)))
 
 (defn compile-arg-parser [arglist]
+  (println "##### Compile arg parser on " arglist)
   (let [exprs (get-all-exprs arglist)]
     (fn [args0] 
       (let [args (regroup-args arglist args0)]
@@ -179,6 +181,8 @@
         fform (debug/dout `(fn ~bindings ~@body-forms))
         handler (eval fform)]
     (fn [args]
+      (println "Got method args " args)
+      (println "The arglist is " arglist)
       (if-let [values (arg-parser args)]
         (optional/optional (apply handler values))
         (optional/optional)))))
@@ -189,7 +193,6 @@
       ::spec/invalid
       (compile-arglist-exprs arglist))))
 
-(spec/def ::defpoly-symbol #(= % 'defpoly))
 (spec/def ::poly-name symbol?)
 (spec/def ::body-form (constantly true))
 (spec/def ::default (spec/cat 
@@ -200,23 +203,23 @@
                     :arglist (spec/spec ::arglist)
                     :body (spec/* ::body-form)))
 
-(spec/def ::defpoly (spec/cat :defpoly-symbol ::defpoly-symbol
-                              :poly-name ::poly-name
+(spec/def ::defpoly (spec/cat :poly-name ::poly-name
                               :default (spec/? ::default)
                               :methods (spec/* (spec/spec ::method))))
 
 (defn compile-method [method]
+  (println "METHOD: " method)
   (compile-body-fun 
-   (parse-and-compile-arglist (:arglist method))
+   (compile-arglist-exprs (:arglist method))
    (:body method)))
 
 (defn compile-methods [dp]
-  (map compile-method (:methods methods)))
+  (vec (map compile-method (:methods dp))))
 
 (defn get-default-method [dp]
   (if (contains? dp :default)
     (-> dp :default :fn)
-    (fn [& args]
+    (fn [args]
       (throw (RuntimeException. 
               (str "No defpoly method for " (:poly-name dp) " found for "
                    (with-out-str (clojure.pprint/pprint args))))))))
@@ -229,21 +232,26 @@
       e
       [])))
 
+(defn eval-matching-method [methods args]
+  (println "Eval matching method for " (count methods) " methods")
+  (first (filter #(not (nil? %)) (map (fn [f] (f args)) methods))))
+
 (defn defpoly-parsed [parsed]
   (let [name (:poly-name parsed)]
-    `(let [methods# ~(compile-methods parsed)
-           default# ~(get-default-method parsed)]
-       `(defn ~name [& args#]
-          (first (or (eval-matching-method methods# args#)
-                     (eval-matching-method (get-extra-methods ~name) args#)
-                     (eval-matching-method [default#] args#)))))))
+    `(let [methods# (compile-methods (quote ~parsed))
+           default# (get-default-method (quote ~parsed))]
+       (defn ~name [& args0#]
+         (let [args# (vec args0#)]
+           (first (or (eval-matching-method methods# args#)
+                      (eval-matching-method (get-extra-methods ~name) args#)
+                      (eval-matching-method [default#] args#))))))))
 
-`(defmacro defpoly [& args]
-   (let [parsed (spec/conform ::defpoly args)]
-     (if (= parsed ::spec/invalid)
-       (throw 
-        (RuntimeException. 
-         (str "Failed to parse defpoly macro on "
-              (spec/explain-str ::defpoly args))))
-       (defpoly-parsed parsed))))
-            
+(defmacro defpoly [& args]
+  (let [parsed (spec/conform ::defpoly args)]
+    (if (= parsed ::spec/invalid)
+      (throw 
+       (RuntimeException. 
+        (str "Failed to parse defpoly macro on "
+             (spec/explain-str ::defpoly args))))
+      (defpoly-parsed parsed))))
+
