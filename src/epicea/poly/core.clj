@@ -66,12 +66,13 @@
           %))))
 
 (defn compile-exprs [expr-list] 
-  (map
-   (fn [expr]
-     (visit-exprs 
-      expr 
-      #(do (println "COMPILE " %) (compile-expr-sub %))))
-   expr-list))
+  (vec
+   (map
+    (fn [expr]
+      (visit-exprs 
+       expr 
+       #(do (println "COMPILE " %) (compile-expr-sub %))))
+    expr-list)))
 
 (def main-exprs (access/map-accessor :main))
 (def rest-exprs (access/compose (access/map-accessor :rest)
@@ -169,6 +170,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Making a function
 
 (defn into-or-nil [a b]
+  (println "into-or-nil with" a "and" b)
   (if (or (nil? a) (nil? b))
     nil
     (into a b)))
@@ -181,6 +183,8 @@
           (reduce
            into-or-nil
            [] (map (fn [expr arg]
+                     (println "expr = " expr)
+                     (println "arg = " arg)
                      (eval-expr-bindings [] expr arg))
                    exprs args)))))))
 
