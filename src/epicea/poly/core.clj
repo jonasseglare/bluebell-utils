@@ -3,7 +3,8 @@
             [epicea.utils.debug :as debug]
             [epicea.utils.access :as access]
             [epicea.utils.defmultiple :refer [defmultiple]]
-            [epicea.utils.optional :as optional]))
+            [epicea.utils.optional :as optional]
+            [clojure.pprint]))
 
 ;;;;;; Spec
 
@@ -61,7 +62,7 @@
     #(map (fn [e] (visit-exprs e post-fn)) %))))
 
 (defn compile-exprs [e] 
-  (visit-exprs e compile-expr-sub))
+  (visit-exprs e #(do (println "COMPILE " %) (compile-expr-sub %))))
 
 (def main-exprs (access/map-accessor :main))
 (def rest-exprs (access/compose (access/map-accessor :rest)
@@ -77,6 +78,7 @@
       (update-rest-exprs f)))
 
 (defn compile-arglist-exprs [arglist]
+  (println "COMPILE THIS ARGLIST: " arglist)
   (update-arglist-exprs arglist compile-exprs))
 
 
@@ -118,7 +120,6 @@
           (eval-exprs-bindings dst result (:exprs (second expr))))))
 
 (defn get-all-exprs [arglist]
-  (println "get-all-exprs arglist: " arglist)
   (if (contains? arglist :rest)
     (conj (:main arglist) (-> arglist :rest :args))
     (:main arglist)))
@@ -164,7 +165,6 @@
     (into a b)))
 
 (defn compile-arg-parser [arglist]
-  (println "##### Compile arg parser on " arglist)
   (let [exprs (get-all-exprs arglist)]
     (fn [args0] 
       (let [args (regroup-args arglist args0)]
@@ -178,20 +178,15 @@
 (defn compile-body-fun [arglist body-forms]
   (let [arg-parser (compile-arg-parser arglist)
         bindings (get-arglist-bindings arglist)
-        fform (debug/dout `(fn ~bindings ~@body-forms))
+        fform `(fn ~bindings ~@body-forms)
         handler (eval fform)]
     (fn [args]
-      (println "Got method args " args)
-      (println "The arglist is " arglist)
+      (println "arglist = " arglist)
+      (println "args = " args)
+      (println "the values = " (arg-parser args))
       (if-let [values (arg-parser args)]
         (optional/optional (apply handler values))
         (optional/optional)))))
-
-(defn parse-and-compile-arglist [arglist]
-  (let [parsed (spec/conform ::arglist arglist)]
-    (if (= parsed ::spec/invalid)
-      ::spec/invalid
-      (compile-arglist-exprs arglist))))
 
 (spec/def ::poly-name symbol?)
 (spec/def ::body-form (constantly true))
@@ -208,7 +203,7 @@
                               :methods (spec/* (spec/spec ::method))))
 
 (defn compile-method [method]
-  (println "METHOD: " method)
+  (println "COMPILING METHOD.....")
   (compile-body-fun 
    (compile-arglist-exprs (:arglist method))
    (:body method)))
@@ -233,7 +228,6 @@
       [])))
 
 (defn eval-matching-method [methods args]
-  (println "Eval matching method for " (count methods) " methods")
   (first (filter #(not (nil? %)) (map (fn [f] (f args)) methods))))
 
 (defn defpoly-parsed [parsed]
