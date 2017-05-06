@@ -175,7 +175,15 @@
                
 
 (defn compile-body-fun [arglist body-forms]
-  nil)
+  (let [arg-parser (compile-arg-parser arglist)
+        bindings (get-arglist-bindings arglist)
+        handler (eval `(fn ~bindings ~@body-forms))]
+    (fn [args]
+      (if-let [values (arg-parser args)]
+        (optional/optional (apply handler values))
+        (optional/optional)))))
+        
+    
 
 (defn parse-and-compile-arglist [arglist]
   (let [parsed (spec/conform ::arglist arglist)]

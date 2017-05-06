@@ -2,6 +2,7 @@
   (:require [epicea.poly.core :refer :all :as poly]
             [clojure.test :refer :all]
             [epicea.utils.access :as access]
+            [epicea.utils.optional :as optional]
             [clojure.spec :as spec]  :reload-all))
 
 (declpoly kattskit (fn [& _] :no-impl))
@@ -119,3 +120,11 @@
   (is (= [3 4 [5]] (f11 [3 4 5])))
   (is (= [3 4 [5 6]] (f11 [3 4 5 6])))
   (is (nil? (f11 [3 4 :a]))))
+
+(def fn10 (compile-body-fun expr10 ['(+ a b)]))
+
+(deftest body-fn-test
+  (is (= (optional/optional 17) 
+         (fn10 [9 8])))
+  (is (= (optional/optional)
+         (fn10 [9 :a]))))
