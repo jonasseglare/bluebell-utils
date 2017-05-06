@@ -172,7 +172,6 @@
            [] (map (fn [expr arg]
                      (eval-expr-bindings [] expr arg))
                    exprs args)))))))
-               
 
 (defn compile-body-fun [arglist body-forms]
   (let [arg-parser (compile-arg-parser arglist)
@@ -182,66 +181,25 @@
       (if-let [values (arg-parser args)]
         (optional/optional (apply handler values))
         (optional/optional)))))
-        
-    
 
 (defn parse-and-compile-arglist [arglist]
   (let [parsed (spec/conform ::arglist arglist)]
     (if (= parsed ::spec/invalid)
       ::spec/invalid
+      (compile-arglist-exprs arglist))))
 
-      nil)))
+(spec/def ::defpoly-symbol #(= % 'defpoly))
+(spec/def ::poly-name symbol?)
+(spec/def ::body-form (constantly true))
+(spec/def ::default (spec/cat 
+                     :default-key #(= % :default)
+                     :value (constantly true)))
+                     
+(spec/def ::method (spec/cat
+                    :arglist (spec/spec ::arglist)
+                    :body (spec/* ::body-form)))
 
-(defn compile-matching-fn [label raw-arglist raw-body-forms]
-  (let [parsed-arglist (parse-and-compile-arglist raw-arglist)]
-    (if (= ::spec/invalid parsed-arglist)
-      (throw 
-       (RuntimeException. 
-        (str "Invalid arglist to " label ": " 
-             (spec/explain ::arglist raw-arglist))))
-      (let [arg-parser (compile-arg-parser parsed-arglist)
-            body-fun (compile-body-fun parsed-arglist raw-body-forms)]
-        (fn [& args]
-          (if-let [parsed-args (arg-parser args)]
-            (apply body-fun parsed-args)
-            (optional/optional)))))))
-                   
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Main impl
-(declare multi-fn)
-
-(def empty-method-list [])
-
-(defn add-method [obj x]
-  (conj obj x))
-
-(def ^:private method-map (atom {}))
-
-(defn polyfun [name default-impl]
-  (fn [& args]
-    (loop [impls (get (deref method-map) name)]
-      (if (empty? impls)
-        (apply default-impl args)
-        (if-let [[result] (apply (first impls) args)]
-          result
-          (recur (rest impls)))))))
-
-(defmacro declpoly [name default-impl]
-  (swap! method-map #(assoc % name empty-method-list))
-  `(def ~name ~(polyfun name (eval default-impl))))
-
-(defn make-method [arglist body-forms]
-  (eval `(fn [~@arglist] [(do ~@body-forms)])))
-
-(defn register-poly [m name arglist body-forms]
-  (update-in m [name] #(add-method % (make-method arglist body-forms))))
-
-(defmacro defpoly [name arglist & body-forms]
-  (swap! method-map #(register-poly % name arglist body-forms))
-  nil)
-
-
-;; (declpoly rulle (fn [& args] :no-impl))
-;; (defpoly rulle [x] (* x x))
-;;(def v (visit-exprs test-expr7 #(conj % :kattskit)))
+(spec/def ::defpoly (spec/cat :defpoly-symbol ::defpoly-symbol
+                              :poly-name ::poly-name
+                              :default (spec/? ::default)
+                              :methods (spec/* (spec/spec ::method))))

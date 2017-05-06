@@ -5,10 +5,6 @@
             [epicea.utils.optional :as optional]
             [clojure.spec :as spec]  :reload-all))
 
-(declpoly kattskit (fn [& _] :no-impl))
-
-(deftest decl-def-poly
-  (is (= :no-impl (kattskit 3))))
 
 
 (def args ['a [:pred number?] 'b 'c '& 'd])
@@ -128,3 +124,19 @@
          (fn10 [9 8])))
   (is (= (optional/optional)
          (fn10 [9 :a]))))
+
+(deftest defpoly-parse
+  (is (not= ::spec/invalid (spec/conform ::poly/defpoly '(defpoly kattskit))))
+  (is (not= ::spec/invalid (spec/conform 
+                            ::poly/defpoly 
+                            '(defpoly kattskit :default :kattskit))))
+  (is (not (spec/valid? ::poly/defpoly 
+                        '(defpoly kattskit :kattskit))))
+  (is (spec/valid? ::poly/method
+                   '([a b] inc)))
+  (is (not (spec/valid? ::poly/method
+                        '(a inc))))
+  (is (spec/valid? ::poly/method
+                   '([a b] (+ a b) (* a b))))
+  (is (spec/valid? ::poly/method
+                   '([a b]))))
