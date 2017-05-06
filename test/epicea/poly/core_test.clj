@@ -149,8 +149,14 @@
                    '(kattskit :default mjao
                       ([[[:pred number?] a] b] (+ a b))
                       ([a] (* a a))))))
-(defpoly my-add 
-   ([[[:pred number?] aa]
-     [[:pred number?] bb]]
-     (+ aa bb))
-   ([aa bb] (str aa " + " bb)))
+(defpoly my-add
+  ([[[:pred keyword?] a]] [:keyword a])
+  ([[[:pred number?] aa]
+    [[:pred number?] bb]]
+   (+ aa bb))
+  ([aa bb] (str aa " + " bb)))
+
+(deftest my-add-test
+  (is (= [:keyword :a] (my-add :a)))
+  (is (= 12 (my-add 9 3)))
+  (is (= "a + b" (my-add "a" "b"))))
