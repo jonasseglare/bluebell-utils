@@ -156,7 +156,11 @@
    (+ aa bb))
   ([aa bb] (str aa " + " bb)))
 
+(defpoly-extra my-add
+  ([a b c] (+ a b c)))
+
 (deftest my-add-test
   (is (= [:keyword :a] (my-add :a)))
   (is (= 12 (my-add 9 3)))
-  (is (= "a + b" (my-add "a" "b"))))
+  (is (= "a + b" (my-add "a" "b")))
+  (is (= 12 (my-add 3 4 5))))

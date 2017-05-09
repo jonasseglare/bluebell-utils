@@ -202,9 +202,14 @@
                     :arglist (spec/spec ::arglist)
                     :body (spec/* ::body-form)))
 
+(spec/def ::methods (spec/* (spec/spec ::method)))
+
 (spec/def ::defpoly (spec/cat :poly-name ::poly-name
                               :default (spec/? ::default)
-                              :methods (spec/* (spec/spec ::method))))
+                              :methods ::methods))
+
+(spec/def ::defpoly-extra (spec/cat :poly-name ::poly-name
+                                    :methods ::methods))
 
 (defn compile-method [method]
   (compile-body-fun 
@@ -240,7 +245,7 @@
        (defn ~name [& args0#]
          (let [args# (vec args0#)]
            (first (or (eval-matching-method methods# args#)
-                      (eval-matching-method (get-extra-methods ~name) args#)
+                      (eval-matching-method (get-extra-methods (quote ~name)) args#)
                       (eval-matching-method [default#] args#))))))))
 
 (defmacro defpoly [& args]
@@ -252,3 +257,20 @@
              (spec/explain-str ::defpoly args))))
       (defpoly-parsed parsed))))
 
+(defn defpoly-extra-parsed [parsed]
+  (swap! extra-methods
+         (fn [extra]
+           (assoc 
+            extra
+            (:poly-name parsed)
+            (compile-methods parsed))))
+  nil)
+
+(defmacro defpoly-extra [& args]
+  (let [parsed (spec/conform ::defpoly-extra args)]
+    (if (= parsed ::spec/invalid)
+      (throw
+       (RuntimeException. 
+        (str "Failed to parse defpoly-extra macro on"
+             (spec/explain-str ::defpoly-extra args))))
+      (defpoly-extra-parsed parsed))))
