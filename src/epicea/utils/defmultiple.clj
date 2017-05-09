@@ -18,11 +18,18 @@
                      :default-key #(= % :default)
                      :value (constantly true)))
 
+(spec/def ::methods (spec/* (spec/spec ::method)))
+
 (spec/def ::defmultiple (spec/cat 
                          :name ::name
                          :dispatch-fun ::dispatch-fun
                          :default (spec/? ::default)
-                         :methods (spec/* (spec/spec ::method)))) ;; explicit call to spec/spec.
+                         :methods ::methods))
+
+(spec/def ::defmultiple-extra
+  (spec/cat 
+   :name ::name
+   :methods ::methods))
 
 (defn make-method [entry]
   {(:dispatch-value entry) 
@@ -31,13 +38,19 @@
 (defn make-method-map [methods]
   (reduce merge (map make-method methods)))
 
-(defn eval-multi [dispatch-value method-map default-key args]
-  (cond
-    (contains? method-map dispatch-value) (apply (get method-map dispatch-value) args)
-    (contains? method-map default-key) (apply (get method-map default-key) args)
-    :default (throw (RuntimeException. (str "No method for dispatch value '" dispatch-value "'. "
-                                            "Methods are " (keys method-map))))))
-                                                 
+(def extra-methods (atom {}))
+  
+(defn eval-multi [name dispatch-value method-map default-key args]
+  (if (contains? method-map dispatch-value) 
+    (apply (get method-map dispatch-value) args)
+    (let [extra (get (deref extra-methods) name)]
+      (cond
+        (contains? extra dispatch-value) (apply (get extra dispatch-value) args)
+        (contains? method-map default-key) (apply (get method-map default-key) args)
+        :default 
+        (throw (RuntimeException. 
+                (str "No method for dispatch value '" dispatch-value "'. "
+                     "Methods are " (keys method-map))))))))
 
 (defn defmultiple-sub [x]
   `(let [dispatch-fun# ~(eval (:dispatch-fun x))
@@ -46,7 +59,8 @@
                          (eval (-> x :default :value))
                          :default)]
      (defn ~(:name x) [& args#]
-       (eval-multi (apply dispatch-fun# args#)
+       (eval-multi (quote ~(:name x))
+                   (apply dispatch-fun# args#)
                    method-map#
                    default-key#
                    args#))))
@@ -58,3 +72,24 @@
               (with-out-str 
                 (spec/explain ::defmultiple args))))
       (defmultiple-sub parsed))))
+
+(defn defmultiple-extra-sub [parsed]
+  (swap! 
+   extra-methods
+   (fn [extra-method-map]
+     (update-in
+      extra-method-map [(:name parsed)]
+      (fn [methods]
+        (reduce
+         merge
+         methods
+         (map make-method 
+              (:methods parsed))))))))
+
+(defmacro defmultiple-extra [& args]
+  (let [parsed (spec/conform ::defmultiple-extra args)]
+    (if (= parsed ::spec/invalid)
+      (throw (RuntimeException. 
+              (str "Failed to parse defmultiple-extra: "
+                   (spec/explain-str ::defmultiple-extra args))))
+      (defmultiple-extra-sub parsed))))
