@@ -1,11 +1,12 @@
 (ns epicea.typed.core
-  (:require [clojure.spec :as spec] :reload-all))
+  (:require [clojure.spec :as spec]
+            [epicea.utils.defmultiple :refer [defmultiple]]
+            [epicea.utils.access :as access] :reload-all))
 
-(spec/def ::double (partial = :double))
+(spec/def ::double (spec/or :type (partial = :double)
+                            :literal number?))
 (spec/def ::unspecified nil?)
 (spec/def ::count number?)
-(spec/def ::primitive (spec/or :double ::double))
-
 (spec/def ::key keyword?)
 
 (spec/def ::record-field (spec/cat 
@@ -25,26 +26,31 @@
                  :type ::sized-type
                  :count ::count))
 
+(spec/def ::vecdata (spec/cat
+                     :type (partial = :vecdata)
+                     :values (spec/* ::sized-type)))
+
+;; Compile time tagging
 (spec/def ::tagged (spec/cat
                     :type (partial = :tag)
                     :tag (constantly true)
                     :data ::sized-type))
 
-(spec/def ::sized-type (spec/or :primitive ::primitive
+(spec/def ::sized-type (spec/or :double ::double
                                 :record ::record
                                 :union ::union
                                 :unspecified ::unspecified
                                 :tagged ::tagged
-                                :vec ::vec))
+                                :vec ::vec
+                                :vecdata ::vecdata))
 
 (spec/def ::array (spec/cat
                    :type (partial = :array)
-                   :element-type ::sized-type))
+                   :header (spec/? ::sized-type)
+                   :data ::sized-type))
 
-(spec/def ::harray (spec/cat
-                    :type (partial = :harray)
-                    :header ::sized-type
-                    :data ::sized-type))
+;; How to specify one:
+;; (value [:record :a :double :b double] [3 [4 9]])
 
 (assert (spec/valid? ::double :double))
 (assert (spec/valid? ::union [:union :double :double]))
@@ -53,4 +59,31 @@
                                :b [:vec nil 3]]))
 (assert (spec/valid? ::tagged [:tag 119 [:vec :double 3]]))
 (assert (spec/valid? ::array [:array [:record :a nil :b nil]]))
-(assert (spec/valid? ::harray [:harray [:record :a nil :b nil] nil]))
+(assert (spec/valid? ::array [:array [:record :a nil :b nil] nil]))
+(assert (spec/valid? ::vecdata [:vecdata 3 4 5]))
+
+(def pair-settings {:default-parent [nil nil]})
+
+(def pair-tag (access/vector-accessor 0 pair-settings))
+(def pair-value (access/vector-accessor 1 pair-settings))
+
+(def get-pair-tag (access/getter pair-tag))
+(def get-pair-value (access/getter pair-value))
+
+;;;;;; Type properties
+(declare compute-size)
+
+(defn size-op [f]
+  (fn [a b]
+    (if (and (number? a) (number? b))
+      (f a b))))
+(def size-add +)
+(def size-mul *)
+
+(defmultiple compute-size get-pair-tag
+  (:vec [x] (let [value (get-pair-value x)]
+              (size-mul (:count value) (compute-size (:type value)))))
+  (:double [x] 1))
+  
+(assert (= 1 (compute-size (spec/conform ::sized-type 3))))
+(assert (= 3 (compute-size (spec/conform ::sized-type [:vec :double 3]))))

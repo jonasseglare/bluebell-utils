@@ -53,17 +53,19 @@
                      "Methods are " (keys method-map))))))))
 
 (defn defmultiple-sub [x]
-  `(let [dispatch-fun# ~(eval (:dispatch-fun x))
-         method-map# ~(make-method-map (:methods x))
-         default-key# ~(if (contains? x :default)
-                         (eval (-> x :default :value))
-                         :default)]
-     (defn ~(:name x) [& args#]
-       (eval-multi (quote ~(:name x))
-                   (apply dispatch-fun# args#)
-                   method-map#
-                   default-key#
-                   args#))))
+  `(do
+     (declare ~(:name x))
+     (let [dispatch-fun# ~(:dispatch-fun x)
+           method-map# ~(make-method-map (:methods x))
+           default-key# ~(if (contains? x :default)
+                           (eval (-> x :default :value))
+                           :default)]
+       (defn ~(:name x) [& args#]
+         (eval-multi (quote ~(:name x))
+                     (apply dispatch-fun# args#)
+                     method-map#
+                     default-key#
+                     args#)))))
 
 (defmacro defmultiple [& args]
   (let [parsed (spec/conform ::defmultiple args)]
