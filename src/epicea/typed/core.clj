@@ -1,5 +1,6 @@
 (ns epicea.typed.core
   (:require [clojure.spec :as spec]
+            [epicea.utils.debug :as debug]
             [epicea.utils.defmultiple :refer [defmultiple]]
             [epicea.utils.access :as access] :reload-all))
 
@@ -79,11 +80,19 @@
       (f a b))))
 (def size-add +)
 (def size-mul *)
+(def size-max max)
 
 (defmultiple compute-size get-pair-tag
   (:vec [x] (let [value (get-pair-value x)]
               (size-mul (:count value) (compute-size (:type value)))))
-  (:double [x] 1))
+  (:double [x] 1)
+  (:tagged [x] (compute-size (:data (get-pair-value x))))
+  (:union [x] (reduce size-max (map compute-size (-> x get-pair-value :alts))))
+  (:record [x] (reduce size-add (map (comp compute-size :value) 
+                                    (-> x get-pair-value :fields)))))
   
+(assert (= 1 (compute-size (spec/conform ::sized-type [:tag 119 :double]))))
 (assert (= 1 (compute-size (spec/conform ::sized-type 3))))
 (assert (= 3 (compute-size (spec/conform ::sized-type [:vec :double 3]))))
+(assert (= 2 (compute-size (spec/conform ::sized-type [:union :double [:vec :double 2]]))))
+(assert (= 2 (compute-size (spec/conform ::sized-type [:record :a :double :b :double]))))
