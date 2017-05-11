@@ -134,12 +134,49 @@
 
 (spec/def ::arg-list (spec/* ::arg-decl))
 
-(spec/def ::statement (constantly true))
+(spec/def ::sexpr (spec/cat 
+                   :op ::expr
+                   :args (spec/* ::expr)))
+
+(spec/def ::expr (spec/or :number number?
+                          :keyword keyword?
+                          :symbol symbol?
+                          :sexprs ::sexpr
+                          :string string?))
+(spec/def ::exprs (spec/* ::expr))
 
 (spec/def ::typed-fun (spec/cat
                        :return-type ::type
                        :arg-list (spec/spec ::arg-list)
-                       :body (spec/* ::statement)))
+                       :body ::exprs))
 (assert (not= 
          ::spec/invalid 
          (spec/conform ::typed-fun [nil [:double 'a :double 'b] :a :b :c])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Compilable
+
+(defn compile-expr [argmap expr cb]
+  (cb argmap [:compiled expr]))
+
+(def empty-argmap {})
+
+(defn compile-exprs [argmap exprs cb]
+  (cond
+    (empty? exprs) nil
+    (empty? (rest exprs)) (compile-expr argmap (first exprs) cb)
+    :default (compile-expr 
+              argmap (first exprs)
+              (fn [new-argmap _]
+                (compile-exprs new-argmap (rest exprs) cb)))))
+
+(defmacro with-typed [& args]
+  (let [parsed (spec/conform ::exprs args)]
+    (if (= ::spec/invalid parsed)
+      (throw (RuntimeException. 
+              (str "Failed to parsed typed: " 
+                   (spec/explain-str ::exprs args))))
+      (compile-exprs empty-argmap parsed (fn [final-argmap final-value]
+                                           [:final final-value])))))
+  
+  
+(macroexpand '(with-typed 9 (+ 4 5)))
