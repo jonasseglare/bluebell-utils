@@ -173,6 +173,11 @@
 (def expr-type (expr-access 0))
 (def expr-value (expr-access 1))
 
+
+
+;;; OBS: Vi måste räkna referenserna till varje uttryck som vi kompilerar.
+;;; Kanske i argmap? Om antalet referenser överskriver 1 binder vi uttrycket
+;;; till en variabel.
 (defmultiple compile-expr (fn [argmap expr cb]
                             (access/getx expr-type expr))
   (:default 
