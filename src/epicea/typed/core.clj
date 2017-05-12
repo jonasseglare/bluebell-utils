@@ -81,6 +81,14 @@
                           :sized-type ::sized-type
                           :array ::array
                           :dynamic ::dynamic))
+
+(defn export-primitive [x]
+  [:export x])
+
+;(defmultiple export-typed-value first
+;  (:primitive [x] (export-primitive x)))
+(defn export-typed-value [x]
+  [:export x])
                        
 
 ;; How to specify one:
@@ -182,16 +190,13 @@
                             (access/getx expr-type expr))
   (:default 
    [argmap expr cb]
-   (cb argmap {:type (spec/conform ::type (access/getx expr-value expr))
-               :repr expr})))
+   (cb argmap (spec/conform ::type (access/getx expr-value expr)))))
 
 (def empty-argmap {})
 
 
 (defn value? [x]
-  (and (map? x)
-       (contains? x :type)
-       (contains? x :repr)))
+  true)
 
 (defn check-is-value [x]
   (if (not (value? x))
@@ -207,9 +212,6 @@
               (fn [new-argmap x]
                 (check-is-value x)
                 (compile-exprs new-argmap (rest exprs) cb)))))
-
-(defn export-typed-value [value]
-  [:export value])
 
 (defmacro with-typed [& args]
   (let [parsed (spec/conform ::exprs args)]
