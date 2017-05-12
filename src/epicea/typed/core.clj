@@ -13,26 +13,20 @@
 (spec/def ::int #(or (instance? java.lang.Integer %)
                      (int? %)))
 
-(spec/def ::primitive-value 
-  (spec/or
-   :bool ::bool
-   :float ::float
-   :double ::double
-   :long ::long
-   :int ::int))
-
-(spec/def ::primitive (spec/or
-                       :bool (partial = :bool)
-                       :float (partial = :float)
-                       :long (partial = :long)
-                       :double (partial = :double)
-                       :int (partial = :int)))
-
 (spec/def ::dynamic (partial = :dynamic))
 
-(spec/def ::number (spec/or :type #(or (= % :number)
-                                       (= % :double))
-                            :value number?))
+(defn value-or-type [type-tag value-tester?]
+  (spec/or :type (partial = type-tag)
+           :value value-tester?))
+
+(spec/def ::number (value-or-type :number number?))
+(spec/def ::double (value-or-type :double double?))
+(spec/def ::long (value-or-type :long #(instance? java.lang.Long %)))
+(spec/def ::float (value-or-type :float float?))
+(spec/def ::bool (value-or-type :boll boolean?))
+(spec/def ::int (value-or-type :int int?))
+
+
 (spec/def ::count number?)
 (spec/def ::key keyword?)
 
@@ -63,7 +57,12 @@
                     :tag (constantly true)
                     :data ::sized-type))
 
-(spec/def ::sized-type (spec/or :number ::number
+(spec/def ::sized-type (spec/or :double ::double
+                                :float ::float
+                                :long ::long
+                                :int ::int
+                                :bool ::bool
+                                :number ::number
                                 :record ::record
                                 :union ::union
                                 :unspecified ::unspecified ;; <-- a primitive building block
@@ -76,9 +75,7 @@
                    :header (spec/? ::sized-type)
                    :data ::sized-type))
 
-(spec/def ::type (spec/or :primitive ::primitive
-                          :primitive-value ::primitive-value
-                          :sized-type ::sized-type
+(spec/def ::type (spec/or :sized-type ::sized-type
                           :array ::array
                           :dynamic ::dynamic))
 
@@ -126,9 +123,9 @@
 
 ;;;; Compute the size of a ::sized-type
 (defmultiple compute-size get-pair-tag
+  (:default [x] 1)
   (:vec [x] (let [value (get-pair-value x)]
               (size-mul (:count value) (compute-size (:type value)))))
-  (:number [x] 1)
   (:tagged [x] (compute-size (:data (get-pair-value x))))
   (:union [x] (reduce size-max (map compute-size (-> x get-pair-value :alts))))
   (:record [x] (reduce size-add (map (comp compute-size :value) 
@@ -183,6 +180,9 @@
 
 
 
+(defn expr-to-typed-value [expr]
+  (spec/conform ::type expr))
+
 ;;; OBS: Vi måste räkna referenserna till varje uttryck som vi kompilerar.
 ;;; Kanske i argmap? Om antalet referenser överskriver 1 binder vi uttrycket
 ;;; till en variabel.
@@ -190,7 +190,7 @@
                             (access/getx expr-type expr))
   (:default 
    [argmap expr cb]
-   (cb argmap (spec/conform ::type (access/getx expr-value expr)))))
+   (cb argmap (expr-to-typed-value (access/getx expr-value expr)))))
 
 (def empty-argmap {})
 
