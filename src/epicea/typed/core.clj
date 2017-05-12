@@ -5,22 +5,34 @@
             [epicea.utils.access :as access] :reload-all))
 
 (spec/def ::unspecified nil?)
+
 (spec/def ::bool boolean?)
 (spec/def ::float float?)
 (spec/def ::double double?)
 (spec/def ::long #(instance? java.lang.Long %))
-(spec/def ::int #(instance? java.lang.Integer %))
+(spec/def ::int #(or (instance? java.lang.Integer %)
+                     (int? %)))
+
+(spec/def ::primitive-value 
+  (spec/or
+   :bool ::bool
+   :float ::float
+   :double ::double
+   :long ::long
+   :int ::int))
+
 (spec/def ::primitive (spec/or
                        :bool (partial = :bool)
                        :float (partial = :float)
                        :long (partial = :long)
                        :double (partial = :double)
                        :int (partial = :int)))
+
 (spec/def ::dynamic (partial = :dynamic))
 
 (spec/def ::number (spec/or :type #(or (= % :number)
                                        (= % :double))
-                            :literal number?))
+                            :value number?))
 (spec/def ::count number?)
 (spec/def ::key keyword?)
 
@@ -64,8 +76,9 @@
                    :header (spec/? ::sized-type)
                    :data ::sized-type))
 
-(spec/def ::type (spec/or :sized-type ::sized-type
-                          :primitive ::primitive
+(spec/def ::type (spec/or :primitive ::primitive
+                          :primitive-value ::primitive-value
+                          :sized-type ::sized-type
                           :array ::array
                           :dynamic ::dynamic))
                        
@@ -155,10 +168,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Compilable
 
-(defn compile-expr [argmap expr cb]
-  (cb argmap [:compiled expr]))
+(defn expr-access [i]
+  (access/vector-accessor i {:default-parent [nil nil]}))
+(def expr-type (expr-access 0))
+(def expr-value (expr-access 1))
+
+(defmultiple compile-expr (fn [argmap expr cb]
+                            (access/getx expr-type expr))
+  (:default 
+   [argmap expr cb]
+   (cb argmap {:type (spec/conform ::type (access/getx expr-value expr))
+               :repr expr})))
 
 (def empty-argmap {})
+
+
+(defn value? [x]
+  (and (map? x)
+       (contains? x :type)
+       (contains? x :repr)))
+
+(defn check-is-value [x]
+  (if (not (value? x))
+    (throw (RuntimeException. 
+            (str "Invalid value: " x)))))
 
 (defn compile-exprs [argmap exprs cb]
   (cond
@@ -166,8 +199,12 @@
     (empty? (rest exprs)) (compile-expr argmap (first exprs) cb)
     :default (compile-expr 
               argmap (first exprs)
-              (fn [new-argmap _]
+              (fn [new-argmap x]
+                (check-is-value x)
                 (compile-exprs new-argmap (rest exprs) cb)))))
+
+(defn export-typed-value [value]
+  [:export value])
 
 (defmacro with-typed [& args]
   (let [parsed (spec/conform ::exprs args)]
@@ -176,7 +213,8 @@
               (str "Failed to parsed typed: " 
                    (spec/explain-str ::exprs args))))
       (compile-exprs empty-argmap parsed (fn [final-argmap final-value]
-                                           [:final final-value])))))
+                                           (check-is-value final-value)
+                                           (export-typed-value final-value))))))
   
   
-(macroexpand '(with-typed 9 (+ 4 5)))
+(macroexpand '(with-typed 9 4 5 6))
