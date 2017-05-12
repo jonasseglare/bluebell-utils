@@ -57,12 +57,14 @@
                     :tag (constantly true)
                     :data ::sized-type))
 
-(spec/def ::sized-type (spec/or :double ::double
-                                :float ::float
-                                :long ::long
-                                :int ::int
-                                :bool ::bool
-                                :number ::number
+(spec/def ::primitive (spec/or :double ::double
+                               :float ::float
+                               :long ::long
+                               :int ::int
+                               :bool ::bool
+                               :number ::number))
+
+(spec/def ::sized-type (spec/or :primitive ::primitive
                                 :record ::record
                                 :union ::union
                                 :unspecified ::unspecified ;; <-- a primitive building block
