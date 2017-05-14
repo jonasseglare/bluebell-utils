@@ -1,5 +1,6 @@
 (ns epicea.utils.core
   (:require [clojure.set]))
+            
 
 (defn flatten-map-hierarchy [mh]
   (reduce
@@ -108,3 +109,8 @@
   (assert (valid-partial-args? partial-args))
   (fn [& args0]
     (apply fun (merge-args partial-args args0))))
+
+
+
+;(defmacro mapdater [& args]
+;  (let 
