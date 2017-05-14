@@ -42,7 +42,13 @@
 
 (spec/def ::pointer (spec/cat
                      :type (partial = :pointer)
-                     :value-type ::type))
+                     :value-type ::type
+                     :at (spec/? (spec/cat 
+                                  :array symbol?
+                                  :offset (spec/or :int ::int
+                                                   :long ::long)))))
+
+
 
 (spec/def ::constant (spec/cat
                       :type (partial = :constant)
@@ -60,7 +66,8 @@
                           :pointer ::pointer
                           :unspecified ::unspecified ;; <-- a primitive building block
                           :constant ::constant
-                          :dynamic ::dynamic))
+                          :dynamic ::dynamic
+                          :dynamic symbol?))
 
 (def pair-vec {:default-parent [nil nil]})
 (def type-head (access/vector-accessor 0 pair-vec))
