@@ -62,9 +62,80 @@
                           :constant ::constant
                           :dynamic ::dynamic))
 
+(def pair-vec {:default-parent [nil nil]})
+(def type-head (access/vector-accessor 0 pair-vec))
+(def type-body (access/vector-accessor 1 pair-vec))
+
+(def primitive-values #{:double :float :long :int :bool :number})
+
+(declare compute-size)
+
+(defn size-op [f]
+  (fn [a b]
+    (if (and (number? a) (number? b))
+      (f a b))))
+(def size-add +)
+(def size-mul *)
+(def size-max max)
+
+(defn compute-vec-size [x]
+  (size-mul (compute-size (vec-type x))
+            (vec-size x)))
+
+(defn compute-record-size [x]
+  (reduce size-add (map (comp compute-size :value-type)
+                        (:fields x))))
+
+(defn compute-size [type]
+  (let [h (access/getx type-head type)
+        b (access/getx type-body type)]
+    (cond
+      (= :constant h) 0
+      (contains? primitive-values h) 1
+      (= :vec h) (compute-vec-size b)
+      (= :record h) (compute-record-size b)
+      :default nil)))
+
+(def compute-size-on (comp compute-size #(spec/conform ::type %)))
+
+;; 
+(assert (= 1 (compute-size-on 9)))
+(assert (= 0 (compute-size-on [:constant 9])))
+(assert (= 3 (compute-size-on [:vecdata 3 4 5])))
+(assert (= 5 (compute-size-on [:vec :double 5])))
+(assert (= 5 (compute-size-on [:record :a [:vecdata 1 2 3] :b :double :c :int])))
+(assert (nil? (compute-size-on :dynamic)))
+(assert (spec/valid? ::type 9))
+(assert (= [:long [:value 9]] (spec/conform ::type 9)))
+(assert (spec/valid? ::type [:record :a [:constant 9] :b :double]))
 
 (defn export-primitive [x]
   [:export x])
+
+
+(defn vec-body? [x]
+  (and (map? x)
+       (contains? #{:vecdata :vec} (:type x))))
+
+(defn vec-type [vec-body]
+  (assert (vec-body? vec-body))
+  (if (= :vecdata (:type vec-body))
+    (-> vec-body :data first)
+    (:value-type vec-body)))
+
+(defn vec-size [vec-body]
+  (assert (vec-body? vec-body))
+  (if (= :vecdata (:type vec-body))
+    (-> vec-body :data count)
+    (:count vec-body)))
+
+(def v0 (second (spec/conform ::type [:vecdata 1 2 3 4])))
+(def v1 (second (spec/conform ::type [:vec 1 3])))
+(assert (= :long (first (vec-type v0))))
+(assert (= :long (first (vec-type v1))))
+(assert (= 4 (vec-size v0)))
+(assert (= 3 (vec-size v1)))
+    
 
 ;(defmultiple export-typed-value first
 ;  (:primitive [x] (export-primitive x)))
@@ -92,15 +163,6 @@
 
 ;;;;;; Type properties
 ;; When it is stored
-(declare compute-size)
-
-(defn size-op [f]
-  (fn [a b]
-    (if (and (number? a) (number? b))
-      (f a b))))
-(def size-add +)
-(def size-mul *)
-(def size-max max)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Grammar
 (spec/def ::arg-name symbol?)
