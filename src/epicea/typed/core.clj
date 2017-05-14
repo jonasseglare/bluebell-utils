@@ -6,13 +6,6 @@
 
 (spec/def ::unspecified nil?)
 
-(spec/def ::bool boolean?)
-(spec/def ::float float?)
-(spec/def ::double double?)
-(spec/def ::long #(instance? java.lang.Long %))
-(spec/def ::int #(or (instance? java.lang.Integer %)
-                     (int? %)))
-
 (spec/def ::dynamic (partial = :dynamic))
 
 (defn value-or-type [type-tag value-tester?]
@@ -32,54 +25,43 @@
 
 (spec/def ::record-field (spec/cat 
                           :key ::key
-                          :value ::sized-type))
+                          :value-type ::type))
 
 (spec/def ::record (spec/cat
                     :type (partial = :record)
                     :fields (spec/* ::record-field)))
 
-(spec/def ::union (spec/cat
-                   :type (partial = :union)
-                   :alts (spec/* ::sized-type)))
-
 (spec/def ::vec (spec/cat
                  :type (partial = :vec)
-                 :type ::sized-type
+                 :value-type ::type
                  :count ::count))
 
-(spec/def ::vecdata (spec/cat
-                     :type (partial = :vecdata)
-                     :data (spec/* ::sized-type)))
+(spec/def ::vec-literal (spec/cat
+                         :type (partial = :vecdata)
+                         :data (spec/* ::type)))
 
-;; Compile time tagging
-(spec/def ::tagged (spec/cat
-                    :type (partial = :tag)
-                    :tag (constantly true)
-                    :data ::sized-type))
+(spec/def ::pointer (spec/cat
+                     :type (partial = :pointer)
+                     :value-type ::type))
 
-(spec/def ::primitive (spec/or :double ::double
-                               :float ::float
-                               :long ::long
-                               :int ::int
-                               :bool ::bool
-                               :number ::number))
+(spec/def ::constant (spec/cat
+                      :type (partial = :constant)
+                      :value (constantly true)))
 
-(spec/def ::sized-type (spec/or :primitive ::primitive
-                                :record ::record
-                                :union ::union
-                                :unspecified ::unspecified ;; <-- a primitive building block
-                                :tagged ::tagged
-                                :vec ::vec
-                                :vecdata ::vecdata))
-
-(spec/def ::array (spec/cat
-                   :type (partial = :array)
-                   :header (spec/? ::sized-type)
-                   :data ::sized-type))
-
-(spec/def ::type (spec/or :sized-type ::sized-type
-                          :array ::array
+(spec/def ::type (spec/or :double ::double
+                          :float ::float
+                          :long ::long
+                          :int ::int
+                          :bool ::bool
+                          :number ::number
+                          :record ::record
+                          :vec ::vec
+                          :vec ::vec-literal
+                          :pointer ::pointer
+                          :unspecified ::unspecified ;; <-- a primitive building block
+                          :constant ::constant
                           :dynamic ::dynamic))
+
 
 (defn export-primitive [x]
   [:export x])
@@ -93,15 +75,12 @@
 ;; How to specify one:
 ;; (value [:record :a :number :b double] [3 [4 9]])
 
+
 (assert (spec/valid? ::number :number))
-(assert (spec/valid? ::union [:union :number :number]))
 (assert (spec/valid? ::record [:record 
                                :a :number 
                                :b [:vec nil 3]]))
-(assert (spec/valid? ::tagged [:tag 119 [:vec :number 3]]))
-(assert (spec/valid? ::array [:array [:record :a nil :b nil]]))
-(assert (spec/valid? ::array [:array [:record :a nil :b nil] nil]))
-(assert (spec/valid? ::vecdata [:vecdata 3 4 5]))
+
 
 (def pair-settings {:default-parent [nil nil]})
 
@@ -112,6 +91,7 @@
 (def get-pair-value (access/getter pair-value))
 
 ;;;;;; Type properties
+;; When it is stored
 (declare compute-size)
 
 (defn size-op [f]
@@ -121,29 +101,6 @@
 (def size-add +)
 (def size-mul *)
 (def size-max max)
-
-
-;;;; Compute the size of a ::sized-type
-(defmultiple compute-size get-pair-tag
-  (:default [x] 1)
-  (:vec [x] (let [value (get-pair-value x)]
-              (size-mul (:count value) (compute-size (:type value)))))
-  (:tagged [x] (compute-size (:data (get-pair-value x))))
-  (:union [x] (reduce size-max (map compute-size (-> x get-pair-value :alts))))
-  (:record [x] (reduce size-add (map (comp compute-size :value) 
-                                    (-> x get-pair-value :fields))))
-  (:unspecified [x] nil)
-  (:vecdata [x] (reduce size-add (map compute-size (-> x get-pair-value :data)))))
-
-  
-(assert (= 1 (compute-size (spec/conform ::sized-type [:tag 119 :number]))))
-(assert (= 1 (compute-size (spec/conform ::sized-type 3))))
-(assert (= 3 (compute-size (spec/conform ::sized-type [:vec :number 3]))))
-(assert (= 2 (compute-size (spec/conform ::sized-type [:union :number [:vec :number 2]]))))
-(assert (= 2 (compute-size (spec/conform ::sized-type [:record :a :number :b :number]))))
-(assert (= 3 (compute-size (spec/conform 
-                            ::sized-type 
-                            [:record :a :number :b :number :c :number]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Grammar
 (spec/def ::arg-name symbol?)
