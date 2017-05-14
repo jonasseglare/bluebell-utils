@@ -90,8 +90,8 @@
 (defn defmultiple-extra-sub [parsed]
   `(add-extra-methods
     (quote ~(:name parsed))
-    (quote ~(map make-method 
-                 (:methods parsed)))))
+    ~(vec (map make-method 
+               (:methods parsed)))))
 
 
 
