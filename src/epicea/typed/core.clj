@@ -8,6 +8,10 @@
 
 (spec/def ::dynamic (partial = :dynamic))
 
+(spec/def ::dynamic-value (spec/cat
+                     :type ::dynamic
+                     :value (spec/? (constantly true))))
+
 (defn value-or-type [type-tag value-tester?]
   (spec/or :type (partial = type-tag)
            :value value-tester?))
@@ -67,6 +71,7 @@
                           :unspecified ::unspecified ;; <-- a primitive building block
                           :constant ::constant
                           :dynamic ::dynamic
+                          :dynamic ::dynamic-value
                           :dynamic symbol?))
 
 (def pair-vec {:default-parent [nil nil]})
@@ -160,9 +165,20 @@
                                {:key :b, :value-type [:visited [:long [:value 2]]]} 
                                {:key :c, :value-type [:visited [:long [:value 3]]]})}]))
 
-(defn export-primitive [x]
-  [:export x])
+(defn strip-data [x]
+  (visit-primitives 
+   x (fn [primitive]
+       (let [t (access/getx type-head primitive)]
+         [t [:type t]]))))
+(assert (= (strip-data (spec/conform ::type [:vecdata 1 2 3 4]))
+           [:vec {:type :vecdata, 
+                  :data '([:long [:type :long]] 
+                          [:long [:type :long]] 
+                          [:long [:type :long]] 
+                          [:long [:type :long]])}]))
 
+(def get-type-head (access/getter type-head))
+(def get-type-body (access/getter type-body))
 
 (defn vec-body? [x]
   (and (map? x)
