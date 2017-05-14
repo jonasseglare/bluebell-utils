@@ -33,7 +33,7 @@
 
 (defn make-method [entry]
   {(:dispatch-value entry) 
-   (eval `(fn ~@(:function entry)))})
+   `(fn ~@(:function entry))})
 
 (defn make-method-map [methods]
   (reduce merge (map make-method methods)))
@@ -58,7 +58,7 @@
      (let [dispatch-fun# ~(:dispatch-fun x)
            method-map# ~(make-method-map (:methods x))
            default-key# ~(if (contains? x :default)
-                           (eval (-> x :default :value))
+                           (-> x :default :value)
                            :default)]
        (defn ~(:name x) [& args#]
          (eval-multi (quote ~(:name x))
@@ -75,18 +75,25 @@
                 (spec/explain ::defmultiple args))))
       (defmultiple-sub parsed))))
 
-(defn defmultiple-extra-sub [parsed]
+(defn add-extra-methods [name methods-to-add]
   (swap! 
    extra-methods
    (fn [extra-method-map]
      (update-in
-      extra-method-map [(:name parsed)]
+      extra-method-map [name]
       (fn [methods]
         (reduce
          merge
          methods
-         (map make-method 
-              (:methods parsed))))))))
+         methods-to-add))))))
+
+(defn defmultiple-extra-sub [parsed]
+  `(add-extra-methods
+    (quote ~(:name parsed))
+    (quote ~(map make-method 
+                 (:methods parsed)))))
+
+
 
 (defmacro defmultiple-extra [& args]
   (let [parsed (spec/conform ::defmultiple-extra args)]
