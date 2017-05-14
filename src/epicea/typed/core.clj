@@ -75,8 +75,6 @@
 
 (def primitive-values #{:double :float :long :int :bool :number})
 
-(declare compute-size)
-
 (defn size-op [f]
   (fn [a b]
     (if (and (number? a) (number? b))
@@ -84,6 +82,8 @@
 (def size-add +)
 (def size-mul *)
 (def size-max max)
+
+(declare compute-size)
 
 (defn compute-vec-size [x]
   (size-mul (compute-size (vec-type x))
@@ -103,7 +103,9 @@
       (= :record h) (compute-record-size b)
       :default nil)))
 
-(def compute-size-on (comp compute-size #(spec/conform ::type %)))
+(def parse-type #(spec/conform ::type %))
+
+(def compute-size-on (comp compute-size parse-type))
 
 ;; 
 (assert (= 1 (compute-size-on 9)))
@@ -115,6 +117,48 @@
 (assert (spec/valid? ::type 9))
 (assert (= [:long [:value 9]] (spec/conform ::type 9)))
 (assert (spec/valid? ::type [:record :a [:constant 9] :b :double]))
+
+(declare visit-primitives)
+
+(defn visit-vec-primitives [b f]
+  (if (= (:type b) :vecdata)
+    (update-in b [:data] 
+               (fn [fields]
+                 (map #(visit-primitives % f) fields)))
+    (update-in b [:value-type] #(visit-primitives % f))))
+
+(defn visit-record-primitives [b f]
+  (update-in b [:fields]
+             (fn [fields]
+               (map (fn [field]
+                      (update-in field [:value-type] 
+                                 #(visit-primitives % f)))
+                    fields))))
+
+(defn visit-primitives [type f] 
+  (let [h (access/getx type-head type)]
+    (cond
+      (contains? primitive-values h) (f type)
+      (= :vec h) (access/updatex type-body type 
+                                 #(visit-vec-primitives % f))
+      (= :record h) (access/updatex type-body type 
+                                 #(visit-record-primitives % f))
+      :default type)))
+
+(defn visit-primitive-on [x f]
+  (visit-primitives (parse-type x) f))
+
+(assert (= [:visited [:long [:value 9]]]
+           (visit-primitive-on 9 (fn [x] [:visited x]))))
+(assert (= [:vec {:type :vecdata, :data '([:visited [:long [:value 1]]] 
+                                          [:visited [:long [:value 2]]] 
+                                          [:visited [:long [:value 3]]])}]
+           (visit-primitive-on [:vecdata 1 2 3] (fn [x] [:visited x]))))
+(assert (= (visit-primitive-on [:record :a 1 :b 2 :c 3] (fn [x] [:visited x]))
+           [:record {:type :record, 
+                     :fields '({:key :a, :value-type [:visited [:long [:value 1]]]} 
+                               {:key :b, :value-type [:visited [:long [:value 2]]]} 
+                               {:key :c, :value-type [:visited [:long [:value 3]]]})}]))
 
 (defn export-primitive [x]
   [:export x])
