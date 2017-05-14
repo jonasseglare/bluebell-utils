@@ -203,11 +203,18 @@
 (assert (= 4 (vec-size v0)))
 (assert (= 3 (vec-size v1)))
     
-
 ;(defmultiple export-typed-value first
 ;  (:primitive [x] (export-primitive x)))
-(defn export-typed-value [x]
-  [:export x])
+;; (defn export-typed-value [x]
+;;   (let [h (get-type-head x)
+;;         b (get-type-body x)]
+;;     (cond 
+;;       (contains? primitive-values h) (get-primitive-value b)
+;;       (= h :record) (export-record b)
+;;       (= h :vec) (export-vec b)
+;;       :default x)))
+    
+
                        
 
 ;; How to specify one:
