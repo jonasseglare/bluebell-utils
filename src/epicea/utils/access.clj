@@ -93,16 +93,18 @@
 
 (defn make-checked-set [accessor]
   (let [b (:validate-base accessor)
-        v (:validate-value accessor)]
-    (fn [x]
-      x)))
+        v (:validate-value accessor)
+        s (:set accessor)]
+    (fn [obj x]
+      (b (s (b obj) (v x))))))
 
 (def decorators [[:validate-base make-validate-base]
                  [:validate-has make-validate-has]
                  [:validate-value make-validate-value]
                  [:get-optional-unchecked make-get-optional-unchecked]
                  [:get-optional make-get-optional]
-                 [:checked-get make-checked-get]])
+                 [:checked-get make-checked-get]
+                 [:checked-set make-checked-set]])
 
 (defn decorate-accessor [a]
   (reduce apply-decorator

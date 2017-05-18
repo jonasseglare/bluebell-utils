@@ -32,3 +32,6 @@
 (deftest checked-get-test
   (is (= 3 ((:checked-get k) {:k 3})))
   (is (thrown? Throwable ((:checked-get k) {:k :a}))))
+
+(deftest checked-set-test
+  (is (= {:k 9} ((:checked-set k) {:k 3} 9))))
