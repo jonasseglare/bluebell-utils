@@ -59,8 +59,17 @@
         (accessor-error "missing value"
                         accessor x nil)))))
 
+(defn make-validate-value [accessor]
+  (let [v? (:valid-value? accessor)]
+    (fn [x]
+      (if (v? x)
+        x
+        (accessor-error "invalid value"
+                        accessor x nil)))))
+
 (def decorators [[:validate-base make-validate-base]
-                 [:validate-has make-validate-has]])
+                 [:validate-has make-validate-has]
+                 [:validate-value make-validate-value]])
 
 (defn decorate-accessor [a]
   (reduce apply-decorator

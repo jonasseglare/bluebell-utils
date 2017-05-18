@@ -3,7 +3,7 @@
             [epicea.utils.access :refer :all]
             [epicea.utils.optional :refer [optional]]))
 
-(def k (map-accessor :k {}))
+(def k (map-accessor :k {:valid-value? int?}))
 
 (deftest basic-map-access
   (is (= 3 ((:get k) {:k 3})))
@@ -18,3 +18,8 @@
 (deftest validate-has-test
   (is (thrown? Throwable ((:validate-has k) {:r 9})))
   (is (= {:k 111} ((:validate-has k) {:k 111}))))
+
+(deftest validate-value-test
+  (is (thrown? Throwable ((:validate-value k) "asfdasdf")))
+  (is ((:validate-value k) 9)))
+
