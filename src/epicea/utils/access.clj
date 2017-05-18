@@ -13,9 +13,27 @@
 (def default-obj {})
 (def default-opts {})
 (def default-map-opts (merge default-opts {:valid-value? (constantly true)
-                                           :make-default (fn [x] 
-                                                           (if (nil? x) {} x))
+                                           :make-default-parent 
+                                           (fn [x] 
+                                             (if (nil? x) {} x))
                                            :valid-parent? map?}))
+
+(defn make-default-parent [accessor x]
+  (if (contains? accessor :make-default-parent)
+    ((:make-default-parent accessor) x)
+    x))
+
+(defn make-default-parent-opt [x accessor]
+  (if (contains? accessor :make-default-parent)
+    (optional ((:make-default-parent accessor) x))
+    (optional)))
+
+
+(defn make-default [obj accessor]
+  (if (contains? accessor :make-default)
+    ((:make-default accessor) obj)))
+
+
 
 ;; Assumptions:
 ;;  - Always a valid input object.
@@ -40,7 +58,7 @@
    
 
 (defn ensure-parent [action key opts x]
-  (let [y ((:make-default opts) x)]
+  (let [y (make-default-parent opts x)]
     (check-parent action key opts y x)
     y))
 
@@ -85,24 +103,24 @@
 (defn getx [obj accessor]
   ((:get accessor) obj))
 
-(defn setx [accessor obj x]
+(defn setx [obj accessor x]
   ((:set accessor) obj x))
 
-(defn updatex [accessor obj f]
+(defn updatex [obj accessor f]
   (if ((:has? accessor) obj)
     ((:set accessor) obj (f ((:get accessor) obj)))
     obj))
 
-(defn has? [accessor obj]
+(defn has? [obj accessor]
   ((:has? accessor) obj))
 
-(defn getx-or-default [accessor obj]
-  (cond 
-    ((:has? accessor) obj) ((:get accessor) obj)
-    (contains? accessor :make-default) ((:make-default accessor) obj)
-    :default ((:get accessor) (:default-parent accessor))))
+(defn getx-or-default [obj accessor]
+  (assert (accessor? accessor))
+  (if (has? obj accessor) 
+    (getx obj accessor)
+    (make-default obj accessor)))
 
-(defn getx-optional [accessor obj]
+(defn getx-optional [obj accessor]
   (if ((:has? accessor) obj)
     (optional ((:get accessor) obj))
     (optional)))
@@ -120,7 +138,7 @@
 (def setter (er :set))
 
 (defn updater [accessor]
-  (fn [obj f] (updatex accessor obj f)))
+  (fn [obj f] (updatex obj accessor f)))
 
 (defn parts [accessor]
   (if (contains? accessor :parts)
@@ -147,7 +165,8 @@
 
 (defn compose-setx [a b]
   (fn [obj x] 
-    (setx a obj (setx b (getx-or-default a obj) x))))
+    (let [subobj (getx-or-default obj a)]
+      (setx obj a (setx subobj b x)))))
 
 (defn catparts [a b]
   (vec (concat a b)))

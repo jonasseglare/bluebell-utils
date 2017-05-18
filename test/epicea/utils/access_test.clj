@@ -16,24 +16,24 @@
 (deftest access-test
   (is (accessor? (map-accessor :k)))
   (is (not (accessor? {})))
-  (is (= {:k 9} (setx k {} 9)))
-  (is (not (has? k {})))
-  (is (has? k (setx k {} 9)))
+  (is (= {:k 9} (setx {} k 9)))
+  (is (not (has? {} k)))
+  (is (has? (setx {} k 9) k))
   (is (= 9 (getx {:k 9} k)))
   (is (= 9 (get-k {:k 9}))))
 
-(comment
 (deftest compose-test
-  (is (has? kw {:k {:w 3}}))
-  (is (= 3 (getx kw {:k {:w 3}})))
-  (is (= {:r 3 
-          :k {:w 4}} (setx kw {:r 3} 4)))
+  (is (has? {:k {:w 3}} kw))
+  (is (= 3 (getx {:k {:w 3}} kw)))
+  (is (= {:r 3 :k {:w 4}} (setx {:r 3} kw 4)))
+
   (is (= {:k 4} (update-k {:k 3} inc)))
   (is (= {:k {:w 4}} (update-kw {:k {:w 3}} inc)))
   (is (= 2 (size kw)))
   (is (= 1 (size k)))
   (is (not (empty? (:common (diff-ancestors kw k)))))
   (is (empty? (:common (diff-ancestors kw w)))))
+(comment
 
 (def default-vec [nil nil nil nil])
 (def sec (vector-accessor 1 {:default-parent default-vec}))
