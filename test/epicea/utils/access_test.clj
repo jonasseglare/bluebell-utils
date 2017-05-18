@@ -42,16 +42,17 @@
   (is (= [nil 3 nil nil] (setx default-vec sec 3)))
   (is (= [nil 4 nil nil] (updatex [nil 3 nil nil] sec inc))))
 
-(comment
   (def x (map-accessor :x))
 (def y (map-accessor :y))
 (def make-xy (constructor {} [x y]))
+
 
 (deftest constructor-test
   (is (= {:x 3 :y 4} (make-xy 3 4))))
 
 
-(def empty-xy2 [nil nil])
+(comment
+  (def empty-xy2 [nil nil])
 (def x2 (vector-accessor 0 {:default-parent empty-xy2}))
 (def y2 (vector-accessor 1 {:default-parent empty-xy2}))
 (def make-xy2 (constructor [x2 y2]))
