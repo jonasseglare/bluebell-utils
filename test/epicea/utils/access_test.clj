@@ -51,7 +51,6 @@
   (is (= {:x 3 :y 4} (make-xy 3 4))))
 
 
-(comment
   (def empty-xy2 [nil nil])
 (def x2 (vector-accessor 0 {:default-parent empty-xy2}))
 (def y2 (vector-accessor 1 {:default-parent empty-xy2}))
@@ -59,6 +58,7 @@
 
 (deftest constructor-test2
   (is (= [9 20] (make-xy2 9 20))))
+
 
 (def even-access
   {:id :even-number
@@ -68,17 +68,19 @@
    :set (fn [a b] b)})
 
 (deftest even-access-test
-  (is (= 2 (getx even-access 2)))
-  (is (= (optional 2) (getx-optional even-access 2)))
-  (is (= (optional) (getx-optional even-access 3))))
+  (is (= 2 (getx 2 even-access)))
+  (is (= (optional 2) (getx-optional 2 even-access)))
+  (is (= (optional) (getx-optional 3 even-access))))
 
 (def whiskers2 (map-accessor :whiskers {:default-parent {:type :cat :whiskers []}}))
 (def whiskers3 (map-accessor :whiskers {:make-default (fn [_] [1 2 3])}))
 
-(deftest cat-test
-  (is (= [] (getx-or-default whiskers2 {})))
-  (is (= [1 2 3] (getx-or-default whiskers3 {}))))
 
+(deftest cat-test
+  (is (= [] (getx-or-default {} whiskers2)))
+  (is (= [1 2 3] (getx-or-default {} whiskers3))))
+
+(comment
 (deftest vec1-accessor-test
   (is (= 4 (updatex vec1-accessor 3 (fn [k] (map inc k))))))
 )
