@@ -18,15 +18,21 @@
                                              (if (nil? x) {} x))
                                            :valid-parent? map?}))
 
-(defn make-default-parent [accessor x]
-  (if (contains? accessor :make-default-parent)
-    ((:make-default-parent accessor) x)
-    x))
+(defn valid-parent? [x accessor]
+  (if (contains? accessor :valid-parent?)
+    ((:valid-parent? accessor) x)
+    true))
 
-(defn make-default-parent-opt [x accessor]
-  (if (contains? accessor :make-default-parent)
-    (optional ((:make-default-parent accessor) x))
-    (optional)))
+(defn get-default-parent [accessor]
+  (:default-parent accessor))
+
+(defn make-default-parent [accessor x]
+  (if (contains? accessor :make-default-parent) 
+    ((:make-default-parent accessor) x)
+    (if (valid-parent? x accessor)
+      x
+      (get-default-parent accessor))))
+
 
 
 (defn make-default [obj accessor]
