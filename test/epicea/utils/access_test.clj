@@ -23,3 +23,6 @@
   (is (thrown? Throwable ((:validate-value k) "asfdasdf")))
   (is ((:validate-value k) 9)))
 
+(deftest get-optional-test
+  (is (= [3] ((:get-optional k) {:k 3})))
+  (is (nil? ((:get-optional k) {:r 3}))))

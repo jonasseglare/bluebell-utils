@@ -26,7 +26,7 @@
                 :valid-base? (constantly true)
                 :default-base {}
                 :default-value nil
-                :valid-value? nil})
+                :valid-value? (constantly true)})
 
 (defn map-methods [key]
   {:has? #(contains? % key)
@@ -61,15 +61,40 @@
 
 (defn make-validate-value [accessor]
   (let [v? (:valid-value? accessor)]
+    (debug/dout accessor)
+    (debug/dout v?)
     (fn [x]
       (if (v? x)
         x
         (accessor-error "invalid value"
                         accessor x nil)))))
+(defn make-get-optional-unchecked [accessor]
+  (let [h? (:has? accessor)
+        g (:get accessor)]
+    (fn [x]
+      (if (h? x)
+        (optional (g x))
+        (optional)))))
+
+(defn make-get-optional [accessor]
+  (let [b (:validate-base accessor)
+        v (:validate-value accessor)
+        o (:get-optional-unchecked accessor)]
+    (debug/dout b)
+    (debug/dout v)
+    (debug/dout o)
+    (fn [x]
+      (if-let [[y] (o (b x))]
+        (do 
+          (debug/dout y)
+          (optional (v y)))
+        (optional)))))
 
 (def decorators [[:validate-base make-validate-base]
                  [:validate-has make-validate-has]
-                 [:validate-value make-validate-value]])
+                 [:validate-value make-validate-value]
+                 [:get-optional-unchecked make-get-optional-unchecked]
+                 [:get-optional make-get-optional]])
 
 (defn decorate-accessor [a]
   (reduce apply-decorator
