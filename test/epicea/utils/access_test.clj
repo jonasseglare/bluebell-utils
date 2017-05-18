@@ -51,4 +51,6 @@
 (def v (vector-accessor 1))
 
 (deftest vector-tests
-  (is (= [nil 9] ((:checked-set v) [nil nil] 9))))
+  (is (= 119 ((:checked-get v) [3 119])))
+  (is (= [nil 9] ((:checked-set v) [nil nil] 9)))
+  (is (not ((:has? v) []))))
