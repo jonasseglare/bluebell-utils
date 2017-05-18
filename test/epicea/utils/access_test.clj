@@ -3,7 +3,7 @@
             [epicea.utils.access :refer :all]
             [epicea.utils.optional :refer [optional]]))
 
-(def k (map-accessor :k {:valid-value? int?}))
+(def k (map-accessor :k {:valid-value? int? :default-value 0}))
 
 (deftest basic-map-access
   (is (= 3 ((:get k) {:k 3})))
@@ -35,3 +35,10 @@
 
 (deftest checked-set-test
   (is (= {:k 9} ((:checked-set k) {:k 3} 9))))
+
+(deftest update-test
+  (is (= {:k 10} ((:update k) {:k 9} inc))))
+
+(deftest prepare-test
+  (is (= {:k 0} ((:prepare k) {})))
+  (is (= {:k 9} ((:prepare k) {:k 9}))))

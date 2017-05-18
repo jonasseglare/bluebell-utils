@@ -98,13 +98,30 @@
     (fn [obj x]
       (b (s (b obj) (v x))))))
 
+(defn make-update [accessor]
+  (let [g (:checked-get accessor)
+        s (:checked-set accessor)]
+    (fn [obj f]
+      (s obj (f (g obj))))))
+
+(defn make-prepare [accessor]
+  (let [h? (:has? accessor)
+        d (:default-value accessor)
+        s (:set accessor)]
+    (fn [obj]
+      (if (h? obj)
+        obj
+        (s obj d)))))
+
 (def decorators [[:validate-base make-validate-base]
                  [:validate-has make-validate-has]
                  [:validate-value make-validate-value]
                  [:get-optional-unchecked make-get-optional-unchecked]
                  [:get-optional make-get-optional]
                  [:checked-get make-checked-get]
-                 [:checked-set make-checked-set]])
+                 [:checked-set make-checked-set]
+                 [:update make-update]
+                 [:prepare make-prepare]])
 
 (defn decorate-accessor [a]
   (reduce apply-decorator
