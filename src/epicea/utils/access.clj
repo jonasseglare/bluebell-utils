@@ -61,8 +61,6 @@
 
 (defn make-validate-value [accessor]
   (let [v? (:valid-value? accessor)]
-    (debug/dout accessor)
-    (debug/dout v?)
     (fn [x]
       (if (v? x)
         x
@@ -80,14 +78,9 @@
   (let [b (:validate-base accessor)
         v (:validate-value accessor)
         o (:get-optional-unchecked accessor)]
-    (debug/dout b)
-    (debug/dout v)
-    (debug/dout o)
     (fn [x]
       (if-let [[y] (o (b x))]
-        (do 
-          (debug/dout y)
-          (optional (v y)))
+        (optional (v y))
         (optional)))))
 
 (def decorators [[:validate-base make-validate-base]

@@ -25,4 +25,6 @@
 
 (deftest get-optional-test
   (is (= [3] ((:get-optional k) {:k 3})))
-  (is (nil? ((:get-optional k) {:r 3}))))
+  (is (nil? ((:get-optional k) {:r 3})))
+  (is (thrown? Throwable ((:get-optional k) [])))
+  (is (thrown? Throwable ((:get-optional k) {:k :a}))))
