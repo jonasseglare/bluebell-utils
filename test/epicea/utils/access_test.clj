@@ -42,3 +42,13 @@
 (deftest prepare-test
   (is (= {:k 0} ((:prepare k) {})))
   (is (= {:k 9} ((:prepare k) {:k 9}))))
+
+(deftest get-or-default-test
+  (is (= 9 ((:get-or-default k) {:k 9})))
+  (is (= 0 ((:get-or-default k) {}))))
+
+;;;;;;;;;;;;;;;;;;;;;;;
+(def v (vector-accessor 1))
+
+(deftest vector-tests
+  (is (= [nil 9] ((:checked-set v) [nil nil] 9))))

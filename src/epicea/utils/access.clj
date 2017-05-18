@@ -17,10 +17,10 @@
 (defn accessor-error [what accessor root value]
   (core/common-error 
    (str "ACCESSOR ERROR"
-        "\n  In the context " what
-        "\n  With accessor  " (data-to-str accessor)
-        "\n  On root value  " (data-to-str root)
-        "\n  For some value " (data-to-str value))))
+        "\n\n  * In the context '" what "'"
+        "\n\n  * With accessor\n" (data-to-str accessor)
+        "\n\n  * On root value  " (data-to-str root)
+        "\n\n  * For some value " (data-to-str value))))
 
 (def base-opts {:info nil
                 :valid-base? (constantly true)
@@ -113,6 +113,14 @@
         obj
         (s obj d)))))
 
+(defn make-get-or-default [a]
+  (let [b (:validate-base a)
+        p (:prepare a)
+        h (:validate-has a)
+        g (:get a)
+        v (:validate-value a)]
+    (comp v g h p b)))
+
 (def decorators [[:validate-base make-validate-base]
                  [:validate-has make-validate-has]
                  [:validate-value make-validate-value]
@@ -121,14 +129,14 @@
                  [:checked-get make-checked-get]
                  [:checked-set make-checked-set]
                  [:update make-update]
-                 [:prepare make-prepare]])
+                 [:prepare make-prepare]
+                 [:get-or-default make-get-or-default]])
 
 (defn decorate-accessor [a]
   (reduce apply-decorator
           a
           decorators))
 
-;;;;;; Main map creator
 (defn map-accessor 
   ([key extra-opts]
    (decorate-accessor
@@ -138,5 +146,30 @@
            (map-methods key))))
   ([key] (map-accessor key {})))
 
-
+;;;;;; Main map creator
 (def q (map-accessor :q))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Vector
+(defn default-vector-opts [index]
+  {:info {:type :vector-accessor :index index}}
+  {:valid-base? vector?})
+
+(defn vector-methods [index]
+  {:has? #(< index (count %))
+   :get #(nth % index)
+   :set (fn [obj x] (assoc obj index x))})
+
+(defn vector-accessor 
+  ([index extra-opts] 
+   (decorate-accessor 
+    (merge base-opts
+           (default-vector-opts index)
+           extra-opts
+           (vector-methods index))))
+  ([index] (vector-accessor index {})))
+
+          
+
+  
