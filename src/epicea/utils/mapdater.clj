@@ -22,6 +22,34 @@
                       :arglist ::arglist
                       :body ::body))
 
+(spec/def ::expr (spec/spec (spec/cat 
+                             :op (constantly true)
+                             :args (spec/* (spec/or :key keyword?
+                                                    :value (constantly true))))))
+(spec/def ::mapdate (spec/cat
+                     :output symbol?
+                     :expr ::expr))
+
+(defn force-conform [sp x]
+  (let [y (spec/conform sp x)]
+    (if (= ::spec/invalid y)
+       (throw (RuntimeException. (spec/explain-str sp x)))
+       y)))
+       
+
+(defmacro mapdate [& args]
+  (let [m (gensym)
+        parsed (force-conform ::mapdate args)
+        expr (:expr parsed)]
+    `(fn [~m]
+       (assoc ~m ~(keyword (:output parsed))
+              (~(:op expr) ~@(map (fn [s] 
+                                    (if (= :key (first s))
+                                      `(~(second s) ~m)
+                                      (second s)))
+                                  (:args expr)))))))
+    
+    
 
 (defn compile-mapdater [c]
   (let [mapsym (gensym)

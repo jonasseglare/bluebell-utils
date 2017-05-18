@@ -1,6 +1,8 @@
 (ns epicea.utils.access
-  (:require [epicea.utils.debug :as dbg]
-            [epicea.utils.optional :refer [optional]]))
+  (:require [epicea.utils.debug :as debug]
+            [epicea.utils.core :as core]
+            [epicea.utils.optional :refer [optional]]
+            [clojure.spec :as spec]))
 
 (defn accessor? [x]
   (and (map? x)
@@ -10,18 +12,53 @@
 
 (def default-obj {})
 (def default-opts {})
-(def default-map-opts (merge default-opts {:default-parent {}}))
+(def default-map-opts (merge default-opts {:valid-value? (constantly true)
+                                           :make-default (fn [x] 
+                                                           (if (nil? x) {} x))
+                                           :valid-parent? map?}))
 
 ;; Assumptions:
 ;;  - Always a valid input object.
 
+(defn check-validity [type-of-action key base-opts source value]
+  (if (not ((:valid-value? base-opts) value))
+    (throw (RuntimeException. 
+            (str "Invalid value obtained using '" type-of-action
+                 "' with key '" key "' on source '" 
+                 source "' getting value '"
+                 value "'")))))
+
+(defn check-parent 
+  ([action key opts y x]
+   (if (not ((:valid-parent? opts) y))
+     (throw (RuntimeException. 
+             (str "INVALID parent '" y "' constructed from '" x "' for key '" key "'")))))
+  ([action key opts y]
+   (if (not ((:valid-parent? opts) y))
+     (throw (RuntimeException. 
+             (str "INVALID parent '" y "' for key '" key "'"))))))
+   
+
+(defn ensure-parent [action key opts x]
+  (let [y ((:make-default opts) x)]
+    (check-parent action key opts y x)
+    y))
+
 (defn map-accessor 
   ([key map-opts]
-   (merge default-map-opts map-opts
-          {:get key
-           :valid-parent? map?
-           :has? #(contains? % key)
-           :set (fn [obj x] (assoc obj key x))}))
+   (let [base-opts (merge default-map-opts map-opts)]
+     (merge base-opts
+          {:get (fn [src] 
+                  (debug/dout src)
+                  (let [x (get src key)]
+                    (check-validity :get key base-opts src x)
+                    x))
+           :has? (fn [obj]
+                   (check-parent :has? key base-opts obj)
+                   (contains? obj key))
+           :set (fn [obj x] 
+                  (check-validity :set key base-opts obj x)
+                  (assoc (ensure-parent :set key base-opts obj) key x))})))
   ([key] (map-accessor key {})))
 
 (def default-vector-opts default-opts)
@@ -45,7 +82,7 @@
                                         :has? (constantly true)}))
           
 ;;;;; Utilities
-(defn getx [accessor obj]
+(defn getx [obj accessor]
   ((:get accessor) obj))
 
 (defn setx [accessor obj x]
@@ -145,6 +182,26 @@
              (rest bp)))))
 
 ;;;;;; Constructor
+
+(spec/def ::build-arg (spec/cat :accessor accessor?
+                                :value (constantly true)))
+(spec/def ::build-args (spec/* ::build-arg))
+
+(defn build [& args]
+  (let [parsed (spec/conform ::build-args args)]
+    (if (= parsed ::spec/invalid)
+      (core/common-error 
+       "Invalid build args: " 
+       (spec/explain-str ::build-args args))
+      (reduce
+       (fn [obj build-arg]
+         (setx (:accessor build-arg)
+               obj
+               (:value build-arg)))
+       nil
+       parsed))))
+      
+
 
 (defn constructor 
   ([init accessors]

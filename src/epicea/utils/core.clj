@@ -110,6 +110,16 @@
   (fn [& args0]
     (apply fun (merge-args partial-args args0))))
 
+(defmacro pipe [& args]
+  (loop [result (first args)
+         functions (rest args)]
+    (if (empty? functions)
+      result
+      (recur `(~(first functions) ~result)
+             (rest functions)))))
+      
+(defn common-error [& args]  
+  (throw (RuntimeException. (apply str args))))
 
 
 ;(defmacro mapdater [& args]

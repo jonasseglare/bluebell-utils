@@ -9,6 +9,7 @@
 (def kw (compose k w))
 
 (def set-k (setter k))
+(def get-k (getter k))
 (def update-k (updater k))
 (def update-kw (updater kw))
 
@@ -17,8 +18,11 @@
   (is (not (accessor? {})))
   (is (= {:k 9} (setx k {} 9)))
   (is (not (has? k {})))
-  (is (has? k (setx k {} 9))))
+  (is (has? k (setx k {} 9)))
+  (is (= 9 (getx {:k 9} k)))
+  (is (= 9 (get-k {:k 9}))))
 
+(comment
 (deftest compose-test
   (is (has? kw {:k {:w 3}}))
   (is (= 3 (getx kw {:k {:w 3}})))
@@ -75,3 +79,4 @@
 
 (deftest vec1-accessor-test
   (is (= 4 (updatex vec1-accessor 3 (fn [k] (map inc k))))))
+)
