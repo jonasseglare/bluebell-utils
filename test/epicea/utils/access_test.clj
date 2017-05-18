@@ -28,3 +28,7 @@
   (is (nil? ((:get-optional k) {:r 3})))
   (is (thrown? Throwable ((:get-optional k) [])))
   (is (thrown? Throwable ((:get-optional k) {:k :a}))))
+
+(deftest checked-get-test
+  (is (= 3 ((:checked-get k) {:k 3})))
+  (is (thrown? Throwable ((:checked-get k) {:k :a}))))

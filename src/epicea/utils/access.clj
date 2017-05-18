@@ -66,6 +66,7 @@
         x
         (accessor-error "invalid value"
                         accessor x nil)))))
+
 (defn make-get-optional-unchecked [accessor]
   (let [h? (:has? accessor)
         g (:get accessor)]
@@ -83,11 +84,25 @@
         (optional (v y))
         (optional)))))
 
+(defn make-checked-get [accessor]
+  (let [b (:validate-base accessor)
+        h (:validate-has accessor)
+        v (:validate-value accessor)
+        g (:get accessor)]
+    (comp v g h b)))
+
+(defn make-checked-set [accessor]
+  (let [b (:validate-base accessor)
+        v (:validate-value accessor)]
+    (fn [x]
+      x)))
+
 (def decorators [[:validate-base make-validate-base]
                  [:validate-has make-validate-has]
                  [:validate-value make-validate-value]
                  [:get-optional-unchecked make-get-optional-unchecked]
-                 [:get-optional make-get-optional]])
+                 [:get-optional make-get-optional]
+                 [:checked-get make-checked-get]])
 
 (defn decorate-accessor [a]
   (reduce apply-decorator
