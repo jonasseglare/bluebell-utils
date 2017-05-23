@@ -176,7 +176,13 @@
 ;;;;;; Main map creator
 (def q (key-accessor :q))
 
-
+(defn build-accessor [default-opts user-opts methods]
+  (decorate-accessor
+   (merge base-opts
+          default-opts
+          user-opts
+          methods)))
+  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Vector
 (defn default-vector-opts [index]
@@ -198,6 +204,37 @@
            extra-opts
            (vector-methods index))))
   ([index] (index-accessor index {})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Composite map accessor
+(defn get-required [m]
+  (filter 
+   (fn [[_ value]]
+     (not (vector? value)))
+   m))
+
+(defn get-optional [m]
+  (filter
+   identity
+   (map
+    (fn [[key value]]
+      (if (vector? value)
+        [key (first value)]))
+    m)))
+   
+(defn default-composite-map-opts [m]
+  {:info {:type :map-accessor :map m}
+   :valid-base? map?})
+
+(defn composite-map-methods [m]
+  nil)
+
+(defn map-accessor [m extra-opts]
+  (build-accessor
+   (default-composite-map-opts m)
+   extra-opts
+   (composite-map-methods m)))
+  
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Composition: TODO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Convenient macros: TODO

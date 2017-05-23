@@ -69,3 +69,7 @@
 
 (deftest remove-test
   (is (= {:a 3} ((:checked-remove b) {:a 3 :b 4}))))
+
+(deftest composite-map-tests
+  (is (= [[:a 3]] (get-required {:a 3 :b [4]})))
+  (is (= [[:b 4]] (get-optional {:a 3 :b [4]}))))
