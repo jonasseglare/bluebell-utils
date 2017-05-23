@@ -62,8 +62,18 @@
         (accessor-error "missing value"
                         accessor x nil)))))
 
+(defn make-valid-output? [accessor]
+  (:valid-value? accessor))
+
+(defn make-valid-input? [accessor]
+  (let [c? (:can-set accessor)
+        v? (:valid-value? accessor)]
+    (fn [obj x]
+      (and (v? x)
+           (c? obj x)))))
+
 (defn make-validate-value [accessor]
-  (let [v? (:valid-value? accessor)]
+  (let [v? (:valid-output? accessor)]
     (fn [x]
       (if (v? x)
         x
@@ -102,7 +112,6 @@
       (b (s (b obj) (v x))))))
 
 (defn make-checked-remove [accessor]
-  (debug/dout accessor)
   (let [b (:validate-base accessor)
         r (:remove accessor)
         r? (:can-remove? accessor)]
@@ -138,6 +147,8 @@
 
 (def decorators [[:validate-base make-validate-base]
                  [:validate-has make-validate-has]
+                 [:valid-output? make-valid-output?]
+                 [:valid-input? make-valid-input?]
                  [:validate-value make-validate-value]
                  [:get-optional-unchecked make-get-optional-unchecked]
                  [:get-optional make-get-optional]
@@ -175,7 +186,9 @@
 (defn vector-methods [index]
   {:can-get? #(< index (count %))
    :get #(nth % index)
-   :set (fn [obj x] (assoc obj index x))})
+   :set (fn [obj x] (assoc obj index x))
+   :can-remove? (constantly false)
+   :remove identity})
 
 (defn vector-accessor 
   ([index extra-opts] 
