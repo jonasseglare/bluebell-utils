@@ -24,18 +24,17 @@
 
 (def base-opts {:info nil
                 :valid-base? (constantly true)
-                :can-set? (constantly true)
-                :remove identity
-                :can-remove? (constantly true) ;; returns true even if key not present
                 :default-base {}
                 :default-value nil
                 :valid-value? (constantly true)})
 
-(defn map-methods [key]
-  {:has? #(contains? % key)
-   :get #(get % key)
-   :set (fn [obj x] (assoc obj key x))
-   :remove #(dissoc % key)})
+(defn map-methods [key] ;;; Every object supports get, set and remove.
+  {:get #(get % key) ;; get
+   :can-get? #(contains? % key)
+   :set (fn [obj x] (assoc obj key x)) ;; set
+   :can-set? (constantly true)
+   :remove #(dissoc % key) ;; remove
+   :can-remove? (constantly true)})
 
 (defn default-map-opts [key]
   {:valid-base? map?
@@ -56,7 +55,7 @@
                         accessor x nil)))))
 
 (defn make-validate-has [accessor]
-  (let [h? (:has? accessor)]
+  (let [h? (:can-get? accessor)]
     (fn [x]
       (if (h? x)
         x
@@ -72,7 +71,7 @@
                         accessor x nil)))))
 
 (defn make-get-optional-unchecked [accessor]
-  (let [h? (:has? accessor)
+  (let [h? (:can-get? accessor)
         g (:get accessor)]
     (fn [x]
       (if (h? x)
@@ -103,6 +102,7 @@
       (b (s (b obj) (v x))))))
 
 (defn make-checked-remove [accessor]
+  (debug/dout accessor)
   (let [b (:validate-base accessor)
         r (:remove accessor)
         r? (:can-remove? accessor)]
@@ -120,7 +120,7 @@
       (s obj (f (g obj))))))
 
 (defn make-prepare [accessor]
-  (let [h? (:has? accessor)
+  (let [h? (:can-get? accessor)
         d (:default-value accessor)
         s (:set accessor)]
     (fn [obj]
@@ -173,7 +173,7 @@
   {:valid-base? vector?})
 
 (defn vector-methods [index]
-  {:has? #(< index (count %))
+  {:can-get? #(< index (count %))
    :get #(nth % index)
    :set (fn [obj x] (assoc obj index x))})
 

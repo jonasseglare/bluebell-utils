@@ -8,8 +8,8 @@
 (deftest basic-map-access
   (is (= 3 ((:get k) {:k 3})))
   (is (= {:k 9} ((:set k) {} 9)))
-  (is ((:has? k) {:k 3}))
-  (is (not ((:has? k) {:p 3}))))
+  (is ((:can-get? k) {:k 3}))
+  (is (not ((:can-get? k) {:p 3}))))
 
 (deftest base-validator
   (is (thrown? Throwable ((:validate-base k) [])))
@@ -53,7 +53,7 @@
 (deftest vector-tests
   (is (= 119 ((:checked-get v) [3 119])))
   (is (= [nil 9] ((:checked-set v) [nil nil] 9)))
-  (is (not ((:has? v) []))))
+  (is (not ((:can-get? v) []))))
 
 (def a (map-accessor :a))
 (def b (map-accessor :b))
