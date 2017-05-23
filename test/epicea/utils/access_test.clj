@@ -54,3 +54,18 @@
   (is (= 119 ((:checked-get v) [3 119])))
   (is (= [nil 9] ((:checked-set v) [nil nil] 9)))
   (is (not ((:has? v) []))))
+
+(def a (map-accessor :a))
+(def b (map-accessor :b))
+(def c (map-accessor :c))
+
+(defn abc-add [x]
+  ((:checked-set c)
+   x (+ ((:checked-get a) x)
+        ((:checked-get b) x))))
+
+(deftest abc-test
+  (is (= {:a 3 :b 4 :c 7} (abc-add {:a 3 :b 4}))))
+
+(deftest remove-test
+  (is (= {:a 3} ((:checked-remove b) {:a 3 :b 4}))))

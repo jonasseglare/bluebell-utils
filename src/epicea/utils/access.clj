@@ -24,6 +24,9 @@
 
 (def base-opts {:info nil
                 :valid-base? (constantly true)
+                :can-set? (constantly true)
+                :remove identity
+                :can-remove? (constantly true) ;; returns true even if key not present
                 :default-base {}
                 :default-value nil
                 :valid-value? (constantly true)})
@@ -31,7 +34,8 @@
 (defn map-methods [key]
   {:has? #(contains? % key)
    :get #(get % key)
-   :set (fn [obj x] (assoc obj key x))})
+   :set (fn [obj x] (assoc obj key x))
+   :remove #(dissoc % key)})
 
 (defn default-map-opts [key]
   {:valid-base? map?
@@ -98,6 +102,17 @@
     (fn [obj x]
       (b (s (b obj) (v x))))))
 
+(defn make-checked-remove [accessor]
+  (let [b (:validate-base accessor)
+        r (:remove accessor)
+        r? (:can-remove? accessor)]
+    (fn [obj0]
+      (let [obj (b obj0)]
+        (if (not (r? obj)) 
+          (accessor-error "Cannot remove" accessor obj nil)
+          (r obj))))))
+    
+
 (defn make-update [accessor]
   (let [g (:checked-get accessor)
         s (:checked-set accessor)]
@@ -128,6 +143,7 @@
                  [:get-optional make-get-optional]
                  [:checked-get make-checked-get]
                  [:checked-set make-checked-set]
+                 [:checked-remove make-checked-remove]
                  [:update make-update]
                  [:prepare make-prepare]
                  [:get-or-default make-get-or-default]])
@@ -170,6 +186,5 @@
            (vector-methods index))))
   ([index] (vector-accessor index {})))
 
-          
-
-  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Composition: TODO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Convenient macros: TODO

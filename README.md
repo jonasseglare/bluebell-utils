@@ -16,6 +16,25 @@ FIXME
 
 **Type checking**: If we use access for all our objects, even small temporary ones returned from functions, we will catch many of the bugs we would otherwise catch with a static type system, because if we access every composite object in a systematic way using the accessors, we will get an error early on as soon as we attempt to read/write to it. Note, however, that it is in the accessors that all typing is done: We don't specify functions, let-values, etc.
 
+### Extraction-type accessors
+  - index-accessor
+  - key-accessor
+### Composite accessors
+  - sequential
+  - vector
+  - map
+### Transforming accessors
+  - Optional: Turns value into optional
+  - Forward/Backward (inc/dec) 
+
+### Function constructs
+  - Transformer (accessor and function)
+  - Optional transformer
+  - Poly fun [original-arglist extracted-var arglist-accessor]
+
+### Async facility:
+  - Async(f, [a, b, c, [c]])
+
 ## License
 
 Copyright © 2016 FIXME
