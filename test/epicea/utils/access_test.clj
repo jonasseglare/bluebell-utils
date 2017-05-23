@@ -3,7 +3,7 @@
             [epicea.utils.access :refer :all]
             [epicea.utils.optional :refer [optional]]))
 
-(def k (map-accessor :k {:valid-value? int? :default-value 0}))
+(def k (key-accessor :k {:valid-value? int? :default-value 0}))
 
 (deftest basic-map-access
   (is (= 3 ((:get k) {:k 3})))
@@ -48,16 +48,16 @@
   (is (= 0 ((:get-or-default k) {}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
-(def v (vector-accessor 1))
+(def v (index-accessor 1))
 
 (deftest vector-tests
   (is (= 119 ((:checked-get v) [3 119])))
   (is (= [nil 9] ((:checked-set v) [nil nil] 9)))
   (is (not ((:can-get? v) []))))
 
-(def a (map-accessor :a))
-(def b (map-accessor :b))
-(def c (map-accessor :c))
+(def a (key-accessor :a))
+(def b (key-accessor :b))
+(def c (key-accessor :c))
 
 (defn abc-add [x]
   ((:checked-set c)

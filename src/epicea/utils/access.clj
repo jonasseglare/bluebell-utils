@@ -38,7 +38,7 @@
 
 (defn default-map-opts [key]
   {:valid-base? map?
-   :info {:type :map-accessor :key key}})
+   :info {:type :key-accessor :key key}})
 
 (defn apply-decorator [accessor [key dec]]
   (if (contains? accessor key)
@@ -164,23 +164,23 @@
           a
           decorators))
 
-(defn map-accessor 
+(defn key-accessor 
   ([key extra-opts]
    (decorate-accessor
     (merge base-opts 
            (default-map-opts key)
            extra-opts 
            (map-methods key))))
-  ([key] (map-accessor key {})))
+  ([key] (key-accessor key {})))
 
 ;;;;;; Main map creator
-(def q (map-accessor :q))
+(def q (key-accessor :q))
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Vector
 (defn default-vector-opts [index]
-  {:info {:type :vector-accessor :index index}}
+  {:info {:type :index-accessor :index index}}
   {:valid-base? vector?})
 
 (defn vector-methods [index]
@@ -190,14 +190,14 @@
    :can-remove? (constantly false)
    :remove identity})
 
-(defn vector-accessor 
+(defn index-accessor 
   ([index extra-opts] 
    (decorate-accessor 
     (merge base-opts
            (default-vector-opts index)
            extra-opts
            (vector-methods index))))
-  ([index] (vector-accessor index {})))
+  ([index] (index-accessor index {})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Composition: TODO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Convenient macros: TODO
