@@ -73,3 +73,10 @@
 (deftest composite-map-tests
   (is (= [[:a 3]] (get-required {:a 3 :b [4]})))
   (is (= [[:b 4]] (get-optional {:a 3 :b [4]}))))
+
+(def ur (map-accessor {:username (key-accessor :username)
+                       :email [(key-accessor :email)]} {}))
+
+(deftest map-can-get-test
+  (is ((:can-get? ur) {:username "Mjao"}))
+  (is (not ((:can-get? ur) {:masdf "masdf"}))))

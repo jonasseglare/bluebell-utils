@@ -28,7 +28,7 @@
                 :default-value nil
                 :valid-value? (constantly true)})
 
-(defn map-methods [key] ;;; Every object supports get, set and remove.
+(defn key-methods [key] ;;; Every object supports get, set and remove.
   {:get #(get % key) ;; get
    :can-get? #(contains? % key)
    :set (fn [obj x] (assoc obj key x)) ;; set
@@ -159,10 +159,12 @@
                  [:prepare make-prepare]
                  [:get-or-default make-get-or-default]])
 
-(defn decorate-accessor [a]
-  (reduce apply-decorator
-          a
-          decorators))
+(defn decorate-accessor 
+  ([a decs]
+   (reduce apply-decorator
+           a
+           decs))
+  ([a] (decorate-accessor a decorators)))
 
 (defn key-accessor 
   ([key extra-opts]
@@ -170,7 +172,7 @@
     (merge base-opts 
            (default-map-opts key)
            extra-opts 
-           (map-methods key))))
+           (key-methods key))))
   ([key] (key-accessor key {})))
 
 ;;;;;; Main map creator
@@ -193,6 +195,7 @@
   {:can-get? #(< index (count %))
    :get #(nth % index)
    :set (fn [obj x] (assoc obj index x))
+   :can-set? (fn [obj x] true)
    :can-remove? (constantly false)
    :remove identity})
 
@@ -225,14 +228,28 @@
   {:info {:type :map-accessor :map m}
    :valid-base? map?})
 
-(defn composite-map-methods [m]
-  nil)
+(defn make-can-get? [reqs]
+  (fn [x]
+    (every? (fn [[key acc]]
+              (debug/dout (:can-get? acc))
+              ((:can-get? acc) x))
+            reqs)))
 
-(defn map-accessor [m extra-opts]
-  (build-accessor
-   (default-composite-map-opts m)
-   extra-opts
-   (composite-map-methods m)))
+(defn map-methods [m]
+  (let [reqs (get-required m)
+        opts (get-optional m)]
+    {:can-get? (make-can-get? reqs)}))
+            
+    
+        
+
+(defn map-accessor 
+  ([m extra-opts]
+   (build-accessor
+    (default-composite-map-opts m)
+    extra-opts
+    (map-methods m)))
+  ([m] (map-accessor m {})))
   
 
 
