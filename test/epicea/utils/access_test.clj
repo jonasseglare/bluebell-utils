@@ -1,4 +1,5 @@
 (ns epicea.utils.access-test
+  (:refer-clojure :exclude [get set update remove])
   (:require [clojure.test :refer :all]
             [epicea.utils.access :refer :all]
             [epicea.utils.optional :refer [optional]]))
@@ -8,8 +9,8 @@
 (deftest basic-map-access
   (is (= 3 ((:get k) {:k 3})))
   (is (= {:k 9} ((:set k) {} 9)))
-  (is ((:can-get? k) {:k 3}))
-  (is (not ((:can-get? k) {:p 3}))))
+  (is ((:has? k) {:k 3}))
+  (is (not ((:has? k) {:p 3}))))
 
 (deftest base-validator
   (is (thrown? Throwable ((:validate-base k) [])))
@@ -53,7 +54,7 @@
 (deftest vector-tests
   (is (= 119 ((:checked-get v) [3 119])))
   (is (= [nil 9] ((:checked-set v) [nil nil] 9)))
-  (is (not ((:can-get? v) []))))
+  (is (not ((:has? v) []))))
 
 (def a (key-accessor :a))
 (def b (key-accessor :b))
@@ -78,9 +79,24 @@
                        :email [(key-accessor :email)]} {}))
 
 (deftest map-can-get-test
-  (is ((:can-get? ur) {:username "Mjao"}))
-  (is (not ((:can-get? ur) {:masdf "masdf"})))
+  (is ((:has? ur) {:username "Mjao"}))
+  (is (not ((:has? ur) {:masdf "masdf"})))
   (is (= {:username "Kalle"}
          ((:get ur) {:a 9 :b 3 :username "Kalle"})))
   (is (= {:username "Kalle" :email "mjao"}
          ((:get ur) {:a 9 :b 3 :username "Kalle" :email "mjao"}))))
+
+(def ag (key-accessor :a))
+(def bg (key-accessor :b))
+
+(def ab (serial ag bg))
+
+(deftest serial-test
+  (is (= 3 ((:get ab) {:a {:b 3}})))
+  (is (= {:a {:b 4}}
+         ((:set ab) {:a {:b 3}} 4)))
+  (is (not ((:has? ab) {:a {}})))
+  (is ((:has? ab) {:a {:b 3}}))
+  (is (= ((:remove ab) {:a {:b 3}})
+         {:a {}}))
+  (is (= [3] ((:get-optional ab) {:a {:b 3}}))))

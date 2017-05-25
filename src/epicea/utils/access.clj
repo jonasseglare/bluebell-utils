@@ -1,9 +1,22 @@
 (ns epicea.utils.access
+  (:refer-clojure :exclude [get set update remove])
   (:require [epicea.utils.debug :as debug]
             [epicea.utils.core :as core]
             [epicea.utils.optional :refer [optional]]
             [clojure.spec :as spec]
             [clojure.pprint :as pprint]))
+
+;;;;;
+;; Base methods:
+;;  - has?
+;;  - remove (can ignore the incoming value if not supported)
+;;  - set (can ignore the incoming value if not supported)
+;;  - get
+;;
+;; And also
+;;  - valid-value?
+;;  - valid-base?
+;;  - default 
 
 (defn shorten [x]
   (let [n 100]
@@ -29,12 +42,11 @@
                 :valid-value? (constantly true)})
 
 (defn key-methods [key] ;;; Every object supports get, set and remove.
-  {:get #(get % key) ;; get
-   :can-get? #(contains? % key)
+  {:get #(clojure.core/get % key) ;; get
+   :has? #(contains? % key)
    :set (fn [obj x] (assoc obj key x)) ;; set
-   :can-set? (constantly true)
-   :remove #(dissoc % key) ;; remove
-   :can-remove? (constantly true)})
+   :remove #(dissoc % key)})
+
 
 (defn default-map-opts [key]
   {:valid-base? map?
@@ -55,7 +67,7 @@
                         accessor x nil)))))
 
 (defn make-validate-has [accessor]
-  (let [h? (:can-get? accessor)]
+  (let [h? (:has? accessor)]
     (fn [x]
       (if (h? x)
         x
@@ -66,11 +78,10 @@
   (:valid-value? accessor))
 
 (defn make-valid-input? [accessor]
-  (let [c? (:can-set accessor)
-        v? (:valid-value? accessor)]
+  (let [v? (:valid-value? accessor)]
     (fn [obj x]
-      (and (v? x)
-           (c? obj x)))))
+      (v? x))))
+           
 
 (defn make-validate-value [accessor]
   (let [v? (:valid-output? accessor)]
@@ -81,7 +92,7 @@
                         accessor x nil)))))
 
 (defn make-get-optional-unchecked [accessor]
-  (let [h? (:can-get? accessor)
+  (let [h? (:has? accessor)
         g (:get accessor)]
     (fn [x]
       (if (h? x)
@@ -114,12 +125,9 @@
 (defn make-checked-remove [accessor]
   (let [b (:validate-base accessor)
         r (:remove accessor)
-        r? (:can-remove? accessor)]
-    (fn [obj0]
-      (let [obj (b obj0)]
-        (if (not (r? obj)) 
-          (accessor-error "Cannot remove" accessor obj nil)
-          (r obj))))))
+        v (:validate-has-not accessor)]
+    (fn [obj]
+      (r (b obj)))))
     
 
 (defn make-update [accessor]
@@ -129,7 +137,7 @@
       (s obj (f (g obj))))))
 
 (defn make-prepare [accessor]
-  (let [h? (:can-get? accessor)
+  (let [h? (:has? accessor)
         d (:default-value accessor)
         s (:set accessor)]
     (fn [obj]
@@ -192,11 +200,9 @@
   {:valid-base? vector?})
 
 (defn vector-methods [index]
-  {:can-get? #(< index (count %))
+  {:has? #(< index (count %))
    :get #(nth % index)
    :set (fn [obj x] (assoc obj index x))
-   :can-set? (fn [obj x] true)
-   :can-remove? (constantly false)
    :remove identity})
 
 (defn index-accessor 
@@ -231,12 +237,12 @@
 (defn make-map-can-get? [reqs]
   (fn [x]
     (every? (fn [[key acc]]
-              ((:can-get? acc) x))
+              ((:has? acc) x))
             reqs)))
 
 (defn add-key-to-map [x optional?]
   (fn [dst [key acc]]
-    (if (or (not optional?) ((:can-get? acc) x))
+    (if (or (not optional?) ((:has? acc) x))
       (assoc dst key ((:checked-get acc) x))
       dst)))
 
@@ -250,15 +256,13 @@
       reqs)
      opts)))
 
+  
 (defn map-methods [m]
   (let [reqs (get-required m)
         opts (get-optional m)
         all (reduce into [] [reqs opts])]
-    {:can-get? (make-map-can-get? reqs)
+    {:has? (make-map-can-get? reqs)
      :get (make-map-get reqs opts)}))
-            
-    
-        
 
 (defn map-accessor 
   ([m extra-opts]
@@ -268,7 +272,89 @@
     (map-methods m)))
   ([m] (map-accessor m {})))
   
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Serial
 
+(defn default-serial-opts [a b]
+  {:info [:serial a b]
+   :valid-value? (:valid-value? b)
+   :valid-base? (:valid-base? a)
+   :default-base (:default-base a)
+   :default-value (:default-value b)})
+
+(defn make-serial-can-get? [a b]
+  (let [ao (:get-optional a)
+        cgb? (:has? b)]
+    (fn [x]
+      (if-let [[y] (ao x)]
+        (cgb? y)))))
+
+(defn make-serial-get [a b]
+  (let [ga (:get a)
+        gb (:get b)]
+    (fn [x]
+      (gb (ga x)))))
+
+(defn make-serial-set [a b]
+  (let [gda (:get-or-default a)
+        sa (:set a)
+        sb (:set b)]
+    (fn [obj x]
+      (sa obj (sb (gda obj) x)))))
+
+(defn make-serial-remove [a b]
+  (let [ag (:get a)
+        as (:set a)
+        rb (:remove b)]
+    (fn [obj]
+      (as obj (rb (ag obj))))))
+
+(defn make-serial-get-optional [a b]
+  (let [goa (:get-optional a)
+        hb? (:has? b)
+        gb (:checked-get b)]
+    (fn [x]
+      (if-let [[y] (goa x)]
+        (if (hb? y)
+          (optional (gb y))
+          (optional))
+        (optional)))))
+
+(defn serial-methods [a b]
+  {:has? (make-serial-can-get? a b)
+   :get (make-serial-get a b)
+   :set (make-serial-set a b)
+   :remove (make-serial-remove a b)
+   :get-optional (make-serial-get-optional a b)})
+
+(defn serial-accessor2 
+  ([a b extra-opts]
+   (build-accessor
+    (default-serial-opts a b)
+    extra-opts
+    (serial-methods a b)))
+  ([a b]
+   (serial-accessor2 a b {})))
+
+(defn serial [& accessors]
+  (reduce serial-accessor2 accessors))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;; Helpers  
+(defn get [obj accessor]
+  ((:checked-get accessor) obj))
+
+(defn set [obj accessor value]
+  ((:checked-set accessor) obj value))
+
+(defn has? [obj accessor] 
+  ((:has? accessor) obj))
+
+(defn remove [obj accessor]
+  ((:remove accessor) obj))
+
+(defn update [obj accessor f]
+  ((:update accessor) obj f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Composition: TODO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Convenient macros: TODO

@@ -10,9 +10,9 @@
 
 (def keys-to-eval #{:getter :fn})
 
-(def expr-x (access/vector-accessor 1 {:default-parent [nil nil]}))
-(def exprs-x (access/map-accessor :exprs {}))
-(def expr-exprs (access/compose expr-x exprs-x))
+(def expr-x (access/index-accessor 1 {:default-base [nil nil]}))
+(def exprs-x (access/key-accessor :exprs {}))
+(def expr-exprs (access/serial-accessor2 expr-x exprs-x {}))
 
 (spec/def ::get (spec/cat :prefix #(contains? #{:get :access} %)
                           :getter (constantly true)
@@ -41,19 +41,19 @@
 
 (defmultiple set-exprs (fn [k _] (first k))
   (:default [b _] b)
-  (:get [g exprs] (access/updatex expr-x g (fn [m] (assoc m :exprs exprs))))
-  (:group [g exprs] (access/setx expr-x g exprs)))
+  (:get [g exprs] (access/update expr-x g (fn [m] (assoc m :exprs exprs))))
+  (:group [g exprs] (access/set expr-x g exprs)))
 
-(def get-getter (access/compose expr-x (access/map-accessor :getter)))
-(def predicate-fn (access/compose expr-x (access/map-accessor :fn)))
+(def get-getter (access/serial expr-x (access/key-accessor :getter)))
+(def predicate-fn (access/serial expr-x (access/key-accessor :fn)))
 
 (defmultiple compile-expr-sub first
   (:default [x] x)
-  (:get [x] (access/updatex get-getter x eval))
-  (:predicate [x] (access/updatex predicate-fn x eval)))
+  (:get [x] (access/update get-getter x eval))
+  (:predicate [x] (access/update predicate-fn x eval)))
 
 (def expr-access {:get get-exprs :set set-exprs :has? (constantly true)})
-(def update-exprs (access/updater expr-access))
+(def update-exprs (:update expr-access))
 
 (defn visit-exprs [root-expr post-fn]
   (post-fn
@@ -72,10 +72,10 @@
        compile-expr-sub))
     expr-list)))
 
-(def main-exprs (access/map-accessor :main))
-(def rest-exprs (access/compose (access/map-accessor :rest)
-                                (access/map-accessor :args)
-                                access/vec1-accessor))
+(def main-exprs (access/key-accessor :main))
+(def rest-exprs (access/serial (access/key-accessor :rest)
+                               (access/key-accessor :args)
+                               access/optional-accessor))
 
 (def update-main-exprs (access/updater main-exprs))
 (def update-rest-exprs (access/updater rest-exprs))
