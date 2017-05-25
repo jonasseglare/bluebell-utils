@@ -79,4 +79,8 @@
 
 (deftest map-can-get-test
   (is ((:can-get? ur) {:username "Mjao"}))
-  (is (not ((:can-get? ur) {:masdf "masdf"}))))
+  (is (not ((:can-get? ur) {:masdf "masdf"})))
+  (is (= {:username "Kalle"}
+         ((:get ur) {:a 9 :b 3 :username "Kalle"})))
+  (is (= {:username "Kalle" :email "mjao"}
+         ((:get ur) {:a 9 :b 3 :username "Kalle" :email "mjao"}))))

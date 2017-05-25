@@ -228,17 +228,34 @@
   {:info {:type :map-accessor :map m}
    :valid-base? map?})
 
-(defn make-can-get? [reqs]
+(defn make-map-can-get? [reqs]
   (fn [x]
     (every? (fn [[key acc]]
-              (debug/dout (:can-get? acc))
               ((:can-get? acc) x))
             reqs)))
 
+(defn add-key-to-map [x optional?]
+  (fn [dst [key acc]]
+    (if (or (not optional?) ((:can-get? acc) x))
+      (assoc dst key ((:checked-get acc) x))
+      dst)))
+
+(defn make-map-get [reqs opts]
+  (fn [x]
+    (reduce
+     (add-key-to-map x true)
+     (reduce 
+      (add-key-to-map x false)
+      {}
+      reqs)
+     opts)))
+
 (defn map-methods [m]
   (let [reqs (get-required m)
-        opts (get-optional m)]
-    {:can-get? (make-can-get? reqs)}))
+        opts (get-optional m)
+        all (reduce into [] [reqs opts])]
+    {:can-get? (make-map-can-get? reqs)
+     :get (make-map-get reqs opts)}))
             
     
         
