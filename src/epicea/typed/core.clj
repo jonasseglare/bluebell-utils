@@ -1,5 +1,6 @@
 (ns epicea.typed.core
   (:require [clojure.spec :as spec]
+            [epicea.typed.lang :as lang]
             [epicea.utils.debug :as debug]
             [epicea.utils.core :as core]
             [epicea.utils.defmultiple :refer [defmultiple]]
@@ -273,7 +274,7 @@
          ::spec/invalid 
          (spec/conform ::typed-fun [nil [:double 'a :double 'b] :a :b :c])))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Compilable
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Compilable: Everything is here!!!
 
 (defn expr-access [i]
   (access/index-accessor i {:default-base [nil nil]}))
@@ -343,11 +344,18 @@
 
 (defn try-parse-s-expr [x]
   (try
-    (let [k (eval x)]
-      (if (compilable? k)
-        k))
+    (let [[f & r] x
+          k (apply (eval f) 
+                   (map parse r))]
+      (if (compilable? k) k))
     (catch Throwable _ nil)))
-  
+
+
+(defn if-statement [& args] {:compilable-type :if})
+
+;(defn dup [x]
+;  (let [p (parse x)]
+;    p))
 
 (defn parse [x]
   (or (try-parse-type x)
@@ -355,6 +363,7 @@
       (core/common-error "Failed to parse " x)))
   
 (assert (compilable? (parse 9)))
+(assert (compilable? (parse '(if-statement 9))))
 
 (defn compile-expr [argmap x cb]
   (cb argmap (access/get x expr)))
@@ -375,5 +384,3 @@
   (:long [x] (long-to-dynamic (access/get x type-body))))
   
 (assert (= 9 (to-dynamic-expr [:long [:value 9]])))
-
-
