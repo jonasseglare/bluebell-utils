@@ -353,6 +353,19 @@
 
 (defn update [obj accessor f]
   ((:update accessor) obj f))
+  
+
+(defn apply-to-base [obj [accessor value]]
+  (set obj accessor value))
+
+(defn build-sub [base args]
+  (reduce ((core/bundle 2) 
+           apply-to-base) base args))
+
+(defn build [& args]
+  (if (even? (count args))
+    (build-sub (:default-base (first args)) args)
+    (build-sub (first args) (rest args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Composition: TODO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Convenient macros: TODO

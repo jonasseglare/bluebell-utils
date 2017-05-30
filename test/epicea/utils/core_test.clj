@@ -29,3 +29,7 @@
   (testing "Flattening..."
     (is (= (flatten-map-hierarchy {:a {1 :c 2 :d} :b {3 :k}})
            {[:a 1] :c, [:a 2] :d, [:b 3] :k}))))
+
+(deftest group-transducer-test
+  (is (reduce ((bundle 2) conj) [] [1 2 3 4 5 6])
+      [[1 2] [3 4] [5 6]]))

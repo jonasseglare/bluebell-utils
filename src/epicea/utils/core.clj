@@ -121,6 +121,15 @@
 (defn common-error [& args]  
   (throw (RuntimeException. (apply str args))))
 
+(defn bundle [n]
+  (let [g (atom [])]
+    (fn [r]
+      (fn [dst x]
+        (let [next (swap! g conj x)]
+          (if (= (count next) n)
+            (do (reset! g [])
+                (r dst next))
+            dst))))))
 
 ;(defmacro mapdater [& args]
 ;  (let 

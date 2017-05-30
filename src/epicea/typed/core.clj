@@ -1,6 +1,7 @@
 (ns epicea.typed.core
   (:require [clojure.spec :as spec]
             [epicea.utils.debug :as debug]
+            [epicea.utils.core :as core]
             [epicea.utils.defmultiple :refer [defmultiple]]
             [epicea.utils.access :as access] :reload-all))
 
@@ -133,6 +134,8 @@
       :default nil)))
 
 (def parse-type #(spec/conform ::type %))
+
+(assert (= ::spec/invalid (parse-type '(+ 3 4))))
 
 (def compute-size-on (comp compute-size parse-type))
 
@@ -315,3 +318,41 @@
 ;(macroexpand '(with-typed 9 4 5 6))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; A fresh start
+;;
+;; Obs: expr is wider than type. It holds a type.
+;;
+;; parse: typed-code -> compilable
+;; compile: argmap x compilable x (argmap x expr -> code) -> code
+;; get-type: compilable -> expr
+
+(def compilable-types #{nil :expr :if :while :assign :do})
+
+(spec/def ::compilable-type #(contains? compilable-types %))
+(spec/def ::compilable (spec/keys :req-un [::compilable-type]))
+(def compilable? (partial spec/valid? ::compilable))
+(def compilable-key-settings {:valid-base? compilable? :default-base {:compilable-type nil}})
+(def compilable-type (access/key-accessor :compilable-type compilable-key-settings))
+(def expr (access/key-accessor :expr compilable-key-settings))
+
+(defn try-parse-type [x]
+  (let [p (parse-type x)]
+    (if (not= ::spec/invalid p)
+      (access/build compilable-type :expr
+                    expr p))))
+
+(defn try-parse-s-expr [x]
+  (try
+    (let [k (eval x)]
+      (if (compilable? k)
+        k))
+    (catch Throwable _ nil)))
+  
+
+(defn parse [x]
+  (or (try-parse-type x)
+      (try-parse-s-expr x)
+      (core/common-error "Failed to parse " x)))
+  
+
+(assert (compilable? (parse 9)))
