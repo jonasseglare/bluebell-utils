@@ -367,4 +367,13 @@
 (assert (= [:long [:value 9]]
            (compile-typed {} (parse 9) (fn [_ x] x))))
 
+(defn long-to-dynamic [[v x]]
+  (assert (= :value v))
+  x)
+
+(defn to-dynamic-expr [x] (:checked-get type-head)
+  (:long [x] (long-to-dynamic (access/get x type-body))))
   
+(assert (= 9 (to-dynamic-expr [:long [:value 9]])))
+
+
