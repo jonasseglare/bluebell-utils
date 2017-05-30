@@ -354,5 +354,17 @@
       (try-parse-s-expr x)
       (core/common-error "Failed to parse " x)))
   
-
 (assert (compilable? (parse 9)))
+
+(defn compile-expr [argmap x cb]
+  (cb argmap (access/get x expr)))
+
+(defmultiple compile-typed (fn [argmap x cb]
+                             (access/get x compilable-type))
+  (:expr [argmap x cb]
+         (compile-expr argmap x cb)))
+
+(assert (= [:long [:value 9]]
+           (compile-typed {} (parse 9) (fn [_ x] x))))
+
+  
