@@ -1,5 +1,5 @@
 (ns epicea.utils.access-test
-  (:refer-clojure :exclude [get set update remove])
+  (:refer-clojure :exclude [get set update remove update])
   (:require [clojure.test :refer :all]
             [epicea.utils.access :refer :all]
             [epicea.utils.optional :refer [optional]]))

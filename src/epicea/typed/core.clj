@@ -74,9 +74,9 @@
                           :dynamic ::dynamic-value
                           :dynamic symbol?))
 
-(def pair-vec {:default-parent [nil nil]})
-(def type-head (access/vector-accessor 0 pair-vec))
-(def type-body (access/vector-accessor 1 pair-vec))
+(def pair-vec {:default-base [nil nil]})
+(def type-head (access/index-accessor 0 pair-vec))
+(def type-body (access/index-accessor 1 pair-vec))
 
 (def primitive-values #{:double :float :long :int :bool :number})
 
@@ -90,6 +90,30 @@
 
 (declare compute-size)
 
+(defn vec-body? [x]
+  (and (map? x)
+       (contains? #{:vecdata :vec} (:type x))))
+
+
+(defn vec-type [vec-body]
+  (assert (vec-body? vec-body))
+  (if (= :vecdata (:type vec-body))
+    (-> vec-body :data first)
+    (:value-type vec-body)))
+
+(defn vec-size [vec-body]
+  (assert (vec-body? vec-body))
+  (if (= :vecdata (:type vec-body))
+    (-> vec-body :data count)
+    (:count vec-body)))
+
+(def v0 (second (spec/conform ::type [:vecdata 1 2 3 4])))
+(def v1 (second (spec/conform ::type [:vec 1 3])))
+(assert (= :long (first (vec-type v0))))
+(assert (= :long (first (vec-type v1))))
+(assert (= 4 (vec-size v0)))
+(assert (= 3 (vec-size v1)))
+
 (defn compute-vec-size [x]
   (size-mul (compute-size (vec-type x))
             (vec-size x)))
@@ -99,8 +123,8 @@
                         (:fields x))))
 
 (defn compute-size [type]
-  (let [h (access/getx type-head type)
-        b (access/getx type-body type)]
+  (let [h (access/get type type-head)
+        b (access/get type type-body)]
     (cond
       (= :constant h) 0
       (contains? primitive-values h) 1
@@ -141,12 +165,12 @@
                     fields))))
 
 (defn visit-primitives [type f] 
-  (let [h (access/getx type-head type)]
+  (let [h (access/get type type-head)]
     (cond
       (contains? primitive-values h) (f type)
-      (= :vec h) (access/updatex type-body type 
+      (= :vec h) (access/update type type-body
                                  #(visit-vec-primitives % f))
-      (= :record h) (access/updatex type-body type 
+      (= :record h) (access/update type type-body 
                                  #(visit-record-primitives % f))
       :default type)))
 
@@ -168,7 +192,7 @@
 (defn strip-data [x]
   (visit-primitives 
    x (fn [primitive]
-       (let [t (access/getx type-head primitive)]
+       (let [t (access/get primitive type-head)]
          [t [:type t]]))))
 (assert (= (strip-data (spec/conform ::type [:vecdata 1 2 3 4]))
            [:vec {:type :vecdata, 
@@ -177,31 +201,11 @@
                           [:long [:type :long]] 
                           [:long [:type :long]])}]))
 
-(def get-type-head (access/getter type-head))
-(def get-type-body (access/getter type-body))
+(def get-type-head (:checked-get type-head))
+(def get-type-body (:checked-get type-body))
 
-(defn vec-body? [x]
-  (and (map? x)
-       (contains? #{:vecdata :vec} (:type x))))
 
-(defn vec-type [vec-body]
-  (assert (vec-body? vec-body))
-  (if (= :vecdata (:type vec-body))
-    (-> vec-body :data first)
-    (:value-type vec-body)))
 
-(defn vec-size [vec-body]
-  (assert (vec-body? vec-body))
-  (if (= :vecdata (:type vec-body))
-    (-> vec-body :data count)
-    (:count vec-body)))
-
-(def v0 (second (spec/conform ::type [:vecdata 1 2 3 4])))
-(def v1 (second (spec/conform ::type [:vec 1 3])))
-(assert (= :long (first (vec-type v0))))
-(assert (= :long (first (vec-type v1))))
-(assert (= 4 (vec-size v0)))
-(assert (= 3 (vec-size v1)))
     
 ;(defmultiple export-typed-value first
 ;  (:primitive [x] (export-primitive x)))
@@ -227,13 +231,13 @@
                                :b [:vec nil 3]]))
 
 
-(def pair-settings {:default-parent [nil nil]})
+(def pair-settings {:default-base [nil nil]})
 
-(def pair-tag (access/vector-accessor 0 pair-settings))
-(def pair-value (access/vector-accessor 1 pair-settings))
+(def pair-tag (access/index-accessor 0 pair-settings))
+(def pair-value (access/index-accessor 1 pair-settings))
 
-(def get-pair-tag (access/getter pair-tag))
-(def get-pair-value (access/getter pair-value))
+(def get-pair-tag (:checked-get pair-tag))
+(def get-pair-value (:checked-get pair-value))
 
 ;;;;;; Type properties
 ;; When it is stored
@@ -269,7 +273,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Compilable
 
 (defn expr-access [i]
-  (access/vector-accessor i {:default-parent [nil nil]}))
+  (access/index-accessor i {:default-base [nil nil]}))
 (def expr-type (expr-access 0))
 (def expr-value (expr-access 1))
 
@@ -282,10 +286,10 @@
 ;;; Kanske i argmap? Om antalet referenser överskriver 1 binder vi uttrycket
 ;;; till en variabel.
 (defmultiple compile-expr (fn [argmap expr cb]
-                            (access/getx expr-type expr))
+                            (access/get type expr-type))
   (:default 
    [argmap expr cb]
-   (cb argmap (expr-to-typed-value (access/getx expr-value expr)))))
+   (cb argmap (expr-to-typed-value (access/get expr expr-value)))))
 
 (def empty-argmap {})
 
@@ -308,15 +312,6 @@
                 (check-is-value x)
                 (compile-exprs new-argmap (rest exprs) cb)))))
 
-(defmacro with-typed [& args]
-  (let [parsed (spec/conform ::exprs args)]
-    (if (= ::spec/invalid parsed)
-      (throw (RuntimeException. 
-              (str "Failed to parsed typed: " 
-                   (spec/explain-str ::exprs args))))
-      (compile-exprs empty-argmap parsed (fn [final-argmap final-value]
-                                           (check-is-value final-value)
-                                           (export-typed-value final-value))))))
-  
-  
-(macroexpand '(with-typed 9 4 5 6))
+;(macroexpand '(with-typed 9 4 5 6))
+
+

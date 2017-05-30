@@ -338,8 +338,6 @@
 (defn serial [& accessors]
   (reduce serial-accessor2 accessors))
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;; Helpers  
 (defn get [obj accessor]
   ((:checked-get accessor) obj))
