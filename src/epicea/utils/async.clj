@@ -1,11 +1,12 @@
 (ns epicea.utils.async
   (:require [clojure.core.async :as async]))
 
-(defn optional-producer [f init-state c]
+(defn producer [f init-state c]
   (async/onto-chan
    c
    (take-while (complement nil?) 
-               (iterate f init-state))))
+               (iterate f init-state)))
+  c)
 
 (defn exhaust [c]
   (async/<!! (async/go
@@ -13,4 +14,4 @@
                  (if-let [y (async/<! c)]
                    (recur (conj acc y))
                    acc)))))
-                 
+               

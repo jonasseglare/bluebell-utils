@@ -8,7 +8,7 @@
     (inc x)))
 
 (deftest producer-and-exhaust-test
-  (is (= [0 1 2 3 4] (exhaust (optional-producer
+  (is (= [0 1 2 3 4] (exhaust (producer
                                inc-up-to-5
                                0
                                (async/chan))))))
