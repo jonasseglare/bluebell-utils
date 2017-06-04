@@ -9,9 +9,5 @@
   c)
 
 (defn exhaust [c]
-  (async/<!! (async/go
-               (loop [acc []]
-                 (if-let [y (async/<! c)]
-                   (recur (conj acc y))
-                   acc)))))
+  (async/<!! (async/into [] c)))
                

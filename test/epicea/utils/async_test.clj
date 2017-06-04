@@ -13,12 +13,12 @@
                                0
                                (async/chan))))))
 
-;; (defn mul-by-2 [x]
-;;   (* 2 x))
+(defn mul-by-2 [x]
+  (* 2 x))
 
-;; (deftest with-transducer-test
-;;   (is (= [0 2 4 6 8] (exhaust (optional-producer
-;;                                inc-up-to-5
-;;                                0 (async/chan 
-;;                                   (async/buffer 1) 
-;;                                   (map mul-by-2)))))))
+(deftest with-transducer-test
+  (is (= [0 2 4 6 8] (exhaust (producer
+                               inc-up-to-5
+                               0 (async/chan 
+                                  (async/buffer 1) 
+                                  (map mul-by-2)))))))
