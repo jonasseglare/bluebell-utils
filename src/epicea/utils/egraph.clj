@@ -28,6 +28,7 @@
 (def -expr (access/key-accessor :expr settings))
 (def -args (access/key-accessor :args (merge settings {:valid-value? valid-args?})))
 (def -make (access/key-accessor :make (merge settings {:valid-value? fn?})))
+(def -refcount (access/key-accessor :refcount (merge settings {:valid-value? number?})))
 
 (defn node-of-type? 
   ([type node]
@@ -76,15 +77,28 @@
        [new-map (conj result e)]))
    [dst []] expr))
 
-(defn add-node [dst expr]
-  (let [sym (gensym)]
-    [(add-subexpr dst sym expr) sym]))
+(defn add-seq [dst expr]
+  (let [[m v] (add-vector dst (vec expr))]
+    [m (seq v)]))
+
+(defn add-coll [dst expr]
+  (let [[m v] (add-vector dst (vec expr))]
+    [m (into (empty expr) v)]))
 
 (defn make-map [dst expr]
   (cond
     (node? expr) (add-node dst expr)
     (vector? expr) (add-vector dst expr)
+    (seq? expr) (add-seq dst expr)
+    (map? expr) (add-coll dst expr)
+    (set? expr) (add-coll dst expr)
     :default [dst expr]))
+
+(defn reset-refcount [m]
+  (into (empty m)
+        (map (fn [[k v]]
+               [k (access/remove v -refcount)])
+             m)))
 
 ;; (defn add-node-subexpressions [dst x]
 ;;   (add-args dst (access/get x -args))

@@ -68,4 +68,15 @@
                        (node? v))) small-map))
     (is (= 2 (count e)))
     (is (key? (first e)))
-    (is (= :a (second e)))))
+    (is (= :a (second e)))
+    (is (seq? (second (make-map {} (list (dnum 3) :a)))))
+    (is (symbol? (-> (make-map {} {:a (dnum 3) :b 9})
+                     second
+                     :a)))))
+
+(deftest refcount-test
+  (let [d-with-ref (access/set (dnum 3) -refcount 9)]
+    (is (not (access/has? (:a (reset-refcount {:a d-with-ref}))
+                          -refcount)))))
+                          
+
