@@ -6,6 +6,29 @@ A Clojure library designed to ... well, that part is up to you.
 
 FIXME
 
+## epicea.typed.core
+
+Ett enda objekt: vexpress
+Motsvarar ett abstrakt vektor-uttryck
+Följande metoder:
+
+ * dimension: (dimension [vexpress] ...) 
+      returnerar dess dimension
+ * expand: (expand [express cb] ...)
+      genererar kod
+
+Utilties:
+ (to-array expr)
+ (to-vec expr)
+ (foreach 'i (fn [x ]
+
+Funktioner som returnerar uttryck:
+    (input-coll [dim] [expr]): 
+      Tar en collection som input
+
+    (add-vec [a] [b]):
+      Returnerar ett uttryck som motsvarar add addera de två vektorerna
+
 ## epicea.utils.access
 
   * Simplifies working with *informal domain types*, such as a "person" represented as a map.

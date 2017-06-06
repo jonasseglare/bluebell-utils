@@ -131,5 +131,11 @@
                 (r dst next))
             dst))))))
 
+(defn or-nil [fun]
+  (fn [& args]
+    (try
+      (apply fun args)
+      (catch Throwable _ nil))))
+
 ;(defmacro mapdater [& args]
 ;  (let 

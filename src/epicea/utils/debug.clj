@@ -10,3 +10,6 @@
   ([label x]
    (dout-sub (str label) x))
   ([x] (dout-sub (str x) x)))
+
+(defmacro douts [& args]
+  `(do ~@(map (fn [arg] `(dout ~arg)) args)))

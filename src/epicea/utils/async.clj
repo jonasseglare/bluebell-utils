@@ -4,8 +4,9 @@
 (defn producer [f init-state c]
   (async/onto-chan
    c
-   (take-while (complement nil?) 
-               (iterate f init-state)))
+   (take-while 
+    (complement nil?) 
+    (iterate f init-state)))
   c)
 
 (defn exhaust [c]
