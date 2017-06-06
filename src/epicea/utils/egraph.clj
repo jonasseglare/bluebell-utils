@@ -55,18 +55,28 @@
   (assert (map? dst))
   (assoc dst key x))
 
+(defn look-up-or-generate [m arg]
+  [(if (contains? m arg)
+     (get m arg) 
+     (gensym))
+   arg])
+
 (defn add-complex-subexpr [dst key x]
   (let [args (access/get x -args)
-        named-args (map (fn [x] [(gensym) x]) args)]
-    (assoc (reduce (fn [dst [k v]]
-                     (add-subexpr dst k v))
-                   dst named-args)
-           key (access/set x -args (map first named-args)))))
+        named-args (map #(look-up-or-generate dst %) args)]
+    (merge
+     (reduce (fn [dst [k v]]
+               (add-subexpr dst k v))
+             dst named-args)
+     {key (access/set x -args (map first named-args))
+      x key})))
 
-(defn add-subexpr [dst key x]           
-  (if (access/has? x -args)
-    (add-complex-subexpr dst key x)
-    (add-simple-subexpr dst key x)))
+(defn add-subexpr [dst key x]      
+  (if (contains? dst key)
+    dst
+    (if (access/has? x -args)
+      (add-complex-subexpr dst key x)
+      (add-simple-subexpr dst key x))))
 
 (declare make-map)
 
@@ -99,6 +109,24 @@
         (map (fn [[k v]]
                [k (access/remove v -refcount)])
              m)))
+
+(defn get-refcount [x]
+  (if-let [[n] (access/get-optional x -refcount)]
+    n 0))
+
+(defn inc-ref [x]
+  (access/set x -refcount (inc (get-refcount x))))
+
+(defn inc-ref-recursive [m0 key]
+  (assert (map? m0))
+  (let [m (update-in m0 [key] inc-ref)
+        v (get m key)]
+    (if (= 1 (get-refcount v))
+      (reduce (fn [dst k] (inc-ref-recursive dst k))
+              (access/get v -args))
+      m)))
+      
+      
 
 ;; (defn add-node-subexpressions [dst x]
 ;;   (add-args dst (access/get x -args))

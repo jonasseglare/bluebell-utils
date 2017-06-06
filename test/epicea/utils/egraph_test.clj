@@ -40,8 +40,10 @@
         norm (test-sqrt sum-squares)]
     (map (fn [x] (test-div x norm)) v)))
 
+(def normalized (normalize [(dnum 3) (dnum 4)]))
+
 (deftest normalization-test
-  (is (every? node? (normalize [(dnum 3) (dnum 4)]))))
+  (is (every? node? normalized)))
 
 (deftest expr-test
   (is (node? (dnum 9)))
@@ -54,8 +56,8 @@
         argsyms (-> expanded :kattskit :args)]
     (assert (is (map? expanded)))
     (assert (every? (fn [[k v]]
-                      (and (key? k)
-                           (node? v))) expanded))
+                      (or (and (key? k) (node? v))
+                          (and (node? k) (key? v)))) expanded))
     (assert (every? symbol? argsyms)))
 
   (is (= (make-map {} [9 3 4])
