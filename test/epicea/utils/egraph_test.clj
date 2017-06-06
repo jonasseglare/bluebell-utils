@@ -81,4 +81,13 @@
     (is (not (access/has? (:a (reset-refcount {:a d-with-ref}))
                           -refcount)))))
                           
+(defn diamond [x]
+  (assert (node? x))
+  (test-add x x))
+
+(deftest diamond-test 
+  (let [mv (make-map {} (diamond (dnum 3)))
+        [m v] mv
+        m2 (inc-ref-recursive m v)]
+    (println (map #(-> % second :refcount) m2))))
 
