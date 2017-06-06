@@ -57,7 +57,7 @@
 
 (defn look-up-or-generate [m arg]
   [(if (contains? m arg)
-     (get m arg) 
+     (get m arg)
      (gensym))
    arg])
 
