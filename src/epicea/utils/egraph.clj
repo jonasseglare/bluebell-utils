@@ -94,6 +94,10 @@
   (let [[m v] (add-vector dst (vec expr))]
     [m (into (empty expr) v)]))
 
+(defn add-node [dst expr]
+  (let [g (gensym)]
+    [(add-subexpr dst g expr) g]))
+
 (defn make-map [dst expr]
   (cond
     (node? expr) (add-node dst expr)
