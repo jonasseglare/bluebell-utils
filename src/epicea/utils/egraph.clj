@@ -125,16 +125,4 @@
       (reduce (fn [dst k] (inc-ref-recursive dst k))
               m (access/get v -args))
       m)))
-      
-      
-
-;; (defn add-node-subexpressions [dst x]
-;;   (add-args dst (access/get x -args))
-
-;; (defn add-subexpressions [dst x]
-;;   (if (node? x)
-;;     (add-node-subexpressions dst x)
-;;     (add-other
-
-;; (defn make-expression-map [x]
-;;   (reduce add-subexpressions {} x))
+     
