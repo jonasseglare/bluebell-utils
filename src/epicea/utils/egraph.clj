@@ -53,7 +53,8 @@
   (assert (node? x))
   (assert (key? key))
   (assert (map? dst))
-  (assoc dst key x))
+  (merge dst {key x
+              x key}))
 
 (defn add-arg [[m syms] arg]
   (if (contains? m arg)

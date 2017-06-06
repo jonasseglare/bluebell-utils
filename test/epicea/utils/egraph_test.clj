@@ -50,14 +50,16 @@
   (is (not (node? 9)))
   (is (node? (test-add (dnum 9) (dnum 3)))))
 
+(defn key-node-pair? [[k v]]
+  (or (and (key? k) (node? v))
+      (and (node? k) (key? v))))
+
 (deftest expression-map-test
   (is (map? (add-simple-subexpr {} :mjao (dnum 9))))
   (let [expanded (add-subexpr {} :kattskit (test-add (dnum 3) (dnum 4)))
         argsyms (-> expanded :kattskit :args)]
     (assert (is (map? expanded)))
-    (assert (every? (fn [[k v]]
-                      (or (and (key? k) (node? v))
-                          (and (node? k) (key? v)))) expanded))
+    (assert (every? key-node-pair? expanded))
     (assert (every? symbol? argsyms)))
 
   (is (= (make-map {} [9 3 4])
@@ -65,9 +67,7 @@
   
   (let [[small-map e] (make-map {} [(dnum 3) :a])]
     (is (map? small-map))
-    (is (every? (fn [[k v]]
-                  (and (key? k)
-                       (node? v))) small-map))
+    (is (every? key-node-pair? small-map))
     (is (= 2 (count e)))
     (is (key? (first e)))
     (is (= :a (second e)))
@@ -89,5 +89,8 @@
   (let [mv (make-map {} (diamond (dnum 3)))
         [m v] mv
         m2 (inc-ref-recursive m v)]
-    (println (map #(-> % second :refcount) m2))))
+    (let [values (set (map #(-> % second :refcount) m2))]
+      (is (contains? values 2))
+      (is (contains? values 1))
+      (is (contains? values nil)))))
 
