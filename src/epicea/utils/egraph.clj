@@ -67,6 +67,25 @@
     (add-complex-subexpr dst key x)
     (add-simple-subexpr dst key x)))
 
+(declare make-map)
+
+(defn add-vector [dst expr]
+  (reduce 
+   (fn [[dst result] x]
+     (let [[new-map e] (make-map dst x)]
+       [new-map (conj result e)]))
+   [dst []] expr))
+
+(defn add-node [dst expr]
+  (let [sym (gensym)]
+    [(add-subexpr dst sym expr) sym]))
+
+(defn make-map [dst expr]
+  (cond
+    (node? expr) (add-node dst expr)
+    (vector? expr) (add-vector dst expr)
+    :default [dst expr]))
+
 ;; (defn add-node-subexpressions [dst x]
 ;;   (add-args dst (access/get x -args))
 
