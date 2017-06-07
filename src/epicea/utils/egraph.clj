@@ -94,19 +94,6 @@
   (let [[m v] (add-vector dst (vec expr))]
     [m (into (empty expr) v)]))
 
-(defn add-node [dst expr]
-  (let [g (gensym)]
-    [(add-subexpr dst g expr) g]))
-
-(defn make-map [dst expr]
-  (cond
-    (node? expr) (add-node dst expr)
-    (vector? expr) (add-vector dst expr)
-    (seq? expr) (add-seq dst expr)
-    (map? expr) (add-coll dst expr)
-    (set? expr) (add-coll dst expr)
-    :default [dst expr]))
-
 (defn reset-refcount [m]
   (into (empty m)
         (map (fn [[k v]]
@@ -129,4 +116,18 @@
       (reduce (fn [dst k] (inc-ref-recursive dst k))
               m (access/get v -args))
       m)))
-     
+
+(defn add-node [dst expr]
+  (let [g (gensym)]
+    [(inc-ref-recursive
+      (add-subexpr dst g expr) g)
+     g]))
+
+(defn make-map [dst expr]
+  (cond
+    (node? expr) (add-node dst expr)
+    (vector? expr) (add-vector dst expr)
+    (seq? expr) (add-seq dst expr)
+    (map? expr) (add-coll dst expr)
+    (set? expr) (add-coll dst expr)
+    :default [dst expr]))     

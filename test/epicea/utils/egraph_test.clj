@@ -88,7 +88,7 @@
 (deftest diamond-test 
   (let [mv (make-map {} (diamond (dnum 3)))
         [m v] mv
-        m2 (inc-ref-recursive m v)]
+        m2 m] ;(inc-ref-recursive m v)]
     (let [values (set (map #(-> % second :refcount) m2))]
       (is (contains? values 2))
       (is (contains? values 1))
