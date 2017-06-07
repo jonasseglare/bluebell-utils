@@ -103,5 +103,7 @@
 
 
 (deftest make-node-test
-  (make-node (dnum 3)))
+  (make-node (dnum 3) [])
+  (is (= (make-node (test-add (dnum 3) (dnum 4)) [3 4 5])
+         '(clojure.core/+ 3 4 5))))
 
