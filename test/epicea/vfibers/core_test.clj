@@ -18,16 +18,17 @@
 (defn dnum [x]
   (primitive-expr :mock-double x))
 
-(defn make-dnum-op [maker]
+(defn make-dnum-op [nodetype]
   (fn [& args]
     (access/build -datatype :mock-double
                   -simple? false
-                  -args args)))
+                  -args args
+                  -nodetype nodetype)))
 
-(def test-add (make-dnum-op (fn [args] `(+ ~@args))))
-(def test-mul (make-dnum-op (fn [args] `(* ~@args))))
-(def test-div (make-dnum-op (fn [args] `(/ ~@args))))
-(def test-sqrt (make-dnum-op (fn [args] `(sqrt ~@args))))
+(def test-add (make-dnum-op :test-add))
+(def test-mul (make-dnum-op :test-mul))
+(def test-div (make-dnum-op :test-div))
+(def test-sqrt (make-dnum-op :test-sqrt))
 
 (spec/def ::double-vector (spec/coll-of (node-of-type? :mock-double)))
 
@@ -96,3 +97,6 @@
 
 ;(defmultiple-extra make-node
 ;  (:mock-double [x] 
+(deftest make-node-test
+  (make-node (dnum 3)))
+
