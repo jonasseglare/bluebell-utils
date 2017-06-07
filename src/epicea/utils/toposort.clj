@@ -52,8 +52,12 @@
 (defn all-values-empty? [x]
   (every? (fn [[_ v]] (empty? v)) x))
 
-(defn toposort [successor-map]
-  (let [pred-map (make-predecessor-map successor-map)
+(defn normalize-map [m]
+  (into {} (map (fn [[k v]] [k (set v)]) m)))
+
+(defn toposort [successor-map0]
+  (let [successor-map (normalize-map successor-map0)
+        pred-map (make-predecessor-map successor-map)
         start (nodes-with-no-incoming-edges successor-map pred-map)
         [r s m result] (exhaust (iterate toposort-iteration 
                                  [start

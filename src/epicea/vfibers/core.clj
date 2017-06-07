@@ -158,7 +158,33 @@
            (<= (get-refcount x) 1))))
 
 
+(defn clean-node-map [m]
+  (into (empty m) (filter (fn [[k _]] (symbol? k))
+                          m)))
+
+(defn get-dependency-map [m]
+  (into {} 
+        (filter
+         (fn [[k v]]
+           (not (empty? v)))
+         (map (fn [[k v]]
+                [k (:args v)])
+              m))))
+
+(defn make-bindings [order node-map]
+  (transduce
+   (comp (map (fn [key] [key (get node-map key)]))
+         (filter (fn [[k node]] (bind? node)))
+         (filter (fn [[k node]] (access/has? node -args)))
+         (map (fn [[k node]] [k (make-node node (access/get node -args))])))
+   conj
+   order))
+
 (defn make-code [expr0]
-  (let [[node-map expr] (make-map {} expr0)]
-    node-map))
+  (let [[node-map expr] (make-map {} expr0)
+        node-map (clean-node-map node-map)
+        deps (get-dependency-map node-map)
+        dep-sort (reverse (toposort/toposort deps))
+        bindings (make-bindings dep-sort node-map)]
+    bindings))
 
