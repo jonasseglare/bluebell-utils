@@ -40,10 +40,6 @@
      result]))
 
 (defn toposort-iteration [[root-nodes suc-map pred-map result]]
-  (println "TOPOSORT ITERATION")
-  (debug/dout root-nodes)
-  (debug/dout pred-map)
-  (debug/dout result)
   (when (not (empty? root-nodes))
     (let [n (first root-nodes)
           successors (get suc-map n)]
@@ -53,12 +49,20 @@
                                (conj result n)]
               successors))))
 
+(defn all-values-empty? [x]
+  (every? (fn [[_ v]] (empty? v)) x))
+
 (defn toposort [successor-map]
   (let [pred-map (make-predecessor-map successor-map)
-        start (nodes-with-no-incoming-edges successor-map pred-map)]
-    (exhaust (iterate toposort-iteration 
-                      [start
-                       successor-map
-                       pred-map
-                       []]))))
+        start (nodes-with-no-incoming-edges successor-map pred-map)
+        [r s m result] (exhaust (iterate toposort-iteration 
+                                 [start
+                                  successor-map
+                                  pred-map
+                                  []]))]
+    (if (and (all-values-empty? s)
+             (all-values-empty? m))
+      result)))
+      
+
 
