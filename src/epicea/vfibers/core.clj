@@ -171,14 +171,40 @@
                 [k (:args v)])
               m))))
 
+(defn get-args [node]
+  (if (access/has? node -args)
+    (access/get node -args)
+    []))
+
+(defn make-node-recursive [m node]
+  (if (symbol? node) 
+    (if (bind? (get m node))
+      node ;; it was bound to this symbol
+      (make-node-recursive m (get m node)))
+    (make-node node (map #(make-node-recursive m %)
+                         (get-args node)))))
+    
+
 (defn make-bindings [order node-map]
   (transduce
    (comp (map (fn [key] [key (get node-map key)]))
          (filter (fn [[k node]] (bind? node)))
-         (filter (fn [[k node]] (access/has? node -args)))
-         (map (fn [[k node]] [k (make-node node (access/get node -args))])))
+         (mapcat (fn [[k node]] [k (make-node-recursive node-map node)]))
+         )
    conj
    order))
+
+(defn expand-symbol [node-map x]
+  (if (and (symbol? x) (contains? node-map x))
+    (make-node-recursive node-map x)
+    x))
+
+(defn postwalk-vector []
+
+(defn accurate-postwalk [f x]
+  (f (cond
+       (vector? x) (postwalk-vector f x)
+
 
 (defn make-code [expr0]
   (let [[node-map expr] (make-map {} expr0)
@@ -186,5 +212,7 @@
         deps (get-dependency-map node-map)
         dep-sort (reverse (toposort/toposort deps))
         bindings (make-bindings dep-sort node-map)]
-    bindings))
+    (clojure.walk/postwalk
+     #(expand-symbol node-map %)
+     expr)))
 

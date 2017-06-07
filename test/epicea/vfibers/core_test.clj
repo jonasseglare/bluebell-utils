@@ -99,6 +99,7 @@
   (:test-add [x args] `(+ ~@args))
   (:test-sub [x args] `(- ~@args))
   (:test-div [x args] `(/ ~@args))
+  (:test-mul [x args] `(* ~@args))
   (:test-sqrt [x args] `(Math/sqrt ~@args)))
 
 

@@ -95,9 +95,6 @@
     ~(vec (map make-method 
                (:methods parsed)))))
 
-
-
-
 ;;;;; Top-level macro
 (defmacro defmultiple-extra [& args]
   (let [parsed (spec/conform ::defmultiple-extra args)]
