@@ -67,6 +67,8 @@
                      default-key#
                      args#)))))
 
+
+;;;; Top-level macro
 (defmacro defmultiple [& args]
   (let [parsed (spec/conform ::defmultiple args)]
     (if (= parsed ::spec/invalid)
@@ -95,6 +97,8 @@
 
 
 
+
+;;;;; Top-level macro
 (defmacro defmultiple-extra [& args]
   (let [parsed (spec/conform ::defmultiple-extra args)]
     (if (= parsed ::spec/invalid)

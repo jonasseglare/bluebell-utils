@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [epicea.utils.access :as access]
             [epicea.vfibers.core :refer :all :as egraph]
-            [clojure.spec :as spec]))
+            [clojure.spec :as spec]
+            [epicea.utils.defmultiple :refer [defmultiple-extra]]))
 
 (deftest egraph-test-node?
   (is (node? {:unique-tag ::egraph/node :kattskit 9}))
@@ -19,7 +20,7 @@
 
 (defn make-dnum-op [maker]
   (fn [& args]
-    (access/build -type :mock-double
+    (access/build -datatype :mock-double
                   -simple? false
                   -args args)))
 
@@ -93,3 +94,5 @@
       (is (contains? values 1))
       (is (contains? values nil)))))
 
+;(defmultiple-extra make-node
+;  (:mock-double [x] 
