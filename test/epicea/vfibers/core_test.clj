@@ -1,7 +1,7 @@
-(ns epicea.utils.egraph-test
+(ns epicea.vfibers.core-test
   (:require [clojure.test :refer :all]
             [epicea.utils.access :as access]
-            [epicea.utils.egraph :refer :all :as egraph]
+            [epicea.vfibers.core :refer :all :as egraph]
             [clojure.spec :as spec]))
 
 (deftest egraph-test-node?
@@ -15,13 +15,12 @@
     (is (not (access/get b -simple?)))))
 
 (defn dnum [x]
-  (primitive-expr :double x))
+  (primitive-expr :mock-double x))
 
 (defn make-dnum-op [maker]
   (fn [& args]
-    (access/build -type :double
+    (access/build -type :mock-double
                   -simple? false
-                  -make maker
                   -args args)))
 
 (def test-add (make-dnum-op (fn [args] `(+ ~@args))))
@@ -29,7 +28,7 @@
 (def test-div (make-dnum-op (fn [args] `(/ ~@args))))
 (def test-sqrt (make-dnum-op (fn [args] `(sqrt ~@args))))
 
-(spec/def ::double-vector (spec/coll-of (node-of-type? :double)))
+(spec/def ::double-vector (spec/coll-of (node-of-type? :mock-double)))
 
 (deftest is-double-vector-test
   (is (spec/valid? ::double-vector [(dnum 9) (dnum 3)])))
