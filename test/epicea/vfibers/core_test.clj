@@ -95,8 +95,13 @@
       (is (contains? values 1))
       (is (contains? values nil)))))
 
-;(defmultiple-extra make-node
-;  (:mock-double [x] 
+(defmultiple-extra make-node
+  (:test-add [x args] `(+ ~@args))
+  (:test-sub [x args] `(- ~@args))
+  (:test-div [x args] `(/ ~@args))
+  (:test-sqrt [x args] `(Math/sqrt ~@args)))
+
+
 (deftest make-node-test
   (make-node (dnum 3)))
 
