@@ -107,3 +107,7 @@
   (is (= (make-node (test-add (dnum 3) (dnum 4)) [3 4 5])
          '(clojure.core/+ 3 4 5))))
 
+(deftest binding-test
+  (is (not (bind? (dnum 3))))
+  (is (not (bind? (dnum '(+ 4 5))))))
+
