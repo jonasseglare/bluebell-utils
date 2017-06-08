@@ -199,12 +199,6 @@
     (make-node-recursive node-map x)
     x))
 
-(defn postwalk-vector []
-
-(defn accurate-postwalk [f x]
-  (f (cond
-       (vector? x) (postwalk-vector f x)
-
 
 (defn make-code [expr0]
   (let [[node-map expr] (make-map {} expr0)
