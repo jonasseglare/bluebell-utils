@@ -199,6 +199,10 @@
     (make-node-recursive node-map x)
     x))
 
+(defn expand-symbols [node-map expr]
+  (clojure.walk/postwalk
+   #(expand-symbol node-map %)
+   expr))
 
 (defn make-code [expr0]
   (let [[node-map expr] (make-map {} expr0)
@@ -206,7 +210,5 @@
         deps (get-dependency-map node-map)
         dep-sort (reverse (toposort/toposort deps))
         bindings (make-bindings dep-sort node-map)]
-    (clojure.walk/postwalk
-     #(expand-symbol node-map %)
-     expr)))
+    (expand-symbols node-map expr)))
 
