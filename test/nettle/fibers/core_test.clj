@@ -115,3 +115,6 @@
 (deftest make-code-test
   (is (= [0.6 0.8]
          (eval (make-code normalized)))))
+
+;(defn to-array [expr]
+;  (

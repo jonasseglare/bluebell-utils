@@ -146,7 +146,26 @@
     (seq? expr) (add-seq dst expr)
     (map? expr) (add-coll dst expr)
     (set? expr) (add-coll dst expr)
-    :default [dst expr]))     
+    :default [dst expr]))
+
+(declare collect-nodes-sub)
+
+(defn collector [collect?]
+  (fn [r d] (collect-nodes-sub r collect? d)))
+
+(defn collect-nodes-sub [result collect? data]
+  (if (collect? data)
+    (conj result data)
+    (let [cns (collector collect?)]
+      (cond
+        (map? data) (reduce cns result (flatten (vec data)))
+        (coll? data) (reduce cns result data)
+        :default result))))
+
+(defn collect-nodes [collect? data]
+  (collect-nodes-sub
+   [] collect? data))
+
 
 (def get-nodetype (:checked-get -nodetype))
 
@@ -218,4 +237,13 @@
     (make-let
       bindings
       (expand-symbols node-map expr))))
+
+;(defn flatten-expr [expr]
+;  (clojure.walk/prewalk
+;   accumulate-nodes
+;   expr))
+
+;;; code-reducer: code x expr -> code
+
+;;; Array-assignment
 
