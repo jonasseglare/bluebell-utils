@@ -137,5 +137,9 @@
       (apply fun args)
       (catch Throwable _ nil))))
 
+(defmacro eval-code [code]
+  (eval code))
+  
+
 ;(defmacro mapdater [& args]
 ;  (let 

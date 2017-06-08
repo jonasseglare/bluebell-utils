@@ -153,12 +153,16 @@
 (defn collector [collect?]
   (fn [r d] (collect-nodes-sub r collect? d)))
 
+(defn sorted-map-data [x]
+  (flatten (vec (into (sorted-map) x))))
+
 (defn collect-nodes-sub [result collect? data]
   (if (collect? data)
     (conj result data)
     (let [cns (collector collect?)]
       (cond
-        (map? data) (reduce cns result (flatten (vec data)))
+        (map? data) (reduce cns result (sorted-map-data data))
+        (set? data) (reduce cns result (into (sorted-set) data))
         (coll? data) (reduce cns result data)
         :default result))))
 
@@ -238,12 +242,7 @@
       bindings
       (expand-symbols node-map expr))))
 
-;(defn flatten-expr [expr]
-;  (clojure.walk/prewalk
-;   accumulate-nodes
-;   expr))
-
-;;; code-reducer: code x expr -> code
-
-;;; Array-assignment
+(defn flatten-expr [expr]
+  (collect-nodes 
+   node? expr))
 
