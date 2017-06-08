@@ -1,4 +1,4 @@
-(ns nettle.vfibers.core
+(ns nettle.fibers.core
   (:require [clojure.spec :as spec]
             [nettle.utils.defmultiple :refer [defmultiple]]
             [nettle.utils.toposort :as toposort]

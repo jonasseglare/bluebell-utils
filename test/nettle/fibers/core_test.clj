@@ -1,7 +1,7 @@
-(ns nettle.vfibers.core-test
+(ns nettle.fibers.core-test
   (:require [clojure.test :refer :all]
             [nettle.utils.access :as access]
-            [nettle.vfibers.core :refer :all :as egraph]
+            [nettle.fibers.core :refer :all :as egraph]
             [clojure.spec :as spec]
             [nettle.utils.defmultiple :refer [defmultiple-extra]]))
 

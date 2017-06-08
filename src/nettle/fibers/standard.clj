@@ -1,5 +1,5 @@
-(ns nettle.vfibers.standard
-  (:require [nettle.vfibers.core :refer :all]))
+(ns nettle.fibers.standard
+  (:require [nettle.fibers.core :refer :all]))
 
 (def primitive-list [[[:bool] {}]
                      [[:float :float32] {}]
