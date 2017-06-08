@@ -39,7 +39,7 @@
   (assert (spec/valid? ::double-vector v))
   (let [sum-squares (reduce test-add (map (fn [x] (test-mul x x)) v))
         norm (test-sqrt sum-squares)]
-    (map (fn [x] (test-div x norm)) v)))
+    (mapv (fn [x] (test-div x norm)) v)))
 
 (def normalized (normalize [(dnum 3) (dnum 4)]))
 
@@ -112,3 +112,6 @@
   (is (not (bind? (dnum 3))))
   (is (not (bind? (dnum '(+ 4 5))))))
 
+(deftest make-code-test
+  (is (= [0.6 0.8]
+         (eval (make-code normalized)))))

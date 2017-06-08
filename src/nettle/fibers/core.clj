@@ -204,11 +204,18 @@
    #(expand-symbol node-map %)
    expr))
 
+(defn make-let [bindings code]
+  (if (empty? bindings)
+    code
+    `(let ~(vec bindings) ~code)))
+
 (defn make-code [expr0]
   (let [[node-map expr] (make-map {} expr0)
         node-map (clean-node-map node-map)
         deps (get-dependency-map node-map)
         dep-sort (reverse (toposort/toposort deps))
         bindings (make-bindings dep-sort node-map)]
-    (expand-symbols node-map expr)))
+    (make-let
+      bindings
+      (expand-symbols node-map expr))))
 
