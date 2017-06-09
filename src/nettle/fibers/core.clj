@@ -246,3 +246,48 @@
   (collect-nodes 
    node? expr))
 
+
+;;;;;;;; 
+
+
+;; make-code: expr -> code
+;; 'make-code' is a construct on its own. It just compiles whatever code provided.
+;; Use it as a primitive for more elaborate constructs.
+;; 
+;; code-reducer: code x expr -> code
+;; A code-reducer takes as input the code representing a result,
+;; and an expression, and returns code representing the new result.
+;; Internally, it might use 'make-code' to produce that code.
+;;
+;; expr-mapper: expr -> expr
+;; A function that takes an expression as input, and returns a new expression.
+;;
+;; transducer: code-reducer -> code-reducer
+;; A transducer is used to implement more elaborate constructs. Examples:
+;;  - (map f), with f being an expr-mapper.
+;;  - (filter f), with f being an expr-mapper representing a boolean.
+;;  - (branch f a b), with f being an expr-mapper, and a, b being transducers.
+;;  - (loop f body), with f being an expr-mapper, and body 
+;;          being the loop body, as a transducer.
+;;
+;; how to implement branching: Given as input the condition function and the two
+;; reducers, it should return a transducer. That transducer takes as input 
+;; a code reducer (R), and it should return a new code reducer. The new code reducer
+;; that it returns takes as input an expression. In the returned reducing function, first
+;;  simplify the incoming expression, then apply the condition function on it. 
+;; Return code for an if-statement on the compiled condition. For each if-branch, 
+;; generate code by 
+;;   1. Passing the incoming reducing function as argument to the branch --> we get 
+;;      a transformed reducing function.
+;;   2. With the transformed reducing function, pass the 
+;;
+;; (defn branch [condition branch-a branch-b]
+;;   (fn [code-reducer]
+;;     (fn [code expr]
+;;       (make-code-partially
+;;        (condition expr) expr
+;;        (fn [c expr]
+;;          `(if ~c
+;;             ~((branch-a code-reducer) code expr)
+;;             ~((branch-b code-reducer) code expr)))))))
+

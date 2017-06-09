@@ -137,9 +137,6 @@
       (apply fun args)
       (catch Throwable _ nil))))
 
-(defmacro eval-code [code]
+;; For generating code in-place
+(defmacro macro-eval [code]
   (eval code))
-  
-
-;(defmacro mapdater [& args]
-;  (let 

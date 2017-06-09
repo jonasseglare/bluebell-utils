@@ -3,7 +3,7 @@
             [nettle.utils.access :as access]
             [nettle.fibers.core :refer :all :as egraph]
             [clojure.spec :as spec]
-            [nettle.utils.core :refer [eval-code]]
+            [nettle.utils.core :refer [macro-eval]]
             [nettle.utils.defmultiple :refer [defmultiple-extra]]))
 
 (deftest egraph-test-node?
@@ -131,7 +131,9 @@
        ~array-sym)))
 
 (deftest array-data-test
-  (let [arr (eval (make-code (expr-to-array normalized)))]
+  (let [arr (macro-eval 
+             (make-code 
+              (expr-to-array normalized)))]
     (is (= 2 (alength arr)))
     (is (= 0.6 (aget arr 0)))
     (is (= 0.8 (aget arr 1)))))
