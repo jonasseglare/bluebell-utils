@@ -12,3 +12,7 @@
   (is (ad? (ad (primitive :double 3))))
   (is (ad? (ad (primitive :double 3)
                {:x (primitive :double 1)}))))
+
+(deftest common-datatype-test
+  (= :double 
+     (common-datatype [(primitive :double 3) (primitive :float 9)])))

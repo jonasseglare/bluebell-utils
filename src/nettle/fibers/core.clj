@@ -173,7 +173,7 @@
 
 (def get-nodetype (:checked-get -nodetype))
 
-(defmultiple make-node (fn [node args] (get-nodetype node))
+(defmultiple make-node (fn [node compiled-args] (get-nodetype node))
   (:primitive [x _] (access/get x -expr)))
 
 (defn bind? [x]
