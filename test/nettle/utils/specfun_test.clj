@@ -21,3 +21,21 @@
   (is (= 7 (add-any 3 4)))
   (is (= "aabbb" (add-any "aa" "bbb")))
   (is (= [:a 3 4] (add-any [:a 3] [4]))))
+
+(spec/def ::doubles (spec/* double?))
+
+(defspecfun malformed-add
+  (::doubles [x] (apply + x))
+  (::numbers [x] (apply + x)))
+
+(defn threw [f]
+  (try 
+    (f)
+    false
+    (catch Throwable _
+      true)))
+
+(deftest malformed-test
+  (is (= 9 (malformed-add 6 3)))
+  (is (threw #(malformed-add 9.0 3.0)))
+  (is (threw #(malformed-add [:a] [3 4]))))

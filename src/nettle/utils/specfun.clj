@@ -53,7 +53,9 @@
                               (impl parsed-args))
         :default (utils/common-error "Conformance ambiguity for " 
                                key " and " args ": " 
-                               (apply str (map first confs)))))))
+                               (with-out-str
+                                 (clojure.pprint/pprint 
+                                  (map first confs))))))))
 
 (defmacro defspecfun [& args]
   (let [x (spec/conform ::defspecfun args)]
