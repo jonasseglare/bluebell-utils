@@ -14,32 +14,32 @@
                                {:construct boolean})]
                      [[:int32 :int] (merge 
                                      primitive-number-traits 
-                                     {:construct clojure.core/unchecked-int
-                                      :add-op clojure.core/unchecked-add-int
-                                      :mul-op clojure.core/unchecked-multiply-int
-                                      :sub-op clojure.core/unchecked-subtract-int
-                                      :negate clojure.core/unchecked-negate-int})]
+                                     {:construct 'clojure.core/unchecked-int
+                                      :add-op 'clojure.core/unchecked-add-int
+                                      :mul-op 'clojure.core/unchecked-multiply-int
+                                      :sub-op 'clojure.core/unchecked-subtract-int
+                                      :negate 'clojure.core/unchecked-negate-int})]
                      [[:int64 :long] (merge 
                                       primitive-number-traits
-                                      {:construct clojure.core/unchecked-long
-                                       :add-op clojure.core/unchecked-add-int
-                                       :mul-op clojure.core/unchecked-multiply-int
-                                       :sub-op clojure.core/unchecked-subtract-int
-                                       :negate clojure.core/unchecked-negate-int})]
+                                      {:construct 'clojure.core/unchecked-long
+                                       :add-op 'clojure.core/unchecked-add-int
+                                       :mul-op 'clojure.core/unchecked-multiply-int
+                                       :sub-op 'clojure.core/unchecked-subtract-int
+                                       :negate 'clojure.core/unchecked-negate-int})]
                      [[:float :float32] (merge 
                                          primitive-number-traits
-                                         {:construct clojure.core/unchecked-float
-                                          :add-op clojure.core/unchecked-add
-                                          :mul-op clojure.core/unchecked-multiply
-                                          :sub-op clojure.core/unchecked-subtract
-                                          :negate clojure.core/unchecked-negate})]
+                                         {:construct 'clojure.core/unchecked-float
+                                          :add-op 'clojure.core/unchecked-add
+                                          :mul-op 'clojure.core/unchecked-multiply
+                                          :sub-op 'clojure.core/unchecked-subtract
+                                          :negate 'clojure.core/unchecked-negate})]
                      [[:float64 :double] (merge
                                           primitive-number-traits
-                                          {:construct clojure.core/unchecked-double
-                                           :add-op clojure.core/unchecked-add
-                                           :mul-op clojure.core/unchecked-multiply
-                                           :sub-op clojure.core/unchecked-subtract
-                                           :negate clojure.core/unchecked-negate})]])
+                                          {:construct 'clojure.core/unchecked-double
+                                           :add-op 'clojure.core/unchecked-add
+                                           :mul-op 'clojure.core/unchecked-multiply
+                                           :sub-op 'clojure.core/unchecked-subtract
+                                           :negate 'clojure.core/unchecked-negate})]])
 
 (defn scalar? [x]
   (:scalar? x))

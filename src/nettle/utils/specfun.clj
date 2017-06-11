@@ -4,6 +4,10 @@
 
 (def funs (atom {}))
 
+(defn reset 
+  ([] (reset! funs {}))
+  ([key] (swap! funs #(assoc % key {}))))
+
 (spec/def ::name symbol?)
 
 (spec/def ::spec (constantly true))
