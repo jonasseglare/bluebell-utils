@@ -49,7 +49,7 @@
       `(~(type-op t op-key) ~@args))))
 
 ;;;;; Addition
-(def add-primitives (primitive-op :add-primitives))
+(def add-primitives (primitive-op :add-op))
 (def add-primitives-code (op-primitives-code :add-op))
 
 
@@ -61,8 +61,8 @@
 
 ;;;;; Dispatch  
 (defmultiple-extra make-node
-  (:add-primitives [node args] (add-primitives-code node args))
-  (:sub-primitives [node args] (sub-primitives-code node args)))
+  (:add-op [node args] (add-primitives-code node args))
+  (:sub-op [node args] (sub-primitives-code node args)))
 
 ;(specfun/reset)
 
