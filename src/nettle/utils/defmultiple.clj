@@ -38,12 +38,10 @@
 (defn make-method-map [methods]
   (reduce merge (map make-method methods)))
 
-(def extra-methods (atom {}))
-  
-(defn eval-multi [name dispatch-value method-map default-key args]
+(defn eval-multi [name dispatch-value method-map default-key args extra-methods]
   (if (contains? method-map dispatch-value) 
     (apply (get method-map dispatch-value) args)
-    (let [extra (get (deref extra-methods) name)]
+    (let [extra (deref extra-methods)]
       (cond
         (contains? extra dispatch-value) (apply (get extra dispatch-value) args)
         (contains? method-map default-key) (apply (get method-map default-key) args)
@@ -55,17 +53,22 @@
 (defn defmultiple-sub [x]
   `(do
      (declare ~(:name x))
-     (let [dispatch-fun# ~(:dispatch-fun x)
+     (let [extra# (atom {})
+           dispatch-fun# ~(:dispatch-fun x)
            method-map# ~(make-method-map (:methods x))
            default-key# ~(if (contains? x :default)
                            (-> x :default :value)
                            :default)]
-       (defn ~(:name x) [& args#]
-         (eval-multi (quote ~(:name x))
-                     (apply dispatch-fun# args#)
-                     method-map#
-                     default-key#
-                     args#)))))
+       (defn ~(:name x) 
+         ([& args#]
+          (if (empty? args#)
+            extra#
+            (eval-multi (quote ~(:name x))
+                        (apply dispatch-fun# args#)
+                        method-map#
+                        default-key#
+                        args#
+                        extra#)))))))
 
 
 ;;;; Top-level macro
@@ -77,21 +80,18 @@
                 (spec/explain ::defmultiple args))))
       (defmultiple-sub parsed))))
 
-(defn add-extra-methods [name methods-to-add]
+(defn add-extra-methods [dst methods-to-add]
   (swap! 
-   extra-methods
-   (fn [extra-method-map]
-     (update-in
-      extra-method-map [name]
-      (fn [methods]
-        (reduce
-         merge
-         methods
-         methods-to-add))))))
+   dst
+   (fn [methods]
+     (reduce
+      merge
+      methods
+      methods-to-add))))
 
 (defn defmultiple-extra-sub [parsed]
   `(add-extra-methods
-    (quote ~(:name parsed))
+    (~(:name parsed))
     ~(vec (map make-method 
                (:methods parsed)))))
 

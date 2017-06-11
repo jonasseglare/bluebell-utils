@@ -21,4 +21,6 @@
   (is (= 7 (kattskit2 {:op :plus :a 3 :b 4})))
   (is (= -1 (kattskit2 {:op :minus :a 3 :b 4})))
   (is (= "Unknown" (kattskit2 {:op :asdf})))
-  (is (= 12 (kattskit2 {:op :mul :a 3 :b 4}))))
+  (is (= 12 (kattskit2 {:op :mul :a 3 :b 4})))
+  (is (map? (deref (kattskit2)))))
+
