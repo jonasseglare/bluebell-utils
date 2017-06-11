@@ -45,9 +45,8 @@
 
 (defn op-primitives-code [op-key]
   (fn [node args]
-    (let [argnodes (get-node-args node)
-          t (types/common-datatype argnodes)]
-      `(~(type-op t op-key) ~@(cast-to-common-type t argnodes args)))))
+    (let [t (access/get node core/-datatype)]
+      `(~(type-op t op-key) ~@args))))
 
 
 ;;;;; Addition

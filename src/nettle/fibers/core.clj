@@ -183,7 +183,6 @@
   (:primitive [x _] (access/get x -expr)))
 
 (defn simple? [x]
-  (println "x = " x)
   (if-let [[y] ((:get-optional -simple?) x)]
     y false))
 
