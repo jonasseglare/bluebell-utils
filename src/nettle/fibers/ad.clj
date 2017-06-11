@@ -2,7 +2,9 @@
   (:require [clojure.spec :as spec]
             [nettle.fibers.ops :as ops]
             [nettle.fibers.types :as types]
-            [nettle.fibers.core :as core]))
+            [nettle.fibers.core :as core]
+            [nettle.utils.specfun :refer [defspecfun]]
+            [nettle.utils.defmultiple :refer [defmultiple]]))
 
 (spec/def ::scalar-map (spec/map-of (constantly true) types/scalar?))
 
@@ -22,3 +24,4 @@
   ([t] #(is-type? % t)))
 
 (def ad? (is-type? :ad))
+

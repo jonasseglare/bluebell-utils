@@ -1,5 +1,6 @@
 (ns nettle.utils.toposort
-  (:require [nettle.utils.debug :as debug]))
+  (:require [nettle.utils.debug :as debug]
+            [clojure.set]))
 
 (def test-map {:a [:b :c]
                :b [:c]})
