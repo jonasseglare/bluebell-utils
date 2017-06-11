@@ -9,16 +9,18 @@
 
 (spec/def ::primitive types/primitive?)
 (spec/def ::primitives (spec/* ::primitive))
-(spec/def ::primitive-pair (spec/and ::primitives
-                                     #(= 2 (count %))))
 
+(defn n-primitives [n]
+  (spec/and ::primitives
+            #(= n (count %))))
+  
+(spec/def ::primitive-pair (n-primitives 2))
+(spec/def ::one-primitive (n-primitives 1))
 
-
-(defn primitive-op [op]
-  (fn [args]
-    (access/build core/-args args
-                  core/-datatype (types/common-datatype args)
-                  core/-nodetype op)))
+(defn primitive-op [op args]
+  (access/build core/-args args
+                core/-datatype (types/common-datatype args)
+                core/-nodetype op))
 
 (defn construct [t argspec arg]
   (if (= t (access/get argspec core/-datatype))
@@ -36,43 +38,25 @@
          (construct t argspec arg))
        argnodes
        args))
-       
-           
 
 (defn type-op [t op-key]
   (-> types/primitives t op-key))
-         
 
-(defn op-primitives-code [op-key]
-  (fn [node args]
-    (let [t (access/get node core/-datatype)]
-      `(~(type-op t op-key) ~@args))))
+(defn op-primitives-code [op-key node args]
+  (let [t (access/get node core/-datatype)]
+    `(~(type-op t op-key) ~@args)))
 
-;;;;; Addition
-(def add-primitives (primitive-op :add-op))
-(def add-primitives-code (op-primitives-code :add-op))
+(defmacro decl-primitive [op op-key op-spec]
+  `(do 
+     (defmultiple-extra nettle.fibers.core/make-node
+       (~op-key [node# args#] 
+        (op-primitives-code ~op-key node# args#)))
+     (specfun/defspecfun ~op
+       (~op-spec [x#] (primitive-op ~op-key x#)))))
 
-
-;;;;; Subtraction
-(def sub-primitives (primitive-op :sub-primitives))
-(def sub-primitives-code (op-primitives-code :sub-op))
-
-;;;; 
-
-;;;;; Dispatch  
-(defmultiple-extra make-node
-  (:add-op [node args] (add-primitives-code node args))
-  (:sub-op [node args] (sub-primitives-code node args)))
-
-;(specfun/reset)
-
-(defn remove-nils [x]
-  (filter (complement nil?) x))
-
-(specfun/defspecfun +
-  (::primitives [x] (add-primitives x)))
-
-(specfun/defspecfun -
-  (::primitive-pair [x] (sub-primitives x)))
-
-
+(decl-primitive + :add-op ::primitives)
+(decl-primitive - :sub-op ::primitive-pair)
+(decl-primitive * :mul-op ::primitives)
+(decl-primitive inc :inc-op ::one-primitive)
+(decl-primitive dec :dec-op ::one-primitive)
+(decl-primitive - :negate-op ::one-primitive)

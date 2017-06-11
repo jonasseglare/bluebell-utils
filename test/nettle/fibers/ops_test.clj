@@ -1,9 +1,10 @@
 (ns nettle.fibers.ops-test
-  (:refer-clojure :exclude [+ - / *])
-  (:require [nettle.fibers.ops :refer :all]
+  (:refer-clojure :exclude [+ - / * inc dec])
+  (:require [nettle.fibers.ops :refer :all :as ops]
             [nettle.fibers.types :as types]
             [nettle.fibers.core :as core]
             [clojure.test :refer :all]
+            [clojure.spec :as spec]
             [nettle.utils.core :as utils]))
 
 (deftest add-test
@@ -18,4 +19,7 @@
 (deftest add-test-eval
   (is (= 7 (utils/macro-eval 
             (core/make-code (+ (types/primitive :double 3)
-                               (types/primitive :double 4)))))))
+                               (types/primitive :double 4))))))
+  (is (= 12 (core/inline 
+             (* (types/primitive :double 3)
+                (types/primitive :double 4))))))
