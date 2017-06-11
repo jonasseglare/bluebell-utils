@@ -12,8 +12,12 @@
 (defn node? [x]
   (spec/valid? ::node x))
 
+
 (def empty-node {:unique-tag ::node})
 (def settings {:default-base empty-node})
+
+(defn node [x]
+  (merge empty-node x))
 
 (defn key? [x]
   (or (symbol? x)
@@ -29,6 +33,8 @@
 
 ;; what primitive value it evaluates to
 (def -datatype (access/key-accessor :datatype (merge settings {:valid-value? keyword?})))
+
+(def datatype (:checked-get -datatype))
 
 ;; What the node actually represents: used for dynamic dispatch
 (def -nodetype (access/key-accessor :nodetype settings))
@@ -176,8 +182,13 @@
 (defmultiple make-node (fn [node compiled-args] (get-nodetype node))
   (:primitive [x _] (access/get x -expr)))
 
+(defn simple? [x]
+  (println "x = " x)
+  (if-let [[y] ((:get-optional -simple?) x)]
+    y false))
+
 (defn bind? [x]
-  (not (or (access/get x -simple?)
+  (not (or (simple? x)
            (<= (get-refcount x) 1))))
 
 

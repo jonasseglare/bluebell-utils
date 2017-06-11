@@ -59,8 +59,11 @@
 
 (def primitives (reduce add-primitive-entry {} primitive-list))
 
+(defn priority [x]
+  (get-in primitives [(datatype x) :priority]))
+
 (defn choose-higher-priority [a b]
-  (if (< (:priority a) (:priority b))
+  (if (< (priority a) (priority b))
     b a))
 
 (defn common-datatype [args]

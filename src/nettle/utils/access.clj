@@ -31,6 +31,7 @@
   (core/common-error 
    (str "ACCESSOR ERROR"
         "\n\n  * In the context '" what "'"
+        "\n\n  * Accessor info: " (data-to-str (:info accessor))
         "\n\n  * With accessor\n" (data-to-str accessor)
         "\n\n  * On root value  " (data-to-str root)
         "\n\n  * For some value " (data-to-str value))))
