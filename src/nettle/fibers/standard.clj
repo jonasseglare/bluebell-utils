@@ -1,11 +1,18 @@
 (ns nettle.fibers.standard
-  (:require [nettle.fibers.core :refer :all]))
+  (:require [nettle.fibers.core :refer :all])
+  (:refer-clojure :exclude [+ - / *])
+  (:require [nettle.utils.core :as utils]))
 
-(def primitive-list [[[:bool] {}]
-                     [[:float :float32] {}]
-                     [[:float64 :double] {}]
-                     [[:int32 :int] {}]
-                     [[:int64 :long] {}]])
+(def primitive-traits {:primitive? true})
+(def primitive-number-traits (merge 
+                              primitive-traits
+                              {:number? true}))
+
+(def primitive-list [[[:bool] primitive-traits]
+                     [[:float :float32] primitive-number-traits]
+                     [[:float64 :double] primitive-number-traits]
+                     [[:int32 :int] primitive-number-traits]
+                     [[:int64 :long] primitive-number-traits]])
 
 (defn add-primitive-entry [dst [names properties]]
   (reduce
@@ -19,9 +26,14 @@
 (defn primitive-type? [x]
   (contains? primitives x))
 
+(defn with-traits [t x]
+  (if-let [y (get primitives t)]
+    (merge x y)
+    (utils/common-error "Not a primitive: " t)))
+
 (defn primitive
   ([t] (assert (primitive-type? t))
-   (primitive-expr t))
+   (with-traits t (primitive-expr t)))
   ([t x] 
    (assert (primitive-type? t))
-   (primitive-expr t x)))
+   (with-traits t (primitive-expr t x))))
