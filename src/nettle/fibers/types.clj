@@ -9,10 +9,10 @@
                               {:scalar? true}))
 
 (def primitive-list [[[:bool] primitive-traits]
-                     [[:float :float32] primitive-number-traits]
-                     [[:float64 :double] primitive-number-traits]
                      [[:int32 :int] primitive-number-traits]
-                     [[:int64 :long] primitive-number-traits]])
+                     [[:int64 :long] primitive-number-traits]
+                     [[:float :float32] primitive-number-traits]
+                     [[:float64 :double] primitive-number-traits]])
 
 (defn scalar? [x]
   (:scalar? x))
@@ -23,7 +23,10 @@
 (defn add-primitive-entry [dst [names properties]]
   (reduce
    (fn [dst name]
-     (assoc dst name properties))
+     (assoc 
+      dst name 
+      (assoc properties :priority 
+             (count dst))))
    dst
    names))
 
@@ -55,5 +58,12 @@
   ([x] (ad x {}))
   ([x derivative-map] (ad-sub x derivative-map)))
 
-(defn ad? [x]
-  (= (:type x) :ad))
+(defn is-type? 
+  ([x t]
+   (if (map? x)
+     (= t (:type x))))
+  ([t] #(is-type? % t)))
+
+(def ad? (is-type? :ad))
+
+
