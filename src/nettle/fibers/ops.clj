@@ -1,5 +1,5 @@
 (ns nettle.fibers.ops
-  (:refer-clojure :exclude [+ - * /])
+  (:refer-clojure :exclude [+ - * / inc dec])
   (:require [clojure.spec :as spec]
             [nettle.fibers.core :as core]
             [nettle.fibers.types :as types]
@@ -48,7 +48,6 @@
     (let [t (access/get node core/-datatype)]
       `(~(type-op t op-key) ~@args))))
 
-
 ;;;;; Addition
 (def add-primitives (primitive-op :add-primitives))
 (def add-primitives-code (op-primitives-code :add-op))
@@ -58,6 +57,8 @@
 (def sub-primitives (primitive-op :sub-primitives))
 (def sub-primitives-code (op-primitives-code :sub-op))
 
+;;;; 
+
 ;;;;; Dispatch  
 (defmultiple-extra make-node
   (:add-primitives [node args] (add-primitives-code node args))
@@ -65,7 +66,10 @@
 
 ;(specfun/reset)
 
-(specfun/defspecfun + 
+(defn remove-nils [x]
+  (filter (complement nil?) x))
+
+(specfun/defspecfun +
   (::primitives [x] (add-primitives x)))
 
 (specfun/defspecfun -

@@ -256,6 +256,9 @@
   (collect-nodes 
    node? expr))
 
+(defmacro inline [x]
+  (make-code (eval x)))
+
 
 ;;;;;;;; 
 
