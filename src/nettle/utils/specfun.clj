@@ -15,5 +15,5 @@
 
 (spec/def ::defs (spec/* (spec/spec ::def)))
 
-(spec/def ::defs (spec/cat :name ::name
-                           :defs ::defs))
+;(spec/def ::defs (spec/cat :name ::name
+;                           :defs ::defs))
