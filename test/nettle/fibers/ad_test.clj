@@ -1,6 +1,6 @@
-(ns nettle.fibers.ad-test
-  (:require [nettle.fibers.ad :refer :all]
-            [nettle.fibers.types :as types]
+(ns bluebell.fibers.ad-test
+  (:require [bluebell.fibers.ad :refer :all]
+            [bluebell.fibers.types :as types]
             [clojure.test :refer :all]))
 
 (deftest ad-test

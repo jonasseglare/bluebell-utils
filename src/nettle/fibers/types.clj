@@ -1,8 +1,8 @@
-(ns nettle.fibers.types
-  (:require [nettle.fibers.core :refer :all]
+(ns bluebell.fibers.types
+  (:require [bluebell.fibers.core :refer :all]
             [clojure.spec :as spec]
-            [nettle.utils.access :as access]
-            [nettle.utils.core :as utils]))
+            [bluebell.utils.access :as access]
+            [bluebell.utils.core :as utils]))
 
 (def primitive-traits {:primitive? true})
 (def primitive-number-traits (merge 

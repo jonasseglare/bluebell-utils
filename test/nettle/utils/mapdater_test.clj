@@ -1,6 +1,6 @@
-(ns nettle.utils.mapdater-test
+(ns bluebell.utils.mapdater-test
   (:require [clojure.test :refer :all]
-            [nettle.utils.mapdater :refer :all :as md]
+            [bluebell.utils.mapdater :refer :all :as md]
             [clojure.spec :as spec]))
 
 

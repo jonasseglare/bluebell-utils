@@ -1,4 +1,4 @@
-(ns nettle.utils.math)
+(ns bluebell.utils.math)
 
 (defn sqr [x] (* x x))
 

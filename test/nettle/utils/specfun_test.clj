@@ -1,5 +1,5 @@
-(ns nettle.utils.specfun-test
-  (:require [nettle.utils.specfun :refer :all :as specfun]
+(ns bluebell.utils.specfun-test
+  (:require [bluebell.utils.specfun :refer :all :as specfun]
             [clojure.test :refer :all]
             [clojure.spec :as spec]))
 

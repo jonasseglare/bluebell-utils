@@ -1,6 +1,6 @@
-(ns nettle.utils.specfun
+(ns bluebell.utils.specfun
   (:require [clojure.spec :as spec]
-            [nettle.utils.core :as utils]))
+            [bluebell.utils.core :as utils]))
 
 (def funs (atom {}))
 

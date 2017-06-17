@@ -1,4 +1,4 @@
-(ns nettle.utils.macro
+(ns bluebell.utils.macro
   (:require [clojure.spec :as spec]))
 
 ;; General error reporting for macros

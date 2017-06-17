@@ -1,10 +1,10 @@
-(ns nettle.typed.core
+(ns bluebell.typed.core
   (:require [clojure.spec :as spec]
-            [nettle.typed.lang :as lang]
-            [nettle.utils.debug :as debug]
-            [nettle.utils.core :as core]
-            [nettle.utils.defmultiple :refer [defmultiple]]
-            [nettle.utils.access :as access] :reload-all))
+            [bluebell.typed.lang :as lang]
+            [bluebell.utils.debug :as debug]
+            [bluebell.utils.core :as core]
+            [bluebell.utils.defmultiple :refer [defmultiple]]
+            [bluebell.utils.access :as access] :reload-all))
 
 (spec/def ::unspecified nil?)
 

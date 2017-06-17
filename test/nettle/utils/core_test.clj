@@ -1,6 +1,6 @@
-(ns nettle.utils.core-test
+(ns bluebell.utils.core-test
   (:require [clojure.test :refer :all]
-            [nettle.utils.core :refer :all]))
+            [bluebell.utils.core :refer :all]))
 
 (deftest map-with-keys-test
   (testing "Testing map with keys"

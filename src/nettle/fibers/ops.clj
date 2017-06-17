@@ -1,11 +1,11 @@
-(ns nettle.fibers.ops
+(ns bluebell.fibers.ops
   (:refer-clojure :exclude [+ - * / inc dec])
   (:require [clojure.spec :as spec]
-            [nettle.fibers.core :as core]
-            [nettle.fibers.types :as types]
-            [nettle.utils.access :as access]
-            [nettle.utils.specfun :as specfun]
-            [nettle.utils.defmultiple :refer [defmultiple-extra]]))
+            [bluebell.fibers.core :as core]
+            [bluebell.fibers.types :as types]
+            [bluebell.utils.access :as access]
+            [bluebell.utils.specfun :as specfun]
+            [bluebell.utils.defmultiple :refer [defmultiple-extra]]))
 
 (spec/def ::primitive types/primitive?)
 (spec/def ::primitives (spec/* ::primitive))
@@ -48,7 +48,7 @@
 
 (defmacro decl-primitive [op op-key op-spec]
   `(do 
-     (defmultiple-extra nettle.fibers.core/make-node
+     (defmultiple-extra bluebell.fibers.core/make-node
        (~op-key [node# args#] 
         (op-primitives-code ~op-key node# args#)))
      (specfun/defspecfun ~op

@@ -1,4 +1,4 @@
-(ns nettle.utils.debug)
+(ns bluebell.utils.debug)
 
 (defn dout-sub [label x]
   `(let [x# ~x]

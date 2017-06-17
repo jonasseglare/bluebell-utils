@@ -1,10 +1,10 @@
-(ns nettle.fibers.ad
+(ns bluebell.fibers.ad
   (:require [clojure.spec :as spec]
-            [nettle.fibers.ops :as ops]
-            [nettle.fibers.types :as types]
-            [nettle.fibers.core :as core]
-            [nettle.utils.specfun :refer [defspecfun]]
-            [nettle.utils.defmultiple :refer [defmultiple]]))
+            [bluebell.fibers.ops :as ops]
+            [bluebell.fibers.types :as types]
+            [bluebell.fibers.core :as core]
+            [bluebell.utils.specfun :refer [defspecfun]]
+            [bluebell.utils.defmultiple :refer [defmultiple]]))
 
 (spec/def ::scalar-map (spec/map-of (constantly true) types/scalar?))
 

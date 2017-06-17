@@ -1,10 +1,10 @@
-(ns nettle.fibers.core-test
+(ns bluebell.fibers.core-test
   (:require [clojure.test :refer :all]
-            [nettle.utils.access :as access]
-            [nettle.fibers.core :refer :all :as egraph]
+            [bluebell.utils.access :as access]
+            [bluebell.fibers.core :refer :all :as egraph]
             [clojure.spec :as spec]
-            [nettle.utils.core :refer [macro-eval]]
-            [nettle.utils.defmultiple :refer [defmultiple-extra]]))
+            [bluebell.utils.core :refer [macro-eval]]
+            [bluebell.utils.defmultiple :refer [defmultiple-extra]]))
 
 (deftest egraph-test-node?
   (is (node? {:unique-tag ::egraph/node :kattskit 9}))

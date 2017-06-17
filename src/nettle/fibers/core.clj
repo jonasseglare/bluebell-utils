@@ -1,8 +1,8 @@
-(ns nettle.fibers.core
+(ns bluebell.fibers.core
   (:require [clojure.spec :as spec]
-            [nettle.utils.defmultiple :refer [defmultiple]]
-            [nettle.utils.toposort :as toposort]
-            [nettle.utils.access :as access]))
+            [bluebell.utils.defmultiple :refer [defmultiple]]
+            [bluebell.utils.toposort :as toposort]
+            [bluebell.utils.access :as access]))
 
 
 (spec/def ::unique-tag (partial = ::node))

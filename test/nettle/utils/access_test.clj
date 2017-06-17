@@ -1,8 +1,8 @@
-(ns nettle.utils.access-test
+(ns bluebell.utils.access-test
   (:refer-clojure :exclude [get set update remove update])
   (:require [clojure.test :refer :all]
-            [nettle.utils.access :refer :all]
-            [nettle.utils.optional :refer [optional]]))
+            [bluebell.utils.access :refer :all]
+            [bluebell.utils.optional :refer [optional]]))
 
 (def k (key-accessor :k {:valid-value? int? :default-value 0}))
 

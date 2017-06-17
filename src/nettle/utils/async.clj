@@ -1,4 +1,4 @@
-(ns nettle.utils.async
+(ns bluebell.utils.async
   (:require [clojure.core.async :as async]))
 
 (defn producer [f init-state c]

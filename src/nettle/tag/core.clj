@@ -1,4 +1,4 @@
-(ns nettle.tag.core)
+(ns bluebell.tag.core)
 
 (defn tagged?
   ([tag] 

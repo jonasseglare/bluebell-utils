@@ -1,6 +1,6 @@
-(ns nettle.utils.toposort-test
+(ns bluebell.utils.toposort-test
   (:require [clojure.test :refer :all]
-            [nettle.utils.toposort :refer :all]))
+            [bluebell.utils.toposort :refer :all]))
 
 (deftest pred-map
   (is (= {:b [:a] :c [:a :b]}

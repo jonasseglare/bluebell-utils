@@ -1,6 +1,6 @@
-(ns nettle.utils.mapdater
+(ns bluebell.utils.mapdater
   (:require [clojure.spec :as spec]
-            [nettle.utils.defmultiple :refer [defmultiple]]))
+            [bluebell.utils.defmultiple :refer [defmultiple]]))
 
 (spec/def ::body (spec/* (constantly true)))
 (spec/def ::arg (spec/cat 

@@ -1,6 +1,6 @@
-(ns nettle.utils.async-test
+(ns bluebell.utils.async-test
   (:require [clojure.test :refer :all]
-            [nettle.utils.async :refer :all]
+            [bluebell.utils.async :refer :all]
             [clojure.core.async :as async]))
 
 (defn inc-up-to-5 [x]

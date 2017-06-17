@@ -1,11 +1,11 @@
-(ns nettle.fibers.ops-test
+(ns bluebell.fibers.ops-test
   (:refer-clojure :exclude [+ - / * inc dec])
-  (:require [nettle.fibers.ops :refer :all :as ops]
-            [nettle.fibers.types :as types]
-            [nettle.fibers.core :as core]
+  (:require [bluebell.fibers.ops :refer :all :as ops]
+            [bluebell.fibers.types :as types]
+            [bluebell.fibers.core :as core]
             [clojure.test :refer :all]
             [clojure.spec :as spec]
-            [nettle.utils.core :as utils]))
+            [bluebell.utils.core :as utils]))
 
 (deftest add-test
   (is (+ (types/primitive :double 3)

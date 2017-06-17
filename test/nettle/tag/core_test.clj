@@ -1,6 +1,6 @@
-(ns nettle.tag.core-test
+(ns bluebell.tag.core-test
   (:require [clojure.test :refer :all]
-            [nettle.tag.core :refer :all] :reload-all))
+            [bluebell.tag.core :refer :all] :reload-all))
 
 (deftest tags
   (is (tagged? :success [:success 3]))

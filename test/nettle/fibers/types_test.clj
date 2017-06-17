@@ -1,6 +1,6 @@
-(ns nettle.fibers.types-test
-  (:require [nettle.fibers.types :refer :all]
-            [nettle.fibers.core :as fibers]
+(ns bluebell.fibers.types-test
+  (:require [bluebell.fibers.types :refer :all]
+            [bluebell.fibers.core :as fibers]
             [clojure.test :refer :all]))
 
 (deftest primitive-test

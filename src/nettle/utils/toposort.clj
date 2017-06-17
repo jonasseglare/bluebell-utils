@@ -1,5 +1,5 @@
-(ns nettle.utils.toposort
-  (:require [nettle.utils.debug :as debug]
+(ns bluebell.utils.toposort
+  (:require [bluebell.utils.debug :as debug]
             [clojure.set]))
 
 (def test-map {:a [:b :c]

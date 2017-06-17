@@ -1,6 +1,6 @@
-(ns nettle.utils.defmultiple-test
+(ns bluebell.utils.defmultiple-test
   (:require [clojure.test :refer :all]
-            [nettle.utils.defmultiple :refer :all :as d]
+            [bluebell.utils.defmultiple :refer :all :as d]
             [clojure.spec :as spec]))
 
 (deftest defmultiple-test

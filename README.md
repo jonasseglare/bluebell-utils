@@ -1,4 +1,4 @@
-# epicea-utils
+# bluebell-utils
 
 A Clojure library designed to ... well, that part is up to you.
 
@@ -6,7 +6,7 @@ A Clojure library designed to ... well, that part is up to you.
 
 FIXME
 
-## epicea.typed.core
+## bluebell.typed.core
 
 Ett enda objekt: vexpress
 Motsvarar ett abstrakt vektor-uttryck
@@ -29,7 +29,7 @@ Funktioner som returnerar uttryck:
     (add-vec [a] [b]):
       Returnerar ett uttryck som motsvarar add addera de två vektorerna
 
-## epicea.utils.access
+## bluebell.utils.access
 
   * Simplifies working with *informal domain types*, such as a "person" represented as a map.
   * Specifies in one place how a value in a composite type can be read, written, updated, etc.
