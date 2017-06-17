@@ -20,6 +20,6 @@
   (is (= 7 (utils/macro-eval 
             (core/make-code (+ (types/primitive :double 3)
                                (types/primitive :double 4))))))
-  (is (= 12 (core/inline 
+  (is (= 12 (core/expand
              (* (types/primitive :double 3)
                 (types/primitive :double 4))))))
