@@ -12,7 +12,7 @@
   (assert (types/scalar? x))
   (assert (spec/valid? ::scalar-map derivative-map))
   {:type :ad 
-   :x x 
+   :value x 
    :derivatives derivative-map
    :scalar? true})
 
@@ -40,10 +40,16 @@
   (if (ad? x) x (ad x)))
 
 
+(defn only-non-nil [coll]
+  (filter (fn [[_ x]]
+            (not (nil? x))) 
+          coll))
+
 (defn map-keys [keys f sources]
-  (into {} (map (fn [k] [k (apply f (map (fn [src] (get src k))
-                                         sources))])
-                keys)))
+  (into {} (only-non-nil 
+            (map (fn [k] [k (apply f (map (fn [src] (get src k))
+                                          sources))])
+                 keys))))
 
 (defn merge-derivatives [[l m r] a b]
   (let [da (:derivatives a)
@@ -59,8 +65,17 @@
      (map-keys kab m [da db]))))
 
 (defn ad-add [a b]
-  (ad (ops/+ (:x a) (:x b))
+  (ad (ops/+ (:value a) (:value b))
       (merge-derivatives [identity ops/+ identity] a b)))
+
+(defn ad-mul [a b]
+  (ad (ops/* (:value a) (:value b))
+      (merge-derivatives [(partial ops/* (:value b))
+                          (fn [x y]
+                            (ops/+ (ops/* (:value a) y)
+                                   (ops/* (:value b) x)))
+                          (partial ops/* (:value a))]
+                         a b)))
 
 (defn binary-op [base-op ad-f] 
   (fn [a b]
@@ -73,3 +88,8 @@
 
 (defspecfun ops/+ 
   (::args-with-ad [x] (binary-reduce ops/+ ad-add x)))
+
+(defspecfun ops/*
+  (::args-with-ad [x] (binary-reduce ops/* ad-mul x)))
+
+;;; TODO other ops too.
