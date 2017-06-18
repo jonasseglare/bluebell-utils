@@ -2,12 +2,6 @@
   (:require [clojure.spec :as spec]
             [bluebell.utils.core :as utils]))
 
-(def funs (atom {}))
-
-(defn reset 
-  ([] (reset! funs {}))
-  ([key] (swap! funs #(assoc % key {}))))
-
 (spec/def ::name symbol?)
 
 (spec/def ::spec (constantly true))
@@ -24,6 +18,8 @@
 (spec/def ::defspecfun (spec/cat :name ::name
                                  :defs ::defs))
 
+(spec/def ::declspecfun (spec/cat :name ::name))
+
 (defn defs-to-map [defs]
   (into {} (map (fn [m]
                   {(:spec m) 
@@ -32,39 +28,48 @@
                 defs)))
 
 (defn defspecfun-sub [x]
-  `(swap! funs (fn [tgt#] (update-in tgt# [(quote ~(:name x))]
-              (fn [current#]
-                (merge (or current# {})
-                       ~(defs-to-map (:defs x))))))))
+  `(swap! (~(:name x) ::map) 
+          (fn [tgt#] 
+            (update-in tgt# [(quote ~(:name x))]
+                       (fn [current#]
+                         (merge (or current# {})
+                                ~(defs-to-map (:defs x))))))))
 
-(defn find-confs [key args]
+(defn find-confs [funs args]
   (filter
    (complement nil?)
    (map
     (fn [[sp impl]]
+      (println "spec = " sp)
+      (println "impl = " impl)
       (let [y (spec/conform sp args)]
         (if (not= y ::spec/invalid)
           [sp y impl])))
-    (get (deref funs) key))))
+    (deref funs))))
    
 
-(defn evaluate-specfun [key]
+(defn evaluate-specfun [key m]
   (fn [& args]
-    (let [confs (find-confs key args)]
-      (cond
-        (empty? confs) (utils/common-error "No implementation found for " key " and " args)
-        (= 1 (count confs)) (let [[_ parsed-args impl] (first confs)]
-                              (impl parsed-args))
-        :default (utils/common-error "Conformance ambiguity for " 
-                               key " and " args ": " 
-                               (with-out-str
-                                 (clojure.pprint/pprint 
-                                  (map first confs))))))))
+    (println "args = " args)
+    (if (= [::map] args)
+      m
+      (let [confs (find-confs m args)]
+        (cond
+          (empty? confs) (utils/common-error "No implementation found for " key " and " args)
+          (= 1 (count confs)) (let [[_ parsed-args impl] (first confs)]
+                                (impl parsed-args))
+          :default (utils/common-error "Conformance ambiguity for " 
+                                       key " and " args ": " 
+                                       (with-out-str
+                                         (clojure.pprint/pprint 
+                                          (map first confs)))))))))
+
+(defmacro declspecfun [name]
+  `(let [m# (atom {})]
+     (def ~name (evaluate-specfun ~name m#))))
 
 (defmacro defspecfun [& args]
   (let [x (spec/conform ::defspecfun args)]
     (if (= x ::spec/invalid)
       (utils/common-error (spec/explain-str ::defspecfun args))
-      `(do
-         ~(defspecfun-sub x)
-         (def ~(:name x) (evaluate-specfun (quote ~(:name x))))))))
+      (defspecfun-sub x))))
