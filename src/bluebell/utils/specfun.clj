@@ -30,18 +30,14 @@
 (defn defspecfun-sub [x]
   `(swap! (~(:name x) ::map) 
           (fn [tgt#] 
-            (update-in tgt# [(quote ~(:name x))]
-                       (fn [current#]
-                         (merge (or current# {})
-                                ~(defs-to-map (:defs x))))))))
+            (merge (or tgt# {})
+                   ~(defs-to-map (:defs x))))))
 
 (defn find-confs [funs args]
   (filter
    (complement nil?)
    (map
     (fn [[sp impl]]
-      (println "spec = " sp)
-      (println "impl = " impl)
       (let [y (spec/conform sp args)]
         (if (not= y ::spec/invalid)
           [sp y impl])))
@@ -50,7 +46,6 @@
 
 (defn evaluate-specfun [key m]
   (fn [& args]
-    (println "args = " args)
     (if (= [::map] args)
       m
       (let [confs (find-confs m args)]

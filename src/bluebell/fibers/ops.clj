@@ -54,6 +54,12 @@
      (specfun/defspecfun ~op
        (~op-spec [x#] (primitive-op ~op-key x#)))))
 
+(specfun/declspecfun +)
+(specfun/declspecfun -)
+(specfun/declspecfun *)
+(specfun/declspecfun inc)
+(specfun/declspecfun dec)
+
 (decl-primitive + :add-op ::primitives)
 (decl-primitive - :sub-op ::primitive-pair)
 (decl-primitive * :mul-op ::primitives)
