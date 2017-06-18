@@ -39,11 +39,6 @@
 (defn to-ad [x]
   (if (ad? x) x (ad x)))
 
-(defn left [a _]
-  a)
-
-(defn right [_ b]
-  b)
 
 (defn map-keys [keys f sources]
   (into {} (map (fn [k] [k (apply f (map (fn [src] (get src k))
@@ -65,7 +60,7 @@
 
 (defn ad-add [a b]
   (ad (ops/+ (:x a) (:x b))
-      (merge-derivatives [left ops/+ right] a b)))
+      (merge-derivatives [identity ops/+ identity] a b)))
 
 (defn binary-op [base-op ad-f] 
   (fn [a b]

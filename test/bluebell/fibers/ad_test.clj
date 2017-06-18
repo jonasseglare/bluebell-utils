@@ -23,4 +23,13 @@
             [1 2 3]))))
 
 (deftest add-test
-  (is (= 10 (:x (core/expand (ops/+ (ad (types/input 3)) (ad (types/input 4)) (types/input 3)))))))
+  (is (= 10 (:x (core/expand (ops/+ (ad (types/input 3)) 
+                                    (ad (types/input 4)) 
+                                    (types/input 3))))))
+  (is (= (core/expand (ops/+ (ad (types/input 3)
+                               {:x (types/input 1)
+                                :y (types/input 2)})
+                           (ad (types/input 4)
+                               {:y (types/input 9)
+                                :z (types/input 10)})))
+         {:type :ad, :x 7, :derivatives {:x 1, :z 10, :y 11}, :scalar? true})))
