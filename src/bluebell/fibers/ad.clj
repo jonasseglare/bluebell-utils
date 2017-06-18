@@ -30,8 +30,8 @@
 
 (spec/def ::ad ad?)
 (spec/def ::args-with-ad (spec/and 
-                                 ::types/scalars
-                                 #(some ad? %)))
+                          ::types/scalars
+                          #(some ad? %)))
 
 (defn no-ad? [args]
   (not (some ad? args)))
@@ -39,18 +39,36 @@
 (defn to-ad [x]
   (if (ad? x) x (ad x)))
 
-(defn ad-add [a b]
-  (ad (ops/+ (:x a) (:x b))))
-  ;(ops/+ (:x a) (:x b)))
+(defn left [a _]
+  a)
 
+(defn right [_ b]
+  b)
+
+(defn map-keys [keys f sources]
+  (into {} (map (fn [k] [k (apply f (map (fn [src] (get src k))
+                                         sources))])
+                keys)))
+
+(defn merge-derivatives [[l m r] a b]
+  (let [da (:derivatives a)
+        db (:derivatives b)
+        ka- (set (keys da))
+        kb- (set (keys db))
+        kab (clojure.set/intersection ka- kb-)
+        ka (clojure.set/difference ka- kab)
+        kb (clojure.set/difference kb- kab)]
+    (merge
+     (map-keys ka l [da])
+     (map-keys kb r [db])
+     (map-keys kab m [da db]))))
+
+(defn ad-add [a b]
+  (ad (ops/+ (:x a) (:x b))
+      (merge-derivatives [left ops/+ right] a b)))
 
 (defn binary-op [base-op ad-f] 
   (fn [a b]
-    (assert (spec/valid? ::args-with-ad [a b]))
-    (println "-----------------Binary op on ")
-    (clojure.pprint/pprint a)
-    (println "........and")
-    (clojure.pprint/pprint b)
     (if (no-ad? [a b])
       (base-op a b)
       (ad-f (to-ad a) (to-ad b)))))
