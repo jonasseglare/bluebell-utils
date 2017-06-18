@@ -48,6 +48,8 @@
 
 (spec/def ::scalar scalar?)
 (spec/def ::scalars (spec/coll-of ::scalar))
+(defn scalar [x]
+  (assoc x :scalar? true))
 
 (defn primitive? [x]
   (:primitive? x))

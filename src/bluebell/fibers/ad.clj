@@ -33,5 +33,24 @@
                                  ::types/scalars
                                  #(some ad? %)))
 
+(defn no-ad? [args]
+  (not (some ad? args)))
+
+(defn to-ad [x]
+  (if (ad? x) x (ad x)))
+
+(defn ad-add [a b]
+  (ad (ops/+ (:x a) (:x b))))
+
+
+(defn binary-op [base-op ad-f] 
+  (fn [a b]
+    (if (no-ad? [a b])
+      (base-op a b)
+      (ad-f (to-ad a) (to-ad b)))))
+
+(defn binary-reduce [base-op ad-f x]
+  (reduce (binary-op base-op ad-f) x))
+
 (defspecfun ops/+ 
-  (::args-with-ad [x] nil))
+  (::args-with-ad [x] (binary-reduce ops/+ ad-add x)))
