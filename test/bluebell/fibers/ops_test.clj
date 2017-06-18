@@ -23,3 +23,9 @@
   (is (= 12 (core/expand
              (* (types/primitive :double 3)
                 (types/primitive :double 4))))))
+
+(deftest nested-add
+  (is (= 7 (utils/macro-eval
+            (core/make-code (+ (+ (types/input 3)
+                                  (types/input 2))
+                               (types/input 2)))))))

@@ -18,10 +18,13 @@
 (spec/def ::one-primitive (n-primitives 1))
 
 (defn primitive-op [op args]
-  (types/scalar
-   (access/build core/-args args
-                 core/-datatype (types/common-datatype args)
-                 core/-nodetype op)))
+  (let [dt (types/common-datatype args)]
+    (merge
+     (get types/primitives dt)
+     (types/scalar
+      (access/build core/-args args
+                    core/-datatype dt
+                    core/-nodetype op)))))
 
 (defn construct [t argspec arg]
   (if (= t (access/get argspec core/-datatype))

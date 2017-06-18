@@ -41,10 +41,16 @@
 
 (defn ad-add [a b]
   (ad (ops/+ (:x a) (:x b))))
+  ;(ops/+ (:x a) (:x b)))
 
 
 (defn binary-op [base-op ad-f] 
   (fn [a b]
+    (assert (spec/valid? ::args-with-ad [a b]))
+    (println "-----------------Binary op on ")
+    (clojure.pprint/pprint a)
+    (println "........and")
+    (clojure.pprint/pprint b)
     (if (no-ad? [a b])
       (base-op a b)
       (ad-f (to-ad a) (to-ad b)))))
