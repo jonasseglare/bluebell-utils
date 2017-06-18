@@ -46,6 +46,9 @@
 (defn scalar? [x]
   (:scalar? x))
 
+(spec/def ::scalar scalar?)
+(spec/def ::scalars (spec/coll-of ::scalar))
+
 (defn primitive? [x]
   (:primitive? x))
 
@@ -92,3 +95,6 @@
   ([t x] 
    (assert (primitive-type? t))
    (with-traits t (primitive-expr t x))))
+
+(defn input [x]
+  (primitive :double x))

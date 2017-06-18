@@ -11,7 +11,10 @@
 (defn ad-sub [x derivative-map]
   (assert (types/scalar? x))
   (assert (spec/valid? ::scalar-map derivative-map))
-  {:type :ad :x x :derivatives derivative-map})
+  {:type :ad 
+   :x x 
+   :derivatives derivative-map
+   :scalar? true})
 
 (defn ad 
   ([x] (ad x {}))
@@ -25,3 +28,10 @@
 
 (def ad? (is-type? :ad))
 
+(spec/def ::ad ad?)
+(spec/def ::args-with-ad (spec/and 
+                                 ::types/scalars
+                                 #(some ad? %)))
+
+(defspecfun ops/+ 
+  (::args-with-ad [x] nil))
