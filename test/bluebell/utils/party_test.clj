@@ -38,3 +38,11 @@
 (defpseudorec gos
   nam {:valid? string?}
   age {:valid? int?})
+
+(deftest gos-test
+  (is (= {:nam "mummi"
+          :age nil}
+         (nam gos "mummi")))
+  (is (= {:nam nil
+          :age 31}
+         (age gos 31))))

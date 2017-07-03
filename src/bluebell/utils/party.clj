@@ -25,8 +25,7 @@
 (defn chain2 [a b]
   (fn
     ([] {:desc "(chain2 " (:desc (a)) " " (:desc (b)) ")"})
-    ([obj] (if-let [aobj (a obj)]
-             (b aobj)))
+    ([obj] (b (a obj)))
     ([obj x] (a obj (b (a obj) x)))))
 
 (defn chain [& args]
@@ -124,17 +123,22 @@
 (defn defpseudorec-sub [args]
   (let [fields (get-fields args)
         id (:name args)
-        base (merge (field-place-holders fields)
-                    (default-rec-opts fields)
+        defv (field-place-holders fields)
+        base (merge (default-rec-opts fields)
                     (or (:opts args) {}))]
     `(do
-       (def ~id ~base)
+       (def ~id ~defv)
        (def ~(symbol (str (name id) "?"))
-         (:valid? ~id))
+         ~(:valid? base))
        ~@(make-fields (:valid? base) fields))
     ))
 
-(defmacro defpseudorec [& args]
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; The main macro to build a pseudo record
+(defmacro defpseudorec
+  "Define a pseudo record with methods to access." [& args]
   (let [parsed (spec/conform ::args args)]
     (if (= ::spec/invalid parsed)
       (utils/common-error "defpseudorec failed: " (spec/explain-str ::args args))
