@@ -1,4 +1,5 @@
 (ns bluebell.utils.party-test
+  (:refer-clojure :exclude [update])
   (:require [clojure.test :refer :all]
             [bluebell.utils.party :refer :all]))
 
@@ -17,4 +18,6 @@
 
 (deftest mjao-katt-test
   (is (= 2 (mjao-katt {:mjao [0 1 2 3 4]})))
-  (is (= {:mjao [0 1 9 3 4]} (mjao-katt {:mjao [0 1 2 3 4]} 9))))
+  (is (= {:mjao [0 1 9 3 4]} (mjao-katt {:mjao [0 1 2 3 4]} 9)))
+  (is (= {:mjao [0 1 3]} (update {:mjao [0 1 2]} mjao-katt inc))))
+

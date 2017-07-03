@@ -1,14 +1,18 @@
 (ns bluebell.utils.party
   (:refer-clojure :exclude [update]))
 
-(defn key-accessor [k]
+(defn key-accessor
+  "Create an accessor for map keys"
+  [k]
   (fn
     ([obj]
      (get obj k))
     ([obj x]
      (assoc obj k x))))
 
-(defn index-accessor [i]
+(defn index-accessor
+  "Create an accessor for indices"
+  [i]
   (fn
     ([obj] (nth obj i))
     ([obj x] (assoc obj i x))))
@@ -19,7 +23,11 @@
     ([obj x] (a obj (b (a obj) x)))))
 
 (defn chain [& args]
+  "Connect accessors in a chain"
   (reduce chain2 args))
 
 (defn update [obj accessor f]
+  "Use an accessor to update an object"
   (accessor obj (f (accessor obj))))
+
+;;;;;;;;;;;;;;;;;;;;;; Decorators
