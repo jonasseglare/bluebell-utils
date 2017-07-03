@@ -36,9 +36,13 @@
   "Use an accessor to update an object"
   (accessor obj (f (accessor obj))))
 
+(defn updater [accessor]
+  (fn [obj f]
+    (update obj accessor f)))
+
 ;;;;;;;;;;;;;;;;;;;;;; Validation
 (defn validate [v? x cmt]
-  (assert (v? x) cmt)
+  (assert (v? x) (str cmt " on " x))
   x)
 
 (defn validate-base [accessor v?]
@@ -130,8 +134,7 @@
        (def ~id ~defv)
        (def ~(symbol (str (name id) "?"))
          ~(:valid? base))
-       ~@(make-fields (:valid? base) fields))
-    ))
+       ~@(make-fields (:valid? base) fields))))
 
 
 
