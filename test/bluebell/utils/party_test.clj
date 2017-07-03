@@ -34,3 +34,7 @@
   (is (spec/valid?
        ::party/args
        '(mjao {:valid? []} name phone {:valid? string?}))))
+
+(defpseudorec gos
+  nam {:valid? string?}
+  age {:valid? int?})

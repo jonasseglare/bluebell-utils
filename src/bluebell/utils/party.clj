@@ -85,19 +85,53 @@
   (let [fields (set fields0)]
     (fn [x]
       (and (map? x)
-           (clojure.set/subset? fields (keys x))))))
+           (clojure.set/subset?
+            fields (set (keys x)))))))
 
 (defn default-rec-opts [fields]
-  {:valid? `(rec-validator ~fields)})
+  {:valid? `(rec-validator ~(vec (map :key fields)))})
+
+(defn field-place-holders [fields]
+  (reduce (fn [m x]
+            (assoc m (:key x) nil))
+          {} fields))
+
+(defn validate-base-or-nil [acc v?]
+  (if (nil? v?)
+    acc
+    (validate-base acc v?)))
+
+(defn validate-target-or-nil [acc v?]
+  (if (nil? v?)
+    acc
+    (validate-target acc v?)))
+
+(defn key-accessor-with-validation
+  [vb? k v?]
+  (validate-target-or-nil
+   (validate-base-or-nil (key-accessor k) vb?)
+   v?))
+
+(defn make-field [valid-base? field]
+  `(def ~(:name field) (key-accessor-with-validation
+                        ~valid-base?
+                        ~(:key field)
+                        ~(:valid? field))))
+
+(defn make-fields [valid-base? fields]
+  (map #(make-field valid-base? %) fields))
 
 (defn defpseudorec-sub [args]
   (let [fields (get-fields args)
-        id (:name args)]
+        id (:name args)
+        base (merge (field-place-holders fields)
+                    (default-rec-opts fields)
+                    (or (:opts args) {}))]
     `(do
-       (def ~id ~(merge (default-rec-opts fields)
-                        (or (:opts args) {})))
+       (def ~id ~base)
        (def ~(symbol (str (name id) "?"))
-         (:valid? ~id)))
+         (:valid? ~id))
+       ~@(make-fields (:valid? base) fields))
     ))
 
 (defmacro defpseudorec [& args]
