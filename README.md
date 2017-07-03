@@ -2,10 +2,13 @@
 
 A Clojure library designed to ... well, that part is up to you.
 
+## Coding conventions:
+ - ```nil``` is commonly used to represent absence of value.
+ - ```bluebell.utils.failure``` is used to encode failures.
+
 ## Usage
 
 FIXME
-
 ## bluebell.typed.core
 
 Ett enda objekt: vexpress
