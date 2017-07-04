@@ -1,4 +1,5 @@
 (ns bluebell.utils.indent
+  (:refer-clojure :exclude [cat])
   (:require [bluebell.utils.string :as string]))
 
 (def default-indent-settings {:prefix "  "})
@@ -14,9 +15,16 @@
 (defn indent [& args]
   (indent-sub (parse-indent-args args)))
 
+(defn cat [& args]
+  `[::cat ~@args])
+
 (defn indent? [x]
   (and (vector? x)
        (= ::indent (first x))))
+
+(defn cat? [x]
+  (and (vector? x)
+       (= ::cat (first x))))
 
 (defn prefix [x]
   (-> x second :prefix))
@@ -28,6 +36,7 @@
   (cond
     (indent? arg) (render-sub (str p (prefix arg))
                               (body arg))
+    (cat? arg) (apply str (map #(render-sub p %) (rest arg)))
     (coll? arg) (string/join-lines (map #(render-sub p %) arg))
     :default (str p arg)))
 
