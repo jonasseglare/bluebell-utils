@@ -1,7 +1,7 @@
 (ns bluebell.utils.specfun-test
   (:require [bluebell.utils.specfun :refer :all :as specfun]
             [clojure.test :refer :all]
-            [clojure.spec :as spec]))
+            [clojure.spec.alpha :as spec]))
 
 (deftest various-spec
   (is (spec/valid? ::specfun/def '(my-spec [name] (+ 1 2) (+ 4 5))))

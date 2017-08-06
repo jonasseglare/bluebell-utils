@@ -1,6 +1,6 @@
 (ns bluebell.fibers.types
   (:require [bluebell.fibers.core :refer :all]
-            [clojure.spec :as spec]
+            [clojure.spec.alpha :as spec]
             [bluebell.utils.access :as access]
             [bluebell.utils.core :as utils]))
 

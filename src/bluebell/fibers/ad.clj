@@ -1,5 +1,5 @@
 (ns bluebell.fibers.ad
-  (:require [clojure.spec :as spec]
+  (:require [clojure.spec.alpha :as spec]
             [bluebell.fibers.ops :as ops]
             [bluebell.fibers.types :as types]
             [bluebell.fibers.core :as core]

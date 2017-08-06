@@ -1,5 +1,5 @@
 (ns bluebell.utils.defmultiple
-  (:require [clojure.spec :as spec]))
+  (:require [clojure.spec.alpha :as spec]))
 
 
 (spec/def ::name symbol?)

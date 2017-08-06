@@ -1,5 +1,5 @@
 (ns bluebell.utils.mapdater
-  (:require [clojure.spec :as spec]
+  (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.defmultiple :refer [defmultiple]]))
 
 (spec/def ::body (spec/* (constantly true)))

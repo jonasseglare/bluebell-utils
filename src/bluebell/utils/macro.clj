@@ -1,5 +1,5 @@
 (ns bluebell.utils.macro
-  (:require [clojure.spec :as spec]))
+  (:require [clojure.spec.alpha :as spec]))
 
 ;; General error reporting for macros
 (defn error [& s]

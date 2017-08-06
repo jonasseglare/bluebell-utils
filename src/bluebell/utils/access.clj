@@ -3,7 +3,7 @@
   (:require [bluebell.utils.debug :as debug]
             [bluebell.utils.core :as core]
             [bluebell.utils.optional :refer [optional]]
-            [clojure.spec :as spec]
+            [clojure.spec.alpha :as spec]
             [clojure.pprint :as pprint]))
 
 ;;;;;

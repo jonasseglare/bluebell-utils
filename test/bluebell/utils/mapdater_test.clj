@@ -1,7 +1,7 @@
 (ns bluebell.utils.mapdater-test
   (:require [clojure.test :refer :all]
             [bluebell.utils.mapdater :refer :all :as md]
-            [clojure.spec :as spec]))
+            [clojure.spec.alpha :as spec]))
 
 
 (def k (mapdater a [b c] (+ b c)))

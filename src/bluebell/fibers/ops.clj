@@ -1,6 +1,6 @@
 (ns bluebell.fibers.ops
   (:refer-clojure :exclude [+ - * / inc dec])
-  (:require [clojure.spec :as spec]
+  (:require [clojure.spec.alpha :as spec]
             [bluebell.fibers.core :as core]
             [bluebell.fibers.types :as types]
             [bluebell.utils.access :as access]

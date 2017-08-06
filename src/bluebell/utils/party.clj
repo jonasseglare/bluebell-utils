@@ -1,6 +1,6 @@
 (ns bluebell.utils.party
   (:refer-clojure :exclude [update])
-  (:require [clojure.spec :as spec]
+  (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 

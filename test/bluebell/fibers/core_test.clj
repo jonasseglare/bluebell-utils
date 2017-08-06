@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [bluebell.utils.access :as access]
             [bluebell.fibers.core :refer :all :as egraph]
-            [clojure.spec :as spec]
+            [clojure.spec.alpha :as spec]
             [bluebell.utils.core :refer [macro-eval]]
             [bluebell.utils.defmultiple :refer [defmultiple-extra]]))
 

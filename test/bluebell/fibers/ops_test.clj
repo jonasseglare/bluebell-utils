@@ -4,7 +4,7 @@
             [bluebell.fibers.types :as types]
             [bluebell.fibers.core :as core]
             [clojure.test :refer :all]
-            [clojure.spec :as spec]
+            [clojure.spec.alpha :as spec]
             [bluebell.utils.core :as utils]))
 
 (deftest add-test

@@ -1,5 +1,5 @@
 (ns bluebell.fibers.core
-  (:require [clojure.spec :as spec]
+  (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.toposort :as toposort]
             [bluebell.utils.access :as access]))

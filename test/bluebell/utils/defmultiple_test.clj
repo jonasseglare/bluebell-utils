@@ -1,7 +1,7 @@
 (ns bluebell.utils.defmultiple-test
   (:require [clojure.test :refer :all]
             [bluebell.utils.defmultiple :refer :all :as d]
-            [clojure.spec :as spec]))
+            [clojure.spec.alpha :as spec]))
 
 (deftest defmultiple-test
   (is (= {:name 'evaluate

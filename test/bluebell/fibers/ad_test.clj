@@ -4,7 +4,7 @@
             [bluebell.fibers.core :as core]
             [bluebell.fibers.ops :as ops]
             [clojure.test :refer :all]
-            [clojure.spec :as spec]))
+            [clojure.spec.alpha :as spec]))
 
 (deftest ad-test
   (is (ad? (ad (types/primitive :double 3))))

@@ -1,7 +1,7 @@
 (ns bluebell.utils.party-test
   (:refer-clojure :exclude [update])
   (:require [clojure.test :refer :all]
-            [clojure.spec :as spec]
+            [clojure.spec.alpha :as spec]
             [bluebell.utils.party :refer :all :as party]))
 
 (def mjao (key-accessor :mjao))
