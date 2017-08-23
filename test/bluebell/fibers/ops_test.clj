@@ -4,6 +4,7 @@
             [bluebell.fibers.types :as types]
             [bluebell.fibers.core :as core]
             [clojure.test :refer :all]
+            [bluebell.utils.access :as access]
             [clojure.spec.alpha :as spec]
             [bluebell.utils.core :as utils]))
 
@@ -29,3 +30,16 @@
             (core/make-code (+ (+ (types/input 3)
                                   (types/input 2))
                                (types/input 2)))))))
+
+(defn static-if [cond true-branch false-branch]
+  (core/node
+   (access/build core/-datatype :unspecified)))
+
+(comment
+  (core/make-map {}
+                 (static-if (types/input 1)
+                            (types/input 2)
+                            (types/input 3)))
+
+  )
+
