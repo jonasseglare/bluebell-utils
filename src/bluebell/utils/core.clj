@@ -140,3 +140,8 @@
 ;; For generating code in-place
 (defmacro macro-eval [code]
   (eval code))
+
+(defn conj-map [dst key x]
+  (if (contains? dst key)
+    (update-in dst [key] #(conj % x))
+    (assoc dst key [x])))
