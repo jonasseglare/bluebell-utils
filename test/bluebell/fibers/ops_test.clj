@@ -33,13 +33,19 @@
 
 (defn static-if [cond true-branch false-branch]
   (core/node
-   (access/build core/-datatype :unspecified)))
+   (access/build core/-datatype :unspecified
+                 core/-args [cond true-branch false-branch])))
 
 (comment
   (core/make-map {}
                  (static-if (types/input 1)
                             (types/input 2)
                             (types/input 3)))
+
+  (core/make-code
+   (static-if (types/input 1)
+              (types/input 2)
+              (types/input 3)))
 
   )
 
