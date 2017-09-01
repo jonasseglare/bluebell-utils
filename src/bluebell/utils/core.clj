@@ -145,3 +145,48 @@
   (if (contains? dst key)
     (update-in dst [key] #(conj % x))
     (assoc dst key [x])))
+
+(defn make-empty [x]
+  (if (vector? x)
+    [] (empty x)))
+
+(defn reverse-if-seq [[state x]]
+  [state (if (seq? x) (reverse x) x)])
+
+;; Bug in Clojure?
+
+;;; f: state x item -> [new-state transformed-item]
+(defn reduce-coll-items-sub [f state coll]
+  (reduce (fn [[state new-coll] x]
+            (let [[new-state new-item] (f state x)]
+              [new-state (conj new-coll new-item)]))
+          [state (make-empty coll)]
+          coll))
+
+(defn normalize-coll [coll]
+  (cond
+    (map? coll) (vec (apply concat (vec coll)))
+    :default (vec coll)))
+
+(defn make-map [proto coll]
+  (first
+   (reduce (fn [[m state] x]
+             (if (empty? state)
+               [m [x]]
+               [(conj m (conj state x)) []]))
+           [(make-empty proto) []] coll)))
+
+(defn make-seq [proto coll]
+  (reverse (into (make-empty proto) coll)))
+
+(defn denormalize-coll [proto coll]
+  (cond
+    (map? proto) (make-map proto coll)
+    (seq? proto) (make-seq proto coll)
+    :default (into (make-empty proto) coll)))
+
+(defn reduce-coll-items [f state coll]
+  (let [[new-state new-coll] (reduce-coll-items-sub
+                              f state (normalize-coll coll))]
+    [new-state
+     (denormalize-coll coll new-coll)]))

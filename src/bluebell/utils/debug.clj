@@ -13,3 +13,17 @@
 
 (defmacro douts [& args]
   `(do ~@(map (fn [arg] `(dout ~arg)) args)))
+
+(defn disp-fn-io
+  ([f] (disp-fn-io f "Unknown function"))
+  ([f label]
+   (fn [& args]
+     (let [output (apply f args)]
+       (println "----Function " label)
+       (println "Inputs")
+       (doseq [x args]
+         (println "Arg->")
+         (clojure.pprint/pprint x))
+       (println "  ---> Output: ")
+       (clojure.pprint/pprint output)
+       output))))
