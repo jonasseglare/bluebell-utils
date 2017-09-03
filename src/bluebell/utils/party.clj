@@ -4,10 +4,15 @@
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 
-(defn identity-accessor
-  ([] {:desc "idenity-accessor"})
+(defn access-identity
+  ([] {:desc "access-idenity"})
   ([obj] obj)
   ([old-val new-val] new-val))
+
+(defn access-coll-as-vec
+  ([] {:desc "access-coll-as-vec"})
+  ([x] (utils/normalize-coll x))
+  ([x new-value] (utils/denormalize-coll x new-value)))
 
 (defn key-accessor
   "Create an accessor for map keys"
