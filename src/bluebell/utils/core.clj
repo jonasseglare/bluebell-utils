@@ -1,5 +1,7 @@
 (ns bluebell.utils.core
-  (:require [clojure.set]))
+  (:require [clojure.set]
+            [clojure.spec.alpha :as spec]
+            [clojure.spec.test.alpha :as stest]))
             
 
 (defn flatten-map-hierarchy [mh]
