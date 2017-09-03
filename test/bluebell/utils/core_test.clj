@@ -33,3 +33,9 @@
 (deftest group-transducer-test
   (is (reduce ((bundle 2) conj) [] [1 2 3 4 5 6])
       [[1 2] [3 4] [5 6]]))
+
+(defn count-and-inc [state x]
+  [(inc state) (inc x)])
+
+(deftest reduce-coll-items-test
+  (is [3 #{1 2 3} (reduce-coll-items count-and-inc 0 #{0 1 2})]))
