@@ -1,4 +1,5 @@
-(ns bluebell.utils.debug)
+(ns bluebell.utils.debug
+  (:require [clojure.pprint]))
 
 (defn dout-sub [label x]
   `(let [x# ~x]
