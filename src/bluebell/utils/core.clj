@@ -187,8 +187,58 @@
     (seq? proto) (make-seq proto coll)
     :default (into (make-empty proto) coll)))
 
+;;;;;;; Main
 (defn reduce-coll-items [f state coll]
   (let [[new-state new-coll] (reduce-coll-items-sub
                               f state (normalize-coll coll))]
     [new-state
      (denormalize-coll coll new-coll)]))
+
+;;;;;;;;;;;;;;;;;;; Helpers
+(defn only-visit [x? v]
+  (fn [x]
+    (if (x? x) (v x) x)))
+
+
+(defn stateless [f]
+  (fn [state x]
+    [state (f x)]))
+
+
+;;;;;;;;;;;;;;;;;;;;;;; Traversal
+(declare traverse-postorder-cached-sub)
+
+(defn traverse-postorder-cached-coll [m expr cfg]
+  (reduce-coll-items
+   (fn [m x]
+     (traverse-postorder-cached-sub m x cfg))
+   m
+   expr))
+
+(defn register-cache [m src dst]
+  [(assoc m src dst) [dst 1]])
+
+(defn descend? [cfg expr]
+  (let [d? (:descend? cfg)]
+    (or (not d?) (d? expr))))
+
+(defn visit-and-register [orig cfg [m expr]]
+  (let [y ((:visit cfg) expr)]
+    [(assoc m orig y) y]))
+
+(defn look-up-and-inc [m expr]
+  (let [[dst n] (get m expr)]
+    [(assoc m expr [dst (inc n)]) dst]))
+
+(defn traverse-postorder-cached-sub [m expr cfg]
+  (if (contains? m expr)
+    (look-up-and-inc m expr)
+    (visit-and-register
+     expr
+     cfg (if (and (coll? expr)
+                   (descend? cfg expr))
+            (traverse-postorder-cached-coll m expr cfg)
+            [m expr]))))
+
+(defn traverse-postorder-cached [expr cfg]
+  (second (traverse-postorder-cached-sub {} expr cfg)))
