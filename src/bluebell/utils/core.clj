@@ -206,12 +206,12 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;; Traversal
-(declare traverse-postorder-cached)
+(declare traverse-postorder-cached-sub)
 
 (defn traverse-postorder-cached-coll [m expr cfg]
   (reduce-coll-items
    (fn [m x]
-     (traverse-postorder-cached m x cfg))
+     (traverse-postorder-cached-sub m x cfg))
    m
    expr))
 
@@ -219,23 +219,41 @@
   (let [d? (:descend? cfg)]
     (or (not d?) (d? expr))))
 
-(defn visit-and-register [orig cfg [m expr]]
-  (let [y ((:visit cfg) expr)]
-    [(assoc m orig [y 1]) y]))
+(defn register-cached [orig cfg [m new-value]]
+  [(assoc m orig [new-value 1]) new-value])
 
 (defn look-up-and-inc [m expr]
   (let [[dst n] (get m expr)]
     [(assoc m expr [dst (inc n)]) dst]))
 
+(spec/def ::visit fn?)
+(spec/def ::traverse-config (spec/keys :req-un [::visit]
+                                       :opt-un [::access-coll]))
+
+(defn coll-accessor
+  ([] {:desc "coll-accessor"})
+  ([x] (if (coll? x) x []))
+  ([x new-val] (if (coll? x) new-val x)))
+
+(defn traverse-postorder-cached-sub
+  [m expr cfg]
+  (if (contains? m expr)
+    (look-up-and-inc m expr)
+    (register-cached
+     expr
+     cfg (let [c ((:access-coll cfg) expr)
+               [m c] (traverse-postorder-cached-coll m c cfg)]
+           [m ((:visit cfg) ((:access-coll cfg) expr c))]))))
+
+(def default-traverse-cfg {:access-coll coll-accessor})
+
 (defn traverse-postorder-cached
   ([m expr cfg]
-   (if (contains? m expr)
-     (look-up-and-inc m expr)
-     (visit-and-register
-      expr
-      cfg (if (and (coll? expr)
-                   (descend? cfg expr))
-            (traverse-postorder-cached-coll m expr cfg)
-            [m expr]))))
+   (traverse-postorder-cached-sub m expr (merge default-traverse-cfg cfg)))
   ([expr cfg]
    (second (traverse-postorder-cached {} expr cfg))))
+(spec/fdef traverse-postorder-cached :args
+           (spec/cat
+            :m (spec/? map?)
+            :expr (constantly true)
+            :cfg ::traverse-config))

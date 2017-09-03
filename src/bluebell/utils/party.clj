@@ -4,6 +4,11 @@
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 
+(defn identity-accessor
+  ([] {:desc "idenity-accessor"})
+  ([obj] obj)
+  ([old-val new-val] new-val))
+
 (defn key-accessor
   "Create an accessor for map keys"
   [k]

@@ -1,6 +1,9 @@
 (ns bluebell.utils.core-test
   (:require [clojure.test :refer :all]
+            [clojure.spec.test.alpha :as stest]
             [bluebell.utils.core :refer :all]))
+
+(stest/instrument)
 
 (deftest map-with-keys-test
   (testing "Testing map with keys"
