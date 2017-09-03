@@ -206,17 +206,14 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;; Traversal
-(declare traverse-postorder-cached-sub)
+(declare traverse-postorder-cached)
 
 (defn traverse-postorder-cached-coll [m expr cfg]
   (reduce-coll-items
    (fn [m x]
-     (traverse-postorder-cached-sub m x cfg))
+     (traverse-postorder-cached m x cfg))
    m
    expr))
-
-(defn register-cache [m src dst]
-  [(assoc m src dst) [dst 1]])
 
 (defn descend? [cfg expr]
   (let [d? (:descend? cfg)]
@@ -224,21 +221,21 @@
 
 (defn visit-and-register [orig cfg [m expr]]
   (let [y ((:visit cfg) expr)]
-    [(assoc m orig y) y]))
+    [(assoc m orig [y 1]) y]))
 
 (defn look-up-and-inc [m expr]
   (let [[dst n] (get m expr)]
     [(assoc m expr [dst (inc n)]) dst]))
 
-(defn traverse-postorder-cached-sub [m expr cfg]
-  (if (contains? m expr)
-    (look-up-and-inc m expr)
-    (visit-and-register
-     expr
-     cfg (if (and (coll? expr)
+(defn traverse-postorder-cached
+  ([m expr cfg]
+   (if (contains? m expr)
+     (look-up-and-inc m expr)
+     (visit-and-register
+      expr
+      cfg (if (and (coll? expr)
                    (descend? cfg expr))
             (traverse-postorder-cached-coll m expr cfg)
             [m expr]))))
-
-(defn traverse-postorder-cached [expr cfg]
-  (second (traverse-postorder-cached-sub {} expr cfg)))
+  ([expr cfg]
+   (second (traverse-postorder-cached {} expr cfg))))
