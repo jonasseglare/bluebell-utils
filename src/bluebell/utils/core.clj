@@ -168,6 +168,7 @@
 (defn normalize-coll [coll]
   (cond
     (map? coll) (vec (apply concat (vec coll)))
+    (set? coll) (sort (vec coll))
     :default (vec coll)))
 
 (defn make-map [proto coll]
