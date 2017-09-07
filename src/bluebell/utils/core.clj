@@ -165,9 +165,17 @@
           [state (make-empty coll)]
           coll))
 
+(defn comparable? [x]
+  (instance? java.lang.Comparable x))
+
+(defn sort-if-possible [pairs]
+  (if (every? comparable? (map first pairs))
+    (sort-by first pairs)
+    pairs))
+
 (defn normalize-coll [coll]
   (cond
-    (map? coll) (vec (apply concat (vec coll)))
+    (map? coll) (vec (apply concat (sort-if-possible (vec coll))))
     (set? coll) (sort (vec coll))
     :default (vec coll)))
 
