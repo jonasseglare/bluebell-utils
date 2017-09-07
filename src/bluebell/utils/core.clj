@@ -168,15 +168,20 @@
 (defn comparable? [x]
   (instance? java.lang.Comparable x))
 
-(defn sort-if-possible [pairs]
+(defn sort-pairs-if-possible [pairs]
   (if (every? comparable? (map first pairs))
     (sort-by first pairs)
     pairs))
 
+(defn sort-if-possible [x]
+  (if (every? comparable? x)
+    (sort x)
+    x))
+
 (defn normalize-coll [coll]
   (cond
-    (map? coll) (vec (apply concat (sort-if-possible (vec coll))))
-    (set? coll) (sort (vec coll))
+    (map? coll) (vec (apply concat (sort-pairs-if-possible (vec coll))))
+    (set? coll) (sort-if-possible (vec coll))
     :default (vec coll)))
 
 (defn make-map [proto coll]
