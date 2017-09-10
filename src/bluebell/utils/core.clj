@@ -297,8 +297,6 @@
                             (traverse-postorder-with-state-sub
                              state x visit access))
                           state (access expr))
-        _ (do (println "expr=" expr)
-              (println "children=" children))
         expr (access expr children)]
     (visit state expr)))
 

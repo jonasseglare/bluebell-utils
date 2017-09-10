@@ -59,4 +59,11 @@
           [[0 3 4] 3 4] 
           {:visit (fn [state x]
                     [(inc state) (if (coll? x) x (str x))])
-           }))))
+           })))
+  (is (= (traverse-postorder-with-state
+                      0 {:a 3 :b 3}
+                      {:visit (fn [state x]
+                                (if (number? x)
+                                  [(inc state) (str x)]
+                                  [state x]))})
+         [2 {:a "3", :b "3"}])))
