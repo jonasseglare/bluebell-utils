@@ -271,3 +271,26 @@
             :m (spec/? map?)
             :expr (constantly true)
             :cfg ::traverse-config))
+
+;;;;;;;;;;;;;;;;;;;;; Traverse with state
+(defn map-with-state [f state data]
+  (reduce
+   (fn [[state dst] x]
+     (let [[state y] (f state x)]
+       [state (conj dst y)]))
+   [state []] data))
+
+(defn traverse-postorder-with-state-sub [state expr visit access]
+  (let [[state children] (map-with-state
+                          (fn [state x]
+                            (traverse-postorder-with-state-sub
+                             state x visit access))
+                          state (access expr))
+        expr (access expr children)]
+    (visit state expr)))
+
+(defn traverse-postorder-with-state
+  [state expr cfg]
+  (let [c (merge default-traverse-cfg cfg)]
+    (traverse-postorder-with-state-sub
+     state expr (:visit c) (:access-coll c))))
