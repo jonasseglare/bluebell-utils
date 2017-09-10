@@ -157,14 +157,6 @@
 
 ;; Bug in Clojure?
 
-;;; f: state x item -> [new-state transformed-item]
-(defn reduce-coll-items-sub [f state coll]
-  (reduce (fn [[state new-coll] x]
-            (let [[new-state new-item] (f state x)]
-              [new-state (conj new-coll new-item)]))
-          [state (make-empty coll)]
-          coll))
-
 (defn comparable? [x]
   (instance? java.lang.Comparable x))
 
@@ -202,11 +194,13 @@
     :default (into (make-empty proto) coll)))
 
 ;;;;;;; Main
-(defn reduce-coll-items [f state coll]
-  (let [[new-state new-coll] (reduce-coll-items-sub
-                              f state (normalize-coll coll))]
-    [new-state
-     (denormalize-coll coll new-coll)]))
+(defn map-with-state [f state data]
+  (reduce
+   (fn [[state dst] x]
+     (let [[state y] (f state x)]
+       [state (conj dst y)]))
+   [state []] data))
+
 
 (defn normalized-coll-accessor
   ([] {:desc "Normalized coll accessor"})
@@ -232,7 +226,7 @@
 (declare traverse-postorder-cached-sub)
 
 (defn traverse-postorder-cached-coll [m expr cfg]
-  (reduce-coll-items
+  (map-with-state
    (fn [m x]
      (traverse-postorder-cached-sub m x cfg))
    m
@@ -284,12 +278,6 @@
             :cfg ::traverse-config))
 
 ;;;;;;;;;;;;;;;;;;;;; Traverse with state
-(defn map-with-state [f state data]
-  (reduce
-   (fn [[state dst] x]
-     (let [[state y] (f state x)]
-       [state (conj dst y)]))
-   [state []] data))
 
 (defn traverse-postorder-with-state-sub [state expr visit access]
   (let [[state children] (map-with-state

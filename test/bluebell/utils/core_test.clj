@@ -40,9 +40,6 @@
 (defn count-and-inc [state x]
   [(inc state) (inc x)])
 
-(deftest reduce-coll-items-test
-  (is [3 #{1 2 3} (reduce-coll-items count-and-inc 0 #{0 1 2})]))
-
 (deftest traverse-postorder
   (is (= (traverse-postorder-cached [1 2 3] {:visit (only-visit number? inc)})
          [2 3 4]))
