@@ -208,6 +208,15 @@
     [new-state
      (denormalize-coll coll new-coll)]))
 
+(defn normalized-coll-accessor
+  ([] {:desc "Normalized coll accessor"})
+  ([x] (if (coll? x)
+         (normalize-coll x)
+         []))
+  ([x y] (if (coll? x)
+           (denormalize-coll x y)
+           x)))
+
 ;;;;;;;;;;;;;;;;;;; Helpers
 (defn only-visit [x? v]
   (fn [x]
@@ -259,7 +268,9 @@
                [m c] (traverse-postorder-cached-coll m c cfg)]
            [m ((:visit cfg) ((:access-coll cfg) expr c))]))))
 
-(def default-traverse-cfg {:access-coll coll-accessor})
+(def normalized-coll-accessor)
+
+(def default-traverse-cfg {:access-coll normalized-coll-accessor})
 
 (defn traverse-postorder-cached
   ([m expr cfg]
@@ -286,6 +297,8 @@
                             (traverse-postorder-with-state-sub
                              state x visit access))
                           state (access expr))
+        _ (do (println "expr=" expr)
+              (println "children=" children))
         expr (access expr children)]
     (visit state expr)))
 
