@@ -309,7 +309,10 @@
 (println "Traverse unique....")
 
 (defn traverse-postorder-with-state
-  [state expr cfg]
-  (let [c (process-config cfg)]
-    (traverse-postorder-with-state-sub
-     state expr (:visit c) (:access-coll c))))
+  ([expr cfg]
+   (let [c (process-config cfg)]
+     (traverse-postorder-with-state-sub
+      (:state c) expr (:visit c) (:access-coll c))))
+  ([state expr cfg]
+   (traverse-postorder-with-state
+    expr (assoc cfg :state state))))
