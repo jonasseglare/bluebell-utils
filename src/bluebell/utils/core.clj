@@ -264,7 +264,8 @@
 
 (def normalized-coll-accessor)
 
-(def default-traverse-cfg {:access-coll normalized-coll-accessor})
+(def default-traverse-cfg {:access-coll normalized-coll-accessor
+                           :only-unique false})
 
 (defn traverse-postorder-cached
   ([m expr cfg]
@@ -288,8 +289,27 @@
         expr (access expr children)]
     (visit state expr)))
 
+(defn visit-only-unique-wrap [state]
+  {:visited {}
+   :wrapped state})
+
+(defn visit-only-unique [stateful-visitor]
+  (fn [state expr]
+    (let [v (:visited state)]
+      (if (contains? v expr)
+        (get v expr)
+        (let [[next-state output]
+              (stateful-visitor (:wrapped state) expr)]
+          [{:visited (assoc v expr output)
+            :wrapped next-state}])))))
+
+(defn process-config [cfg]
+  (merge default-traverse-cfg cfg))
+
+(println "Traverse unique....")
+
 (defn traverse-postorder-with-state
   [state expr cfg]
-  (let [c (merge default-traverse-cfg cfg)]
+  (let [c (process-config cfg)]
     (traverse-postorder-with-state-sub
      state expr (:visit c) (:access-coll c))))
