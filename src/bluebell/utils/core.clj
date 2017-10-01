@@ -228,7 +228,7 @@
 (defn traverse-postorder-cached-coll [m expr cfg]
   (map-with-state
    (fn [m x]
-     (traverse-postorder-cached-sub m x cfg))
+     (traverse-postorder-cached-sub m x cfg expr))
    m
    expr))
 
@@ -236,12 +236,12 @@
   (let [d? (:descend? cfg)]
     (or (not d?) (d? expr))))
 
-(defn register-cached [orig cfg [m new-value]]
-  [(assoc m orig [new-value 1]) new-value])
+(defn register-cached [orig cfg [m new-value] parent]
+  [(assoc m orig [new-value 1 #{parent}]) new-value])
 
-(defn look-up-and-inc [m expr]
-  (let [[dst n] (get m expr)]
-    [(assoc m expr [dst (inc n)]) dst]))
+(defn look-up-and-inc [m expr parent]
+  (let [[dst n parents] (get m expr)]
+    [(assoc m expr [dst (inc n) (conj parents parent)]) dst]))
 
 (spec/def ::visit fn?)
 (spec/def ::traverse-config (spec/keys :req-un [::visit]
@@ -253,14 +253,15 @@
   ([x new-val] (if (coll? x) new-val x)))
 
 (defn traverse-postorder-cached-sub
-  [m expr cfg]
+  [m expr cfg parent]
   (if (contains? m expr)
-    (look-up-and-inc m expr)
+    (look-up-and-inc m expr parent)
     (register-cached
      expr
      cfg (let [c ((:access-coll cfg) expr)
                [m c] (traverse-postorder-cached-coll m c cfg)]
-           [m ((:visit cfg) ((:access-coll cfg) expr c))]))))
+           [m ((:visit cfg) ((:access-coll cfg) expr c))])
+     parent)))
 
 (def normalized-coll-accessor)
 
@@ -269,7 +270,7 @@
 
 (defn traverse-postorder-cached
   ([m expr cfg]
-   (traverse-postorder-cached-sub m expr (merge default-traverse-cfg cfg)))
+   (traverse-postorder-cached-sub m expr (merge default-traverse-cfg cfg) ::parent))
   ([expr cfg]
    (second (traverse-postorder-cached {} expr cfg))))
 (spec/fdef traverse-postorder-cached :args

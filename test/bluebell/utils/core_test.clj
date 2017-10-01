@@ -46,8 +46,15 @@
   (is (= (traverse-postorder-cached
           {} [1 1 1 3]
           {:visit (only-visit number? inc)})
-         [{1 [2 3], 3 [4 1], [1 1 1 3]
-           [[2 2 2 4] 1]} [2 2 2 4]])))
+         [
+
+          {1 [2 3 #{[1 1 1 3]}],
+           
+           3 [4 1 #{[1 1 1 3]}],
+           
+           [1 1 1 3] [[2 2 2 4] 1 #{:bluebell.utils.core/parent}]}
+          
+          [2 2 2 4]])))
 
 (deftest traverse-with-state
   (is (= [7 [["0" "3" "4"] "3" "4"]]
