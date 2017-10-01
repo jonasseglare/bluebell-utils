@@ -71,8 +71,15 @@
 
 
 (deftest traverse-cached-with-processing
-  (let [m (first
-           (traverse-postorder-cached {} [3 {:a [9 [2 2 2]]}
-                                          [2 2 2] ]
+  (let [top [3 {:a [9 [2 2 2]]}
+             [2 2 2] ]
+        m (first
+           (traverse-postorder-cached {} top
                                       {:visit identity}))]
-    (println m)))
+    (is (= {[2 2 2] 2}
+           (-> (get (register-child-at m [2 2 2] [2 2 2] 1) top)
+               :children)))
+    (is (= 6 (get (:children (get (register-children m) top)) 2)))))
+                 
+
+

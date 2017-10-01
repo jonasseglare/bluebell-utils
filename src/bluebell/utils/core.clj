@@ -293,7 +293,6 @@
 
 (defn register-child-at-parents [m child at n]
   (let [parents (vec (get-in m [at :parents]))]
-    (println "parents=" parents)
     (reduce
      (fn [m [k v]]
        (register-child-at m child k (* n v)))
