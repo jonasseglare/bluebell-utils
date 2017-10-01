@@ -237,11 +237,17 @@
     (or (not d?) (d? expr))))
 
 (defn register-cached [orig cfg [m new-value] parent]
-  [(assoc m orig [new-value 1 #{parent}]) new-value])
+  [(assoc m orig {:mapped new-value
+                  :count 1
+                  :parents #{parent}}) new-value])
 
 (defn look-up-and-inc [m expr parent]
-  (let [[dst n parents] (get m expr)]
-    [(assoc m expr [dst (inc n) (conj parents parent)]) dst]))
+  (let [{dst :mapped
+         n :count
+         parents :parents} (get m expr)]
+    [(assoc m expr {:mapped dst
+                    :count (inc n)
+                    :parents (conj parents parent)}) dst]))
 
 (spec/def ::visit fn?)
 (spec/def ::traverse-config (spec/keys :req-un [::visit]
