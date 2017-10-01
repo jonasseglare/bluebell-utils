@@ -1,6 +1,7 @@
 (ns bluebell.utils.core
   (:require [clojure.set]
             [clojure.spec.alpha :as spec]
+            [bluebell.utils.debug :as debug]
             [clojure.spec.test.alpha :as stest]))
             
 
@@ -225,10 +226,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;; Traversal
 (declare traverse-postorder-cached-sub)
 
-(defn traverse-postorder-cached-coll [m expr cfg]
+(defn traverse-postorder-cached-coll [m expr parent cfg]
   (map-with-state
    (fn [m x]
-     (traverse-postorder-cached-sub m x cfg expr))
+     (traverse-postorder-cached-sub m x cfg parent))
    m
    expr))
 
@@ -236,18 +237,20 @@
   (let [d? (:descend? cfg)]
     (or (not d?) (d? expr))))
 
+(defn add-parent [parents parent]
+  (update
+   parents parent
+   (fn [n] (inc (or n 0)))))
+
 (defn register-cached [orig cfg [m new-value] parent]
   [(assoc m orig {:mapped new-value
-                  :count 1
-                  :parents #{parent}}) new-value])
+                  :parents (add-parent {} parent)}) new-value])
 
 (defn look-up-and-inc [m expr parent]
   (let [{dst :mapped
-         n :count
          parents :parents} (get m expr)]
     [(assoc m expr {:mapped dst
-                    :count (inc n)
-                    :parents (conj parents parent)}) dst]))
+                    :parents (add-parent parents parent)}) dst]))
 
 (spec/def ::visit fn?)
 (spec/def ::traverse-config (spec/keys :req-un [::visit]
@@ -265,7 +268,7 @@
     (register-cached
      expr
      cfg (let [c ((:access-coll cfg) expr)
-               [m c] (traverse-postorder-cached-coll m c cfg)]
+               [m c] (traverse-postorder-cached-coll m c expr cfg)]
            [m ((:visit cfg) ((:access-coll cfg) expr c))])
      parent)))
 
@@ -284,6 +287,35 @@
             :m (spec/? map?)
             :expr (constantly true)
             :cfg ::traverse-config))
+
+;;;;;;;;;;;;; Helper utility on the cached one
+(declare register-child-at)
+
+(defn register-child-at-parents [m child at n]
+  (let [parents (vec (get-in m [at :parents]))]
+    (println "parents=" parents)
+    (reduce
+     (fn [m [k v]]
+       (register-child-at m child k (* n v)))
+     m
+     parents)))
+
+(defn register-child-here [m child at n]
+  (update-in m [at :children child] (fn [x] (+ n (or x 0)))))
+
+(defn register-child-at [m child at n]
+  (register-child-here
+   (register-child-at-parents m child at n)
+   child
+   at n))
+
+(defn register-children [m]
+  (reduce
+   (fn [m c]
+     (register-child-at m c c 1))
+   m
+   (keys m)))
+
 
 ;;;;;;;;;;;;;;;;;;;;; Traverse with state
 
@@ -307,3 +339,5 @@
   ([state expr cfg]
    (traverse-postorder-with-state
     expr (assoc cfg :state state))))
+
+

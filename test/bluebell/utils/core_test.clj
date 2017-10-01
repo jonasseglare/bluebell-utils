@@ -46,19 +46,11 @@
   (is (= (traverse-postorder-cached
           {} [1 1 1 3]
           {:visit (only-visit number? inc)})
-         [{1 {:mapped 2, :count 3, :parents #{[1 1 1 3]}},
-           3 {:mapped 4, :count 1, :parents #{[1 1 1 3]}},
+         [{1 {:mapped 2, :parents {[1 1 1 3] 3}},
+           3 {:mapped 4, :parents {[1 1 1 3] 1}},
            [1 1 1 3]
-           {:mapped [2 2 2 4],
-            :count 1,
-            :parents #{:bluebell.utils.core/parent}}}
-          [2 2 2 4]][{1 {:mapped 2, :count 3, :parents #{[1 1 1 3]}},
-                      3 {:mapped 4, :count 1, :parents #{[1 1 1 3]}},
-                      [1 1 1 3]
-                      {:mapped [2 2 2 4],
-                       :count 1,
-                       :parents #{:bluebell.utils.core/parent}}}
-                     [2 2 2 4]]
+           {:mapped [2 2 2 4], :parents #:bluebell.utils.core{:parent 1}}}
+          [2 2 2 4]]
          )))
 
 (deftest traverse-with-state
@@ -76,3 +68,11 @@
                                   [(inc state) (str x)]
                                   [state x]))})
          [2 {:a "3", :b "3"}])))
+
+
+(deftest traverse-cached-with-processing
+  (let [m (first
+           (traverse-postorder-cached {} [3 {:a [9 [2 2 2]]}
+                                          [2 2 2] ]
+                                      {:visit identity}))]
+    (println m)))
