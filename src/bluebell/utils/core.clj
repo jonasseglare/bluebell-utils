@@ -340,3 +340,19 @@
     expr (assoc cfg :state state))))
 
 
+;;;;;;;;;;;;;;;;;;;;; Asynchronous composition
+(defn cb-comp2
+  ([f g]
+   (fn [x cb]
+     (f x (fn [x] (g x cb))))))
+
+
+(defn cb-comp [& funs]
+  (reduce cb-comp2 funs))
+
+(defn identity-cb [x cb]
+  (cb x))
+
+(defn cb-chain [& funs]
+  (fn [x]
+    ((apply cb-comp (butlast funs)) x (last funs))))
