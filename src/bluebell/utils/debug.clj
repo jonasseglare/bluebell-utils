@@ -9,7 +9,7 @@
 
 (defmacro dout 
   ([label x]
-   (dout-sub (str label) x))
+   (dout-sub (str label)  x))
   ([x] (dout-sub (str x) x)))
 
 (defmacro douts [& args]
@@ -28,3 +28,7 @@
        (println "  ---> Output: ")
        (clojure.pprint/pprint output)
        output))))
+
+(defmacro with-pprint-code [& args]
+  `(binding [clojure.pprint/*print-pretty* clojure.pprint/code-dispatch]
+    ~@args))

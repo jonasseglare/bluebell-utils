@@ -356,3 +356,6 @@
 (defn cb-chain [& funs]
   (fn [x]
     ((apply cb-comp (butlast funs)) x (last funs))))
+
+(defn apply-if [cnd f x]
+  (if cnd (f x) x))
