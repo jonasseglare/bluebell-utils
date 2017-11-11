@@ -29,6 +29,16 @@
   [f]
   (partial protect-apply f))
 
+(defmacro protect-if
+  "Use in place of an if-form, if the condition can be a bubble."
+  ([c a b]
+   `(let [x# ~c]
+      (if (bubble? x#)
+        x#
+        (if x# ~a ~b))))
+  ([c a]
+   `(protect-if ~c ~a nil)))
+
 (defn to-nil-or-vec [x]
   (if (not (bubble? x))
     [x]))
