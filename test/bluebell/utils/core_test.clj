@@ -86,5 +86,10 @@
          (with-value [a {}]
            (assoc a :a 9)
            (assoc a :b 3)
-           (update a :b inc)))))
+           (update a :b inc))))
+  (is (= (with-value [a (range 12)]
+           (filter odd? a)
+           (map inc a)
+           (map #(/ % 2) a))
+         (range 1 7))))
 

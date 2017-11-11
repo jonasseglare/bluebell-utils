@@ -380,6 +380,7 @@
       (assoc init :value (first args))
       (rest args))))
 
+;;;;;;; Write a chain of updates to a value
 (defmacro with-value [init & updates]
   (assert (sequential? updates))
   (let [init (conform-or-error ::with-value-init init)]
