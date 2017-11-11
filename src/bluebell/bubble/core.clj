@@ -1,4 +1,4 @@
-(ns bluebell.bubble)
+(ns bluebell.bubble.core)
 
 (defn bubble [x]
   [::bubble x])
