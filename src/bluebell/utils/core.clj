@@ -356,6 +356,32 @@
 (defn cb-chain [& funs]
   (fn [x]
     ((apply cb-comp (butlast funs)) x (last funs))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Other stuff
+
 
 (defn apply-if [cnd f x]
   (if cnd (f x) x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; practical macro
+(spec/def ::with-value-init (spec/cat :symbol symbol?
+                                      :value (constantly true)))
+
+(defn conform-or-error [sp value]
+  (let [x (spec/conform sp value)]
+    (if (= ::spec/invalid x)
+      (throw (ex-info (spec/explain-str sp value) {:spec sp :value value}))
+      x)))
+
+(defn with-value-sub [acc init args]
+  (if (empty? args)
+    `(let ~(reduce into [] acc) ~(:value init))
+    (with-value-sub
+      (conj acc [(:symbol init) (:value init)])
+      (assoc init :value (first args))
+      (rest args))))
+
+(defmacro with-value [init & updates]
+  (assert (sequential? updates))
+  (let [init (conform-or-error ::with-value-init init)]
+    (with-value-sub []
+      init updates)))

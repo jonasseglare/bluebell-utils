@@ -81,5 +81,10 @@
                :children)))
     (is (= 6 (get (:children (get (register-children m) top)) 2)))))
                  
-
+(deftest with-value-test
+  (is (= {:a 9 :b 4}
+         (with-value [a {}]
+           (assoc a :a 9)
+           (assoc a :b 3)
+           (update a :b inc)))))
 
