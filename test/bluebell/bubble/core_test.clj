@@ -3,6 +3,12 @@
             [bluebell.bubble.core :refer :all]))
 
 (def my-add (protect-fn +))
+(def my-mul (protect-fn *))
+(defn my-sqr [x] (my-mul x x))
+(def my-sqrt (protect-fn #(Math/sqrt %)))
+
+(defn pythagoras [a b]
+  (my-sqrt (my-add (my-sqr a) (my-sqr b))))
 
 (deftest bubble-test
   (is (bubble? (bubble 3)))
@@ -25,4 +31,6 @@
   (is (nil? (filter-first number? :a :b :c)))
   (is (= 3 (protect-if true 3 4)))
   (is (= 4 (protect-if false 3 4)))
-  (is (= nil (protect-if false 3))))
+  (is (= nil (protect-if false 3)))
+  (is (= 5.0 (pythagoras 3 4)))
+  (is (= (bubble 3) (pythagoras (bubble 3) 4))))
