@@ -18,6 +18,11 @@
   (assert (bubble? x))
   (second x))
 
+(defn anti [x]
+  (if (bubble? x)
+    (break x)
+    (bubble x)))
+
 (defn protect-apply
   "Call f on the args if there is no bubble, else return the first bubble in the list."
   [f & args]
@@ -38,10 +43,6 @@
         (if x# ~a ~b))))
   ([c a]
    `(protect-if ~c ~a nil)))
-
-(defn to-nil-or-vec [x]
-  (if (not (bubble? x))
-    [x]))
 
 (defn wrap-f? [f?]
   (fn [x] (if (f? x) [x])))
