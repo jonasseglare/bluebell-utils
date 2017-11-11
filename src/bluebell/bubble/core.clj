@@ -11,8 +11,11 @@
   (assert (bubble? x))
   (second x))
 
+(defn protect-apply [f & args]
+  (or (first (filter bubble? args))
+      (apply f args)))
+
 (defn protect-fn [f]
-  (fn [& args]
-    (or (first (filter bubble? args))
-        (apply f args))))
+  (partial protect-apply f))
+
 
