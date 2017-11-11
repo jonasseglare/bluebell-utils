@@ -7,4 +7,5 @@
 (deftest bubble-test
   (is (bubble? (bubble 3)))
   (is (not (bubble? 3)))
-  (is (= 7 (my-add 3 4))))
+  (is (= 7 (my-add 3 4)))
+  (is (= (bubble 3) (my-add (bubble 3) 4))))
