@@ -21,6 +21,8 @@
          (bubble-up (bubble [1 2 3]))))
   (is (= (bubble false)
          (protect-if (bubble false) 3 4)))
+  (is (= [1] (filter-first number? :a :b 1 :c)))
+  (is (nil? (filter-first number? :a :b :c)))
   (is (= 3 (protect-if true 3 4)))
   (is (= 4 (protect-if false 3 4)))
   (is (= nil (protect-if false 3))))

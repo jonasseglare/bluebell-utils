@@ -43,17 +43,18 @@
   (if (not (bubble? x))
     [x]))
 
-(defn anti
-  "Make a bubble from a non-bubble, or break a bubble."
-  [x]
-  (if (bubble? x)
-    (break x)
-    (bubble x)))
+(defn wrap-f? [f?]
+  (fn [x] (if (f? x) [x])))
+
+(defmacro filter-first [f & args]
+  (let [fsym (gensym)]
+    `(let [~fsym (wrap-f? ~f)]
+       (or ~@(map (fn [x] `(~fsym ~x)) args)))))
 
 (defmacro alts
   "Return the first value that is not a bubble. Don't evaluate the remaining ones."
   [& args]
-  `(first (or ~@(map (fn [x] `(to-nil-or-vec ~x)) args))))
+  `(first (filter-first (complement bubble?) ~@args)))
 
 (defn contains-bubble? [x]
   "Test if there is a bubble nested inside a data structure."
