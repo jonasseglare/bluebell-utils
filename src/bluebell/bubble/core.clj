@@ -18,4 +18,10 @@
 (defn protect-fn [f]
   (partial protect-apply f))
 
+(defn to-nil-or-vec [x]
+  (if (not (bubble? x))
+    [x]))
+
+(defmacro alts [& args]
+  `(first (or ~@(map (fn [x] `(to-nil-or-vec ~x)) args))))
 
