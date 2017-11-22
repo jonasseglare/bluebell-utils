@@ -55,11 +55,9 @@
     (expand-cases parsed parsed)))
 
 ;; Expect something
-(defmacro expect [f? x]
-  `(let [f# ~f?
-         x# ~x]
-     (if (f# x#) x#
-         (throw
-          (ex-info
-           "Expect failed"
-           {::f? f# ::value x#})))))
+(defn expect [f? x]
+  (if (f? x) x
+      (throw
+       (ex-info
+        "Expect failed"
+        {::f? f? ::value x}))))

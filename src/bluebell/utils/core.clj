@@ -374,7 +374,8 @@
 
 (defn with-value-sub [acc init args]
   (if (empty? args)
-    `(let ~(reduce into [] acc) ~(:value init))
+    (do
+      `(let ~(reduce into [] acc) ~(:value init)))
     (with-value-sub
       (conj acc [(:symbol init) (:value init)])
       (assoc init :value (first args))
@@ -386,8 +387,3 @@
   (let [init (conform-or-error ::with-value-init init)]
     (with-value-sub []
       init updates)))
-
-(defmacro with-value [[bds expr] & args]
-  `(let [~bds ~expr]
-     ~@args
-     ~bds))
