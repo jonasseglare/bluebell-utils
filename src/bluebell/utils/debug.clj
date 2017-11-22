@@ -32,3 +32,7 @@
 (defmacro with-pprint-code [& args]
   `(binding [clojure.pprint/*print-pretty* clojure.pprint/code-dispatch]
     ~@args))
+
+(defn pprint-code [& args]
+  (with-pprint-code
+    (apply clojure.pprint/pprint args)))

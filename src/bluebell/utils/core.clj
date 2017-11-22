@@ -386,3 +386,8 @@
   (let [init (conform-or-error ::with-value-init init)]
     (with-value-sub []
       init updates)))
+
+(defmacro with-value [[bds expr] & args]
+  `(let [~bds ~expr]
+     ~@args
+     ~bds))
