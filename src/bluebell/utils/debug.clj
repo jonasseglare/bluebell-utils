@@ -44,8 +44,9 @@
 
 (defn explain-diff-maps [a b]
   (str "\nBoth are maps"
-       (let [ks (set (keys a))]
-         (if (= ks (set (keys b)))
+       (let [aks (set (keys a))
+             bks (set (keys b))]
+         (if (= aks bks)
            (str "\n with the same set of keys"
                 (let [f (first
                          (filter (complement :eq)
@@ -53,15 +54,14 @@
                                         (cmp-ab {:key k
                                                  :a (get a k) 
                                                  :b (get b k)}))
-                                      ks)))]
+                                      aks)))]
                   (str "\nBut different values at "
                        (with-out-str
                          (clojure.pprint/pprint (:key f)))
                        "Compare them there:"
                        (explain-diff (:a f) (:b f)))))
-           (str "\n with different set of keys"
-                "\n  a: " (with-out-str (pp/pprint (sort (keys a))))
-                "\n  b: " (with-out-str (pp/pprint (sort (keys b)))))))))
+           (str "\n with different set of keys:"
+                (explain-diff aks bks))))))
 
 
 (defn explain-diff-sequentials [a b]
