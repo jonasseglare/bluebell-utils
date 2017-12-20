@@ -1,6 +1,9 @@
 (ns bluebell.utils.debug
   (:require [clojure.pprint :as pp]))
 
+(defn limit-string [n s]
+  (if (<= (count s) n) s (str (subs s 0 n) "...")))
+
 (defn dout-sub [label x]
   `(let [x# ~x]
      (println (str "--> " ~label " ="))
@@ -36,6 +39,12 @@
 (defn pprint-code [& args]
   (with-pprint-code
     (apply clojure.pprint/pprint args)))
+
+(defmacro dout-code [expr]
+  `(let [x# ~expr]
+     (println (str "The expr '" (limit-string 30 (quote ~expr))
+                   "' is\n" (with-out-str (pprint-code x#))))
+     x#))
 
 (defn cmp-ab [x]
   (assoc x :eq (= (:a x) (:b x))))
@@ -87,8 +96,6 @@
          (if (empty? amb) "" (str  "\nOnly a contains " (with-out-str (pp/pprint amb))))
          (if (empty? bma) "" (str  "\nOnly b contains " (with-out-str (pp/pprint bma)))))))
 
-(defn limit-string [n s]
-  (if (<= (count s) n) s (str (subs s 0 n) "...")))
 
 (def max-diff-len 30)
 
