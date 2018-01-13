@@ -386,3 +386,24 @@
   (let [init (conform-or-error ::with-value-init init)]
     (with-value-sub []
       init updates)))
+
+
+(def default-subexpr-cfg (merge default-traverse-cfg {:visit identity}))
+
+(defn add-subexpressions [result lookup k]
+  (assoc result k true))
+
+(defn compute-subexpressions-sub [analyzed]
+  (reduce (fn [r k]
+            (add-subexpressions r analyzed k))
+          {}
+          (keys analyzed)))
+
+(defn compute-subexpressions
+  ([expr]
+   (compute-subexpressions expr {}))
+  ([expr cfg]
+   (compute-subexpressions-sub
+    (first
+     (traverse-postorder-cached
+      {} expr (merge default-subexpr-cfg cfg))))))
