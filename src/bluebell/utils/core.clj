@@ -390,12 +390,25 @@
 
 (def default-subexpr-cfg (merge default-traverse-cfg {:visit identity}))
 
-(defn add-subexpressions [result lookup k]
-  (assoc result k true))
+(defn insert-subexpr [result p k]
+  (update result p (fn [x] (conj (or x #{}) k))))
+
+(defn add-subexpression-to-parents-of [result lookup p k]
+  (if (= p ::parent)
+    result
+    (let [parents (keys (get-in lookup [p :parents]))]
+      (reduce
+       (fn [r x]
+         (add-subexpression-to-parents-of r lookup x k))
+       (insert-subexpr result p k)
+       parents))))
+
+(defn add-subexpression [result lookup k]
+  (add-subexpression-to-parents-of result lookup k k))
 
 (defn compute-subexpressions-sub [analyzed]
   (reduce (fn [r k]
-            (add-subexpressions r analyzed k))
+            (add-subexpression r analyzed k))
           {}
           (keys analyzed)))
 
