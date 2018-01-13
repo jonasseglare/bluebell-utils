@@ -212,6 +212,12 @@
            (denormalize-coll x y)
            x)))
 
+;; To check that the accessor is effective
+(defn null-accessor
+  ([] {:desc "Null accessor"})
+  ([x] [])
+  ([x y] x))
+
 ;;;;;;;;;;;;;;;;;;; Helpers
 (defn only-visit [x? v]
   (fn [x]
