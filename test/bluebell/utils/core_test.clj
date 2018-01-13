@@ -93,3 +93,13 @@
            (map #(/ % 2) a))
          (range 1 7))))
 
+(deftest subexpr-test
+  (let [m (compute-subexpressions {:a [1 2] :b [{:d [{:c 3}]}]})]
+    (is (contains? (get m :a) :a))
+    (is (not (contains? (get m :a) 1)))
+    (is (contains? (get m [1 2]) 2))
+    (is (not (contains? (get m [1 2]) {:b 3})))
+    (is (contains?
+         (get m {:a [1 2] :b [{:d [{:c 3}]}]})
+         {:c 3}))))
+
