@@ -426,3 +426,8 @@
     (first
      (traverse-postorder-cached
       {} expr (merge default-subexpr-cfg cfg))))))
+
+;; Force get
+(defn fget [x k]
+  (assert (contains? x k))
+  (get x k))
