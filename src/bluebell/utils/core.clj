@@ -431,3 +431,6 @@
 (defn fget [x k]
   (assert (contains? x k))
   (get x k))
+
+(defmacro implies [a b]
+  `(or (not ~a) ~b))

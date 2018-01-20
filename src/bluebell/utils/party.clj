@@ -14,15 +14,24 @@
   ([x] (utils/normalize-coll x))
   ([x new-value] (utils/denormalize-coll x new-value)))
 
+(def default-key-accessor-settings {:req-on-get true
+                                    :req-on-assoc false})
+
 (defn key-accessor
   "Create an accessor for map keys"
-  [k]
-  (fn
-    ([] {:desc (str "(key-accessor " k ")")})
-    ([obj]
-     (get obj k))
-    ([obj x]
-     (assoc obj k x))))
+  ([k] (key-accessor k default-key-accessor-settings))
+  ([k settings]
+   (let [{req-on-get :req-on-get
+          req-on-assoc :req-on-assoc} (merge default-key-accessor-settings
+                                             settings)]
+     (fn
+       ([] {:desc (str "(key-accessor " k ")")})
+       ([obj]
+        (utils/implies req-on-get (contains? obj k))
+        (get obj k))
+       ([obj x]
+        (utils/implies req-on-assoc (contains? obj k))
+        (assoc obj k x))))))
 
 (defn index-accessor
   "Create an accessor for indices"
