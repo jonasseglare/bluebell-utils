@@ -27,10 +27,10 @@
      (fn
        ([] {:desc (str "(key-accessor " k ")")})
        ([obj]
-        (utils/implies req-on-get (contains? obj k))
+        (assert (utils/implies req-on-get (contains? obj k)))
         (get obj k))
        ([obj x]
-        (utils/implies req-on-assoc (contains? obj k))
+        (assert (utils/implies req-on-assoc (contains? obj k)))
         (assoc obj k x))))))
 
 (defn index-accessor
