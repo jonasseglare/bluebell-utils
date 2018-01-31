@@ -166,9 +166,16 @@
     (sort-by first pairs)
     pairs))
 
+(defn compare-somehow [a b]
+  (try
+    (compare a b)
+    (catch Throwable _
+      (compare (-> a class str)
+               (-> b class str)))))
+
 (defn sort-if-possible [x]
-  (if (every? comparable? x)
-    (sort x)
+  (if (every? comparable? x) ;; Remove the if and always sort?
+    (sort compare-somehow x)
     x))
 
 (defn normalize-coll [coll]
@@ -202,6 +209,12 @@
        [state (conj dst y)]))
    [state []] data))
 
+
+(defn map-vals-accessor
+  ([] {:desc "map-vals-accessor"})
+  ([x]
+   (assert (map? x))
+   (vec (map (partial get x) (sort-if-possible (keys x))))))
 
 (defn normalized-coll-accessor
   ([] {:desc "Normalized coll accessor"})
@@ -434,3 +447,11 @@
 
 (defmacro implies [a b]
   `(or (not ~a) ~b))
+
+(defn abbreviate
+  ([x0 maxlen]
+   (let [x (str x0)]
+     (if (<= (count x) maxlen)
+       x
+       (str (subs x 0 (- maxlen 3)) "..."))))
+  ([x] (abbreviate x 30)))

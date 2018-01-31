@@ -165,3 +165,13 @@
     (if (= ::spec/invalid parsed)
       (utils/common-error "defpseudorec failed: " (spec/explain-str ::args args))
       (defpseudorec-sub parsed))))
+
+
+(defn conditional-accessor [accessor p?]
+  (fn
+    ([] {:desc "Conditional accessor"})
+    ([x] (if (p? x)
+           (accessor x) x))
+    ([x y] (if (p? x)
+             (accessor x y)
+             y))))
