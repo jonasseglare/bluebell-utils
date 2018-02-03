@@ -209,12 +209,19 @@
        [state (conj dst y)]))
    [state []] data))
 
+(def sorted-keys (comp sort-if-possible keys))
 
+;; Access the values of a map. It has to be a map!
 (defn map-vals-accessor
   ([] {:desc "map-vals-accessor"})
   ([x]
    (assert (map? x))
-   (vec (map (partial get x) (sort-if-possible (keys x))))))
+   (vec (map (partial get x) (sorted-keys x))))
+  ([x y]
+   (assert (map? x))
+   (assert (= (count x)
+              (count y)))
+   (into x (map vector (sorted-keys x) (vec y)))))
 
 (defn normalized-coll-accessor
   ([] {:desc "Normalized coll accessor"})

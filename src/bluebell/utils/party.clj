@@ -175,3 +175,11 @@
     ([x y] (if (p? x)
              (accessor x y)
              y))))
+
+
+;;;;;;;;;;;;;;;;;;;;; Checked
+(defn checked-accessor [pred?]
+  (fn 
+    ([] {:desc "Checked accessor"})
+    ([x] (assert (pred? x)) x)
+    ([x y] (assert (pred? y)) y)))
