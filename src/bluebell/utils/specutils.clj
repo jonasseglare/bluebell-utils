@@ -10,3 +10,9 @@
       y)))
 
 
+
+(defn validate [speck x]
+  (if (not (spec/valid? speck x))
+    (throw (ex-info "Spec validation failed"
+                    {:explanation (spec/explain-str speck x)})))
+  x)

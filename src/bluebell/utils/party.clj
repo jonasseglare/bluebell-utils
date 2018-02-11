@@ -17,6 +17,9 @@
 (def default-key-accessor-settings {:req-on-get true
                                     :req-on-assoc false})
 
+(defn missing-key-msg [obj k]
+  (str "No key " k " in " (utils/abbreviate obj)))
+
 (defn key-accessor
   "Create an accessor for map keys"
   ([k] (key-accessor k default-key-accessor-settings))
@@ -27,10 +30,12 @@
      (fn
        ([] {:desc (str "(key-accessor " k ")")})
        ([obj]
-        (assert (utils/implies req-on-get (contains? obj k)))
+        (assert (utils/implies req-on-get (contains? obj k))
+                (missing-key-msg obj k))
         (get obj k))
        ([obj x]
-        (assert (utils/implies req-on-assoc (contains? obj k)))
+        (assert (utils/implies req-on-assoc (contains? obj k))
+                (missing-key-msg obj k))
         (assoc obj k x))))))
 
 (defn index-accessor
@@ -183,3 +188,11 @@
     ([] {:desc "Checked accessor"})
     ([x] (assert (pred? x)) x)
     ([x y] (assert (pred? y)) y)))
+
+
+;;;;;;;;;;;;;;;;;;;;;; Filter set
+(defn filter-set [pred?]
+  (fn
+    ([] {:desc "Filter set"})
+    ([x] x)
+    ([x y] (if (pred? y) y x))))

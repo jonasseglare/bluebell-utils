@@ -462,3 +462,47 @@
        x
        (str (subs x 0 (- maxlen 3)) "..."))))
   ([x] (abbreviate x 30)))
+
+(defn minus1-to-nil [x]
+  (if (= -1 x) nil x))
+
+(defn next-index-of [full part]
+  (fn [index]
+    (if (not (nil? index))
+      (minus1-to-nil
+       (.indexOf full part (inc index))))))
+
+;; Find all substrings
+(defn indices-of [full part]
+  (->> (iterate (next-index-of full part) -1)
+       rest
+       (take-while (complement nil?))))
+
+;; Used when debugging, to set dynamic variables to true.
+(defmacro with-flags [flags & body]
+  `(binding ~(reduce into [] (map (fn [x] [x true]) flags))
+     ~@body))
+
+(defn indent-sub [step prefix data]
+  (if (coll? data)
+    (apply
+     str
+     (map (partial
+           indent-sub
+           step
+           (str prefix step))
+          data))
+    (str prefix data)))
+
+(defn indent-nested
+  ([settings data]
+   (apply
+    str
+    (map (partial indent-sub
+                  (:step settings)
+                  (:prefix settings))
+         data)))
+  ([data]
+   (indent-nested {:prefix "\n"
+                   :step "  "}
+                  data)))

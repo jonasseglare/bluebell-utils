@@ -112,3 +112,6 @@
            :default (str "\nThey have different type"
                          "\na = \n" (limit-string max-diff-len (with-out-str (pp/pprint a)))
                          "\nb = \n" (limit-string max-diff-len (with-out-str (pp/pprint b))))))))
+
+(defmacro TODO [ & msg]
+  `(assert false (str "TODO! " ~@msg)))
