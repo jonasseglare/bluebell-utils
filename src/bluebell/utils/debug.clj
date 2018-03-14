@@ -4,20 +4,6 @@
 (defn limit-string [n s]
   (if (<= (count s) n) s (str (subs s 0 n) "...")))
 
-(defn dout-sub [label x]
-  `(let [x# ~x]
-     (println (str "--> " ~label " ="))
-     (clojure.pprint/pprint x#)
-     x#))
-
-(defmacro dout 
-  ([label x]
-   (dout-sub (str label)  x))
-  ([x] (dout-sub (str x) x)))
-
-(defmacro douts [& args]
-  `(do ~@(map (fn [arg] `(dout ~arg)) args)))
-
 (defn disp-fn-io
   ([f] (disp-fn-io f "Unknown function"))
   ([f label]
@@ -113,5 +99,30 @@
                          "\na = \n" (limit-string max-diff-len (with-out-str (pp/pprint a)))
                          "\nb = \n" (limit-string max-diff-len (with-out-str (pp/pprint b))))))))
 
+(defn limited-pprint
+  ([x] (limited-pprint x 300))
+  ([x n]
+   (println (limit-string
+             n
+             (with-out-str
+               (pp/pprint x))))))
+
+(def ^:dynamic dout-max-len 2000)
+
+(defn dout-arg [arg]
+  `(let [x# ~arg]
+     (println ~(str "dout of '" arg "'"))
+     (limited-pprint x# dout-max-len)
+     (println "")
+     x#))
+
+(defmacro dout [& args]
+  `(do
+     ~@(map dout-arg args)))
+
+
 (defmacro TODO [ & msg]
   `(assert false (str "TODO! " ~@msg)))
+
+(defn TODO-msg [& msg]
+  (apply println `(str "TODO! " ~@msg)))

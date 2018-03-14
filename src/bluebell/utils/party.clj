@@ -30,6 +30,9 @@
      (fn
        ([] {:desc (str "(key-accessor " k ")")})
        ([obj]
+        (utils/data-assert (map? obj) "Not a map"
+                           {:not-a-map obj
+                            :key k})
         (assert (utils/implies req-on-get (contains? obj k))
                 (missing-key-msg obj k))
         (get obj k))

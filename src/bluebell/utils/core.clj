@@ -162,9 +162,16 @@
   (instance? java.lang.Comparable x))
 
 (defn sort-pairs-if-possible [pairs]
+  ;(println "   Sort pairs")
   (if (every? comparable? (map first pairs))
-    (sort-by first pairs)
-    pairs))
+    (do
+      ;(println "Keys are" (map first pairs))
+      (sort-by first pairs))
+    
+    (do
+      ;(println "CANNOT BE SORTED" (map first pairs))
+      ;(throw (ex-info "This is bad" {}))
+      pairs)))
 
 (defn compare-somehow [a b]
   (try
@@ -506,3 +513,20 @@
    (indent-nested {:prefix "\n"
                    :step "  "}
                   data)))
+
+(defn data-assert-sub
+  ([expr msg data]
+   `(if (not ~expr)
+      (throw (ex-info ~(str "Assertion '" expr "' failed: " msg)
+                      ~data)))))
+
+(defmacro data-assert
+  ([expr msg data] (data-assert-sub expr msg data))
+  ([expr data] (data-assert-sub expr "(no explanation)" data)))
+
+(defn cond-call [arg condition f]
+  (assert (boolean? condition))
+  (assert (fn? f))
+  (if condition
+     (f arg)
+     arg))
