@@ -543,3 +543,9 @@
                                                  :provided-keys provided-keys
                                                  :extra more})))
         (merge settings provided)))))
+
+(defn atom-fn []
+  (let [x (atom nil)]
+    (fn
+      ([] (deref x))
+      ([value] (reset! x value) value))))

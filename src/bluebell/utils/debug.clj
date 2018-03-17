@@ -1,5 +1,7 @@
 (ns bluebell.utils.debug
-  (:require [clojure.pprint :as pp]))
+  (:require [clojure.pprint :as pp]
+            [clojure.spec.alpha :as spec]
+            [clojure.string :as cljstr]))
 
 (defn limit-string [n s]
   (if (<= (count s) n) s (str (subs s 0 n) "...")))
@@ -121,8 +123,35 @@
      ~@(map dout-arg args)))
 
 
-(defmacro TODO [ & msg]
-  `(assert false (str "TODO! " ~@msg)))
+(def todo-directives #{:break :done :sort-of-done})
+(def todo-directive? (partial contains? todo-directives))
+(spec/def ::todo-directive todo-directive?)
+(spec/def ::todo-directives (spec/* ::todo-directive))
+(spec/def ::todo-message string?)
+(spec/def ::todo-messages (spec/* ::todo-message))
+(spec/def ::todo-syntax (spec/cat :directives ::todo-directives
+                                  :messages ::todo-messages))
 
-(defn TODO-msg [& msg]
-  (apply println `(str "TODO! " ~@msg)))
+(defmacro TODO [& msg]
+  (let [p (spec/conform ::todo-syntax msg)]
+    (when (= ::spec/invalid p)
+      (throw (ex-info "Bad TODO syntax"
+                      {:explanation (spec/explain-str ::todo-syntax msg)})))
+
+    (let [dirs (-> p :directives set)
+          msgs (-> p :messages)
+          prefix "-------> TODO: "
+          s (str prefix (cljstr/join (str "\n"
+                                          (apply str (take (count prefix)
+                                                           (repeat " "))))
+                                     msgs))]
+      (cond
+        (contains? dirs :break) (throw (ex-info s {:message msgs}))
+        (or (contains? dirs :done)
+            (contains? dirs :sort-of-done)) nil
+        :default (println s)))))
+
+(defmacro pprint-macro [expr]
+  `(-> (quote ~expr)
+       macroexpand
+       pprint-code))
