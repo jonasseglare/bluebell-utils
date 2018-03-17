@@ -123,7 +123,7 @@
      ~@(map dout-arg args)))
 
 
-(def todo-directives #{:break :done :sort-of-done})
+(def todo-directives #{:break :done :sort-of-done :bug :ignore})
 (def todo-directive? (partial contains? todo-directives))
 (spec/def ::todo-directive todo-directive?)
 (spec/def ::todo-directives (spec/* ::todo-directive))
@@ -140,15 +140,19 @@
 
     (let [dirs (-> p :directives set)
           msgs (-> p :messages)
-          prefix "-------> TODO: "
+          marker (if (contains? dirs :bug)
+                   "! ! ! !"
+                   "-------") 
+          prefix (str marker "> TODO: ")
           s (str prefix (cljstr/join (str "\n"
                                           (apply str (take (count prefix)
                                                            (repeat " "))))
                                      msgs))]
       (cond
-        (contains? dirs :break) (throw (ex-info s {:message msgs}))
         (or (contains? dirs :done)
-            (contains? dirs :sort-of-done)) nil
+            (contains? dirs :sort-of-done)
+            (contains? dirs :ignore)) nil
+        (contains? dirs :break) (throw (ex-info s {:message msgs}))
         :default (println s)))))
 
 (defmacro pprint-macro [expr]

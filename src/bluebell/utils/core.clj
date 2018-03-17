@@ -549,3 +549,6 @@
     (fn
       ([] (deref x))
       ([value] (reset! x value) value))))
+
+(defn first-arg [x & args]
+  x)

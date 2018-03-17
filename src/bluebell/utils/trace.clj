@@ -31,8 +31,6 @@
   (spec/spec (spec/cat :value value-spec
                        :time ::nanoseconds)))
 
-(spec/def ::single-item (time-pair any?))
-
 (spec/def ::nanoseconds number?)
 
 (defn pair [tag-spec value-spec]
@@ -47,6 +45,16 @@
 (spec/def ::block (spec/cat :begin (spec/spec ::begin)
                             :trace ::trace
                             :end (spec/spec ::end)))
+
+(spec/def ::begin-or-end (spec/or :begin ::begin
+                                  :end ::end))
+
+
+
+(spec/def ::single-item (spec/and
+                         (time-pair
+                          (spec/nonconforming ::begin-or-end))))
+
 
 (spec/def ::trace-part (spec/alt :block ::block
                                  :item ::single-item))
@@ -97,7 +105,8 @@
   (let [invalid (list-invalid-blocks parse-spec)]
     (if (not (empty? invalid))
       (throw (ex-info "Invalid blocks"
-                      {:blocks (map format-invalid-block invalid)})))
+                      {:blocks (map format-invalid-block invalid)
+                       :parse-spec parse-spec})))
     parse-spec))
 
 (defn parse [trace-data]
