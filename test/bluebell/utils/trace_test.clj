@@ -22,6 +22,13 @@
     (record f :d)
     (f)))
 
+(def sample-trace-1
+  (let [f (trace-fn)]
+    (begin f :b)
+    (record f :kattskit)
+    (end f :b)
+    (f)))
+
 (deftest begin-end-test
   (is (spec/valid? ::trace/trace sample-trace-3))
   (is (empty? (-> sample-trace-3 parse-spec list-invalid-blocks)))
@@ -48,3 +55,17 @@
                (begin f :a)
                (end f :a)
                (f)))))
+
+
+(defn fibonacci-demo [n]
+  (let [f (trace-fn)
+        fib (fn fib [i]
+              (begin f [:fib i])
+              (let [result (if (<= i 1)
+                             i
+                             (+ (fib (- i 1))
+                                (fib (- i 2))))]
+                (end f [:fib i])
+                result))]
+    (fib 5)
+    (disp-trace f)))

@@ -46,14 +46,16 @@
                             :trace ::trace
                             :end (spec/spec ::end)))
 
-(spec/def ::begin-or-end (spec/or :begin ::begin
-                                  :end ::end))
+(spec/def ::begin-or-end (spec/or :begin (kw-vec :begin)
+                                  :end (kw-vec :end)))
+
+(defn not-begin-or-end [x]
+  (not (spec/valid? ::begin-or-end x)))
 
 
 
 (spec/def ::single-item (spec/and
-                         (time-pair
-                          (spec/nonconforming ::begin-or-end))))
+                         (time-pair not-begin-or-end)))
 
 
 (spec/def ::trace-part (spec/alt :block ::block
