@@ -37,3 +37,14 @@
                          (f))
                        parse-spec
                        list-invalid-blocks)))))
+
+(deftest parse-test-full
+  (is (thrown? Throwable
+               (parse (let [f (trace-fn)]
+                        (begin f :a)
+                        (end f :b)
+                        (f)))))
+  (is (parse (let [f (trace-fn)]
+               (begin f :a)
+               (end f :a)
+               (f)))))

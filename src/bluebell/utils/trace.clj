@@ -85,3 +85,31 @@
 (defn parse-spec [trace-data]
   (sutils/force-conform ::trace trace-data))
 
+(defn format-block-bound [bound]
+  {:time (:time bound)
+   :value (-> bound :value :value)})
+
+(defn format-invalid-block [block]
+  {:begin (format-block-bound (:begin block))
+   :end (format-block-bound (:end block))})
+
+(defn check-no-invalid-blocks [parse-spec]
+  (let [invalid (list-invalid-blocks parse-spec)]
+    (if (not (empty? invalid))
+      (throw (ex-info "Invalid blocks"
+                      {:blocks (map format-invalid-block invalid)})))
+    parse-spec))
+
+(defn parse [trace-data]
+  (-> trace-data
+      parse-spec
+      check-no-invalid-blocks))
+
+(defn disp-parsed [])
+
+(defn disp-trace [trace]
+  (if (fn? trace)
+    (disp-trace (trace))
+    (-> trace
+        parse
+        (disp-parsed ""))))
