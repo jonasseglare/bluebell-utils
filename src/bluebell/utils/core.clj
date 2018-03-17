@@ -530,3 +530,16 @@
   (if condition
      (f arg)
      arg))
+
+
+(defn default-settings-fn [settings]
+  (let [default-keys (set (keys settings))]
+    (fn [provided]
+      (let [provided-keys (set (keys provided))
+            more (clojure.set/difference
+                  provided-keys default-keys)]
+        (if (not (empty? more))
+          (throw (ex-info "Extra keys provided" {:default-keys default-keys
+                                                 :provided-keys provided-keys
+                                                 :extra more})))
+        (merge settings provided)))))
