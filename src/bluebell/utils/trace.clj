@@ -105,11 +105,47 @@
       parse-spec
       check-no-invalid-blocks))
 
-(defn disp-parsed [])
+(declare disp-parsed)
 
-(defn disp-trace [trace]
-  (if (fn? trace)
-    (disp-trace (trace))
-    (-> trace
-        parse
-        (disp-parsed ""))))
+(defn ns2str [ns]
+  (format "%.3g ms" (* 1.0e-6 (double ns))))
+
+(defn disp-item [item indent cfg]
+  (println (str indent (:value item)
+                " at " (ns2str (- (:time item)
+                                  (:start cfg)))
+                (if (contains? item :dur)
+                  (str " (dur=" (ns2str (:dur item)) ")")
+                  ""))))
+
+(defn disp-block-bd [bd indent cfg]
+  (disp-item (update bd :value :value) indent cfg))
+
+(defn disp-block [block indent cfg]
+  (let [dur (- (-> block :end :time)
+               (-> block :begin :time))]
+    (disp-block-bd (:begin block) indent cfg)
+    (disp-parsed (:trace block) (str indent " | ") cfg)
+    (disp-block-bd (merge (:end block)
+                          {:dur dur}) indent cfg)))
+
+(defn disp-parsed [trace-data indent cfg]
+  (doseq [[item-type item-data] trace-data]
+    (case item-type
+      :block (disp-block item-data indent cfg)
+      :item (disp-item item-data indent cfg))))
+
+(defn start-time [trace]
+  (-> trace
+      first
+      second))
+
+
+(defn disp-trace
+  ([trace] (disp-trace trace {}))
+  ([trace cfg0]
+   (if (fn? trace)
+     (disp-trace (trace))
+     (-> trace
+         parse
+         (disp-parsed "" (merge cfg0 {:start (start-time trace)}))))))
