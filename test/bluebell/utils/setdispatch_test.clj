@@ -39,8 +39,39 @@
 
 (def-set-method my-plus [[:double a]
                          [:double b]]
-  [:suma (+ a b)])
+  [:double-sum (+ a b)])
+
+(def-set-method my-plus [[:float a]
+                         [:float b]]
+  [:float-sum (+ a b)])
+
+(def-set-method my-plus [[:number a]
+                         [:number b]]
+  [:sum (+ a b)])
+
+(def-set-method my-plus [[:coll a]
+                         [:coll b]]
+  (into a b))
+
+(def-set-method my-plus [[:map a]
+                         [:map b]]
+  (merge a b))
 
 
 (deftest test-it
-  (is (= [:sum 7.9 ()])))
+  (is (= [:double-sum 7.9]
+         (my-plus 3.4 4.5)))
+  (is (= [:float-sum 4.5]
+         (my-plus (float 2.25)
+                  (float 2.25))))
+  (is (= [:sum 4]
+         (my-plus 1 3)))
+  (is (thrown?
+       Throwable
+       (my-plus :a :b)))
+  (is (= [:a :b :c]
+         (my-plus [:a :b]
+                  #{:c})))
+  (is (= {:a 3 :b 4}
+         (my-plus {:a 3}
+                  {:b 4}))))

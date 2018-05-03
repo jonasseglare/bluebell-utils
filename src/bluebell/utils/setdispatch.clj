@@ -97,20 +97,16 @@
            (update-in state [:dispatch-map arity]
                       #(conj % method)))))
 
-(defn conj-nil
-  ([] [])
-  ([dst] dst)
-  ([dst x]
-   (if (not (nil? x))
-     (conj dst x))))
-
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
   (let [fe (or (:feature-extractor arg-spec)
                common-feature-extractor)
         element (fe arg)
         raw-query (:query arg-spec)
         query (ss/normalize-query raw-query)
+
+        ;; TODO: This can be cached
         elements (ss/evaluate-query system query)
+        
         satisfied? (ss/satisfies-query? system query element)
         generality (count elements)]
     (utils/map-of element satisfied? generality raw-query)))
@@ -146,6 +142,9 @@
 ;; Query API
 (def universe ss/universe)
 (def complement ss/complement)
+(def union ss/union)
+(def intersection ss/intersection)
+(def difference ss/difference)
 
 
 ;; The set system used
@@ -161,7 +160,6 @@
 
 (defmacro def-set-method [& args]
   (let [parsed (sutils/force-conform ::method-args args)]
-    (println "PARSED:" parsed)
     `(let [state-atom# (~(:name parsed))]
        (add-method state-atom#
                    ~(count (:args parsed))
