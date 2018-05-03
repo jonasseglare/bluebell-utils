@@ -3,7 +3,7 @@
             [clojure.spec.alpha :as spec]
             [bluebell.utils.core :as utils]
             [bluebell.utils.specutils :as sutils])
-  (:refer-clojure :exclude [complement]))
+  (:refer-clojure :exclude [complement any?]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -44,10 +44,10 @@
 (spec/def ::feature-extractor fn?)
 (spec/def ::dispatch-state (spec/keys :req-un [::dispatch-map ::feature-extractor]))
 
-
-(spec/def ::arg (spec/spec (spec/cat :feature-extractor (spec/? any?)
-                                     :query any?
-                                     :binding any?)))
+(def cljany? clojure.core/any?)
+(spec/def ::arg (spec/spec (spec/cat :feature-extractor (spec/? cljany?)
+                                     :query cljany?
+                                     :binding cljany?)))
 
 (spec/def ::method-meta #(or (map? %)
                              (string? %)
@@ -56,7 +56,7 @@
 (spec/def ::method-args (spec/cat :name symbol?
                                   :meta (spec/* ::method-meta)
                                   :args (spec/coll-of ::arg)
-                                  :body (spec/* any?)))
+                                  :body (spec/* cljany?)))
 
 
 (defn clean-alt [alt]
@@ -192,6 +192,7 @@
 (def complement ss/complement)
 (def union ss/union)
 (def intersection ss/intersection)
+(def any? ss/any?)
 (def difference ss/difference)
 
 

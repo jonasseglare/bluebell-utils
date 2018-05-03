@@ -2,7 +2,7 @@
   (:require [bluebell.utils.symset :as ss]
             [clojure.test :refer :all])
   (:require [bluebell.utils.setdispatch :refer :all] :reload)
-  (:refer-clojure :exclude [complement]))
+  (:refer-clojure :exclude [complement any?]))
 
 (def-system ts)
 
@@ -78,6 +78,11 @@
                          [coarse-feature :number c]]
   [:triple-plus (+ a b c)])
 
+(def-set-method my-plus "Special double addition"
+  [[ss/any? a]
+   [:double b]]
+  [:special-double-add a b])
+
 
 (deftest test-it
   (is (= [:double-sum 7.9]
@@ -105,6 +110,8 @@
                   {:b 4})))
   (is (= [:triple-plus 6]
          (my-plus 1 2 3)))
+  (is (= (my-plus :a 3.4)
+         [:special-double-add :a 3.4]))
   (is (thrown?
        Throwable
        (my-plus 1 2 :a))))
