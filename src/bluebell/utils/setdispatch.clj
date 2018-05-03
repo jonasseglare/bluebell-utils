@@ -53,9 +53,12 @@
                              (string? %)
                              (symbol? %)))
 
+(def not-empty? (comp not empty?))
+
 (spec/def ::method-args (spec/cat :name symbol?
                                   :meta (spec/* ::method-meta)
-                                  :args (spec/coll-of ::arg)
+                                  :args (spec/and (spec/coll-of ::arg)
+                                                  not-empty?)
                                   :body (spec/* cljany?)))
 
 
@@ -177,17 +180,19 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Specifying relationships between types, etc.
+;; Use this function to register a type in the system
 (def add (forward-set-fn ss/add))
 
-
+;; Use this function to specify that some set is a subset of another set,
+;; e.g. floating point numbers are a subset of numbers
 (defn subset-of [system-atom a b]
   (swap! system-atom
          (fn [system]
            (check-not-used system)
            (subset-of-sub system a b))))
 
-;; Query API
+;; Query API: Use these functions to build complex set queries
+;; for the function arguments
 (def universe ss/universe)
 (def complement ss/complement)
 (def union ss/union)
@@ -196,17 +201,25 @@
 (def difference ss/difference)
 
 
-;; The set system used
+;; This creates a mutable type system onto which we can register
+;; new types
 (defmacro def-system [system-name]
   `(def ~system-name (atom (merge ss/empty-set-registry
                                   empty-dispatch-state))))
 
-;; The method name, the system, and how we get the features from function args.
+;; This defines the root function that will do the actual dispatch.
 (defmacro def-dispatch [fn-name system feature-extractor?]
   (assert (symbol? fn-name))
   `(let [state# (atom (initialize-dispatch-state ~feature-extractor?))]
      (def ~fn-name (dispatch-root ~system state#))))
 
+
+;; This defines a specific implementation that will be selected if the
+;; arguments match the arg spec specifically enough. The more specific the arguments,
+;; the more likely this implementation is to be selected.
+;;
+;; NOTE: This form does not necessarily have to be top-level, it can also
+;; be generated.
 (defmacro def-set-method [& args]
   (let [parsed (sutils/force-conform ::method-args args)]
     `(let [state-atom# (~(:name parsed))]
