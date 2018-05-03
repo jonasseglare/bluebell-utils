@@ -1,14 +1,14 @@
 (ns bluebell.utils.symset
   (:require [clojure.spec.alpha :as spec])
-  (:refer-clojure :exclude [complement]))
+  (:refer-clojure :exclude [complement any?]))
 
 ;; Type of operations:
 ;;   - Is an element part of a set?
 ;;   - A set can be a subset of another set
 ;;   - An element belongs to a number of sets
 
-(spec/def ::set-id any?)
-(spec/def ::element-id any?)
+(spec/def ::set-id clojure.core/any?)
+(spec/def ::element-id clojure.core/any?)
 (spec/def ::set-ids (spec/and (spec/coll-of ::set-id)
                               set?))
 (spec/def ::supersets ::set-ids)
@@ -134,6 +134,9 @@
 ;;;  Query API
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn any? [sym-registry x]
+  true)
 
 (def universe element?)
 

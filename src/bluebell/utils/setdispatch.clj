@@ -25,6 +25,12 @@
       sys
       (swap! system #(assoc % :was-called? true)))))
 
+(defn check-not-used [system]
+  (utils/data-assert (not (:was-called? system))
+                     "You cannot extend the system *after* starting to use it"
+                     {:system system})
+  system)
+
 ;;;; OBS: För ett givet system måste alla 
 
 
@@ -43,10 +49,25 @@
                                      :query any?
                                      :binding any?)))
 
+(spec/def ::method-meta #(or (map? %)
+                             (string? %)
+                             (symbol? %)))
+
 (spec/def ::method-args (spec/cat :name symbol?
+                                  :meta (spec/* ::method-meta)
                                   :args (spec/coll-of ::arg)
                                   :body (spec/* any?)))
 
+
+(defn clean-alt [alt]
+  (select-keys alt [:meta :args :satisfied? :generality]))
+
+(defn clean-alts [alts]
+  (map clean-alt alts))
+
+(defn match-error-map [arity alts]
+  {:arity arity
+   :alternatives (sort-by :generality (clean-alts alts))})
 
 (defn resolve-fn-call [system dispatch-state args]
   (let [arity (count args)
@@ -59,12 +80,14 @@
         matching-alternatives (sort-by :generality (filter :satisfied? alternatives))]
     (cond
       (empty? matching-alternatives) (throw (ex-info "No matching set-fn for this arity."
-                                                     (utils/map-of arity alternatives)))
+                                                     (match-error-map
+                                                      arity
+                                                      alternatives)))
       (= (:generality (first matching-alternatives))
          (:generality (second matching-alternatives))) (throw
                                                         (ex-info
                                                          "Ambiguous set-based dispatch"
-                                                         (utils/map-of
+                                                         (match-error-map
                                                           arity
                                                           matching-alternatives)))
       :default (apply (-> matching-alternatives
@@ -89,6 +112,7 @@
   (fn [& args]
     (let [[system & rest-args] args]
       (swap! system (fn [set-registry]
+                      (check-not-used set-registry)
                       (apply f `(~set-registry ~@rest-args)))))))
 
 (defn add-method [state-atom arity method]
@@ -97,21 +121,32 @@
            (update-in state [:dispatch-map arity]
                       #(conj % method)))))
 
+(def memoized-evaluate-query (memoize ss/evaluate-query))
+
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
   (let [fe (or (:feature-extractor arg-spec)
                common-feature-extractor)
         element (fe arg)
+
+        _ (utils/data-assert (ss/element? system element)
+                             "Not an element"
+                             {:x element
+                              :elements (ss/all-elements system)})
+        
         raw-query (:query arg-spec)
         query (ss/normalize-query raw-query)
 
         ;; TODO: This can be cached
-        elements (ss/evaluate-query system query)
-        
+        elements (memoized-evaluate-query system query)
+
+        ;; NOTE: A a query can be satisfied even if the elements returned by
+        ;; evaluate-query is empty.
         satisfied? (ss/satisfies-query? system query element)
+        
         generality (count elements)]
     (utils/map-of element satisfied? generality raw-query)))
 
-(defn make-match-fn [arg-specs]
+(defn make-match-fn [meta arg-specs]
   (fn [system common-feature-extractor args]
     (assert (= (count args)
                (count arg-specs)))
@@ -125,9 +160,16 @@
                                   +
                                   0
                                   evaluated))]
-      {:args evaluated
+      {:meta meta
+       :args evaluated
        :satisfied? all-satisfied?
        :generality generality})))
+
+(defn subset-of-sub [system a b]
+  (-> system
+      (ss/add a)
+      (ss/add b)
+      (ss/subset-of a b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -137,7 +179,13 @@
 
 ;; Specifying relationships between types, etc.
 (def add (forward-set-fn ss/add))
-(def subset-of (forward-set-fn ss/subset-of))
+
+
+(defn subset-of [system-atom a b]
+  (swap! system-atom
+         (fn [system]
+           (check-not-used system)
+           (subset-of-sub system a b))))
 
 ;; Query API
 (def universe ss/universe)
@@ -163,7 +211,8 @@
     `(let [state-atom# (~(:name parsed))]
        (add-method state-atom#
                    ~(count (:args parsed))
-                   {:match-fn (make-match-fn ~(mapv (fn [x] (dissoc x :binding))
+                   {:match-fn (make-match-fn ~(:meta parsed)
+                                             ~(mapv (fn [x] (dissoc x :binding))
                                                     (:args parsed)))
                     :fn (fn [~@(map :binding (:args parsed))]
                           ~@(:body parsed))}))))
