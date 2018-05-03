@@ -10,6 +10,7 @@
   (cond
     (double? x) :double
     (float? x) :float
+    (integer? x) :integer
     (number? x) :number
     (keyword? x) :keyword
     (string? x) :string
@@ -17,6 +18,7 @@
     (set? x) :set
     (coll? x) :coll))
 
+(subset-of ts :integer :number)
 (subset-of ts :double :number)
 (subset-of ts :float :number)
 (subset-of ts :map :coll)
@@ -26,6 +28,9 @@
 (subset-of ts :string :atom)
 (subset-of ts :coll :all)
 (subset-of ts :atom :all)
+
+(def exotic-number (difference :number
+                               (union :double :float :integer)))
 
 (def-dispatch my-plus ts get-feature)
 
@@ -83,6 +88,11 @@
    [:double b]]
   [:special-double-add a b])
 
+(def-set-method my-plus "Exotic addition"
+  [[exotic-number a]
+   [exotic-number b]]
+  [:exotic (+ a b)])
+
 
 (deftest test-it
   (is (= [:double-sum 7.9]
@@ -110,6 +120,8 @@
                   {:b 4})))
   (is (= [:triple-plus 6]
          (my-plus 1 2 3)))
+  (is (= [:exotic 5/7]
+         (my-plus 3/7 2/7)))
   (is (= (my-plus :a 3.4)
          [:special-double-add :a 3.4]))
   (is (thrown?
