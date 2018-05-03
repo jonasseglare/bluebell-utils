@@ -39,5 +39,7 @@
         
         _ (is (= #{:kattskit}
                  (evaluate-query (add-element e :kattskit) #{:kattskit})))
+        _ (is (= #{:x :y :z}
+                 (evaluate-query e universe)))
         ]
     ))

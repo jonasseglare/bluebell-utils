@@ -121,12 +121,16 @@
       keys
       set))
 
+(defn element? [set-registry element]
+  (contains? (:element-map set-registry) element))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Query API
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def universe element?)
 
 (defn union [& args]
   (fn [set-registry element]
