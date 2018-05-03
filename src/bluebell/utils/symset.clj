@@ -11,8 +11,7 @@
 (spec/def ::set-ids (spec/and (spec/coll-of ::set-id)
                               set?))
 (spec/def ::supersets ::set-ids)
-(spec/def ::element-counter integer?)
-(spec/def ::set-entry (spec/keys :req-un [::supersets ::element-counter]))
+(spec/def ::set-entry (spec/keys :req-un [::supersets]))
 (spec/def ::set-map (spec/map-of ::set-id ::set-entry))
 (spec/def ::element-entry (spec/keys ::req-un [::set-ids]))
 (spec/def ::element-map (spec/map-of ::element-id ::element-entry))
@@ -21,13 +20,18 @@
 
 (def empty-element-entry {:set-ids #{}})
 
-(def empty-set-entry {:supersets #{}
-                      :element-counter 0})
+(def empty-set-entry {:supersets #{}})
 
 (def empty-set-registry {:set-map {}
                          :element-map {}})
 
-;; Low level modifiers
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Implementation
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn set-supersets [set-registry set-id]
   (-> set-registry
       :set-map
@@ -39,22 +43,24 @@
 (defn initialize-set [set-registry set-id]
   (update-in set-registry [:set-map set-id] #(or % empty-set-entry)))
 
-(defn inc-counters-from
-  ([set-registry] set-registry)
-  ([set-registry set-id]
-   (reduce
-    inc-counters-from
-    (update-in set-registry [:set-map set-id :element-counter] inc)
-    (get-in set-registry [:set-map set-id :supersets]))))
-
 (defn register-membership [set-registry element set-id]
   (-> set-registry
-      (update-in [:element-map element :set-ids] #(conj % set-id))
-      (inc-counters-from set-id)))
+      (update-in [:element-map element :set-ids] #(conj % set-id))))
 
-;; High level modifiers
+
+(defn register-superset [set-registry set-id-a set-id-b]
+  (update-in set-registry [:set-map set-id-a :supersets] #(conj % set-id-b)))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  High level API
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn set-registry? [x]
   (spec/valid? ::registry x))
+
 
 (defn belongs-to [set-registry element set-id]
   (-> set-registry
@@ -62,14 +68,15 @@
       (initialize-set set-id)
       (register-membership element set-id)))
 
-(defn subset-of [set-registry set-id-a set-id-b])
-
-(defn belongs-to? [set-registry element set-id])
+(defn subset-of [set-registry set-id-a set-id-b]
+  (-> set-registry
+      (initialize-set set-id-a)
+      (initialize-set set-id-b)
+      (register-superset set-id-a set-id-b)))
 
 (defn supersets-of [set-registry set-ids]
   (transduce
    (comp (map (fn [set-id]
-                (println "Visiting set-id" set-id)
                 (supersets-of
                  set-registry
                  (get-in set-registry [:set-map set-id :supersets]))))
@@ -79,12 +86,26 @@
    set-ids))
 
 (defn set-memberships [set-registry element]
-  (supersets-of
-   set-registry
-   (get-in set-registry [:element-map element :set-ids])))
+  (set (supersets-of
+        set-registry
+        (get-in set-registry [:element-map element :set-ids]))))
+
+(defn belongs-to? [set-registry element set-id]
+  (contains? (set-memberships set-registry element) set-id))
+
+(defn all-sets [set-registry]
+  (-> set-registry
+      :set-map
+      keys
+      set))
 
 (comment
-  (def a (belongs-to empty-set-registry :x :numbers))
+  (do
+    
+    (def a (belongs-to empty-set-registry :x :numbers))
+    (def b (belongs-to a :x :elements))
+    (def c (subset-of b :rational :numbers))
 
+    )
 
   )
