@@ -1,12 +1,13 @@
 (ns bluebell.utils.symset
-  (:require [clojure.spec.alpha :as spec]))
+  (:require [clojure.spec.alpha :as spec])
+  (:refer-clojure :exclude [complement]))
 
 ;; Type of operations:
 ;;   - Is an element part of a set?
 ;;   - A set can be a subset of another set
 ;;   - An element belongs to a number of sets
 
-(spec/def ::set-id keyword?)
+(spec/def ::set-id any?)
 (spec/def ::element-id any?)
 (spec/def ::set-ids (spec/and (spec/coll-of ::set-id)
                               set?))
@@ -51,6 +52,18 @@
 (defn register-superset [set-registry set-id-a set-id-b]
   (update-in set-registry [:set-map set-id-a :supersets] #(conj % set-id-b)))
 
+(declare member-of?)
+
+(defn normalize-query [X]
+  (cond
+    (fn? X) X
+    (set? X) (fn [set-registry element]
+               (contains? X element))
+    :default (fn [set-registry element]
+               (member-of? set-registry element X))))
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,8 +74,11 @@
 (defn set-registry? [x]
   (spec/valid? ::registry x))
 
+(def add-element initialize-element)
 
-(defn belongs-to [set-registry element set-id]
+(def add-set initialize-set)
+
+(defn member-of [set-registry element set-id]
   (-> set-registry
       (initialize-element element)
       (initialize-set set-id)
@@ -90,7 +106,7 @@
         set-registry
         (get-in set-registry [:element-map element :set-ids]))))
 
-(defn belongs-to? [set-registry element set-id]
+(defn member-of? [set-registry element set-id]
   (contains? (set-memberships set-registry element) set-id))
 
 (defn all-sets [set-registry]
@@ -99,12 +115,76 @@
       keys
       set))
 
+(defn all-elements [set-registry]
+  (-> set-registry
+      :element-map
+      keys
+      set))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Query API
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn union [& args]
+  (fn [set-registry element]
+    (some (fn [f] (f set-registry element))
+          (map normalize-query args))))
+
+(defn intersection [& args]
+  (fn [set-registry element]
+    (every? (fn [f] (f set-registry element))
+            (map normalize-query args))))
+
+(defn complement [x]
+  (-> x
+      normalize-query
+      clojure.core/complement))
+
+(defn difference [a b]
+  (fn [set-registry element]
+    (and ((normalize-query a) set-registry element)
+         (not ((normalize-query b) set-registry element)))))
+
+
+(defn evaluate-query [set-registry query]
+  (let [f (normalize-query query)]
+    (set
+     (filter
+      #(f set-registry %)
+      (-> set-registry
+          :element-map
+          keys)))))
+
+
+
+
 (comment
   (do
     
-    (def a (belongs-to empty-set-registry :x :numbers))
-    (def b (belongs-to a :x :elements))
-    (def c (subset-of b :rational :numbers))
+    (def a (member-of empty-set-registry :x :numbers))
+    (def b (member-of a :x :elements))
+    (def c (subset-of b :rationals :numbers))
+    (def d (member-of c :y :rationals))
+
+    (println ":numbers in d" (evaluate-query d :numbers))
+    (println ":rationals in d" (evaluate-query d :rationals))
+    (evaluate-query d (complement :rationals))
+
+
+    (def e (member-of d :z :elements))
+
+    (println ":numbers in e" (evaluate-query e :numbers))
+    (println ":rationals in e" (evaluate-query e :rationals))
+    (evaluate-query e (complement :numbers))
+    (evaluate-query e (union :numbers :elements))
+    (evaluate-query e (intersection :numbers :elements))
+
+    (evaluate-query e (difference :numbers :elements))
+
+    (evaluate-query e #{:kattskit})
 
     )
 
