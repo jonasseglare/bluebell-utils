@@ -78,11 +78,16 @@
 
 (def add-set initialize-set)
 
+
+
 (defn member-of [set-registry element set-id]
   (-> set-registry
       (initialize-element element)
       (initialize-set set-id)
       (register-membership element set-id)))
+
+(defn add [set-registry x]
+  (member-of set-registry x x))
 
 (defn subset-of [set-registry set-id-a set-id-b]
   (-> set-registry
