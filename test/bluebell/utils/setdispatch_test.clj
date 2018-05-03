@@ -1,5 +1,8 @@
 (ns bluebell.utils.setdispatch-test
-  (:require [bluebell.utils.setdispatch :refer :all] :reload))
+  (:require [bluebell.utils.symset :as ss]
+            [clojure.test :refer :all])
+  (:require [bluebell.utils.setdispatch :refer :all] :reload)
+  (:refer-clojure :exclude [complement]))
 
 (def-system ts)
 
@@ -14,6 +17,8 @@
     (set? x) :set
     (coll? x) :coll))
 
+(add ts :double)
+(add ts :float)
 (add ts :number)
 (add ts :keyword)
 (add ts :string)
@@ -34,5 +39,8 @@
 
 (def-set-method my-plus [[:double a]
                          [:double b]]
-  [:sum (+ a b)])
+  [:suma (+ a b)])
 
+
+(deftest test-it
+  (is (= [:sum 7.9 ()])))

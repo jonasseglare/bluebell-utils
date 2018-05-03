@@ -624,3 +624,15 @@
 
 (defn count-or-0 [count-map x]
   (get count-map x 0))
+
+#_(defn caching-fn []
+  (let [p (promise)]
+    (fn [f]
+      (if (realized? p)
+        (deref p)
+        (let [value (f)]
+          (deliver p value)
+          value)))))
+
+(defmacro map-of [& symbols]
+  (into {} (map (fn [s] [(keyword s) s]) symbols)))

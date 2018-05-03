@@ -167,6 +167,10 @@
           :element-map
           keys)))))
 
+(defn satisfies-query? [set-registry query x]
+  (let [f (normalize-query query)]
+    (f set-registry x)))
+
 
 
 

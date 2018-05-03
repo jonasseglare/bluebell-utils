@@ -1,7 +1,9 @@
 (ns bluebell.utils.setdispatch
   (:require [bluebell.utils.symset :as ss]
             [clojure.spec.alpha :as spec]
-            [bluebell.utils.specutils :as sutils]))
+            [bluebell.utils.core :as utils]
+            [bluebell.utils.specutils :as sutils])
+  (:refer-clojure :exclude [complement]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,17 +20,12 @@
 
 
 (defn mark-called [system]
-  (if (not (:was-called? (deref system)))
-    (swap! system #(assoc % :was-called? true))))
+  (let [sys (deref system)]
+    (if (:was-called? sys)
+      sys
+      (swap! system #(assoc % :was-called? true)))))
 
 ;;;; OBS: För ett givet system måste alla 
-
-(defn dispatch-root [system fn-list]
-  (fn [& args]
-    (mark-called system)
-    (if (empty? args)
-      fn-list
-      )))
 
 
 (spec/def ::fn fn?)
@@ -42,14 +39,47 @@
 (spec/def ::dispatch-state (spec/keys :req-un [::dispatch-map ::feature-extractor]))
 
 
-
-(spec/def ::arg (spec/spec (spec/cat :get-feature (spec/? any?)
-                                     :set any?
+(spec/def ::arg (spec/spec (spec/cat :feature-extractor (spec/? any?)
+                                     :query any?
                                      :binding any?)))
 
 (spec/def ::method-args (spec/cat :name symbol?
                                   :args (spec/coll-of ::arg)
                                   :body (spec/* any?)))
+
+
+(defn resolve-fn-call [system dispatch-state args]
+  (let [arity (count args)
+        alternatives (map (fn [alt]
+                            (merge alt ((:match-fn alt)
+                                        system
+                                        (:feature-extractor dispatch-state)
+                                        args)))
+                          (get-in dispatch-state [:dispatch-map arity]))
+        matching-alternatives (sort-by :generality (filter :satisfied? alternatives))]
+    (cond
+      (empty? matching-alternatives) (throw (ex-info "No matching set-fn for this arity."
+                                                     (utils/map-of arity alternatives)))
+      (= (:generality (first matching-alternatives))
+         (:generality (second matching-alternatives))) (throw
+                                                        (ex-info
+                                                         "Ambiguous set-based dispatch"
+                                                         (utils/map-of
+                                                          arity
+                                                          matching-alternatives)))
+      :default (apply (-> matching-alternatives
+                          first
+                          :fn)
+                      args))))
+
+(defn dispatch-root [system dispatch-state]
+  (fn [& args]
+    (let [system (mark-called system)]
+      (if (empty? args)
+        dispatch-state
+        (resolve-fn-call system
+                         (deref dispatch-state)
+                         args)))))
 
 (defn initialize-dispatch-state [feature-extractor]
   {:dispatch-map {}
@@ -67,7 +97,41 @@
            (update-in state [:dispatch-map arity]
                       #(conj % method)))))
 
-(defn make-match-fn [state-atom arglist])
+(defn conj-nil
+  ([] [])
+  ([dst] dst)
+  ([dst x]
+   (if (not (nil? x))
+     (conj dst x))))
+
+(defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
+  (let [fe (or (:feature-extractor arg-spec)
+               common-feature-extractor)
+        element (fe arg)
+        raw-query (:query arg-spec)
+        query (ss/normalize-query raw-query)
+        elements (ss/evaluate-query system query)
+        satisfied? (ss/satisfies-query? system query element)
+        generality (count elements)]
+    (utils/map-of element satisfied? generality raw-query)))
+
+(defn make-match-fn [arg-specs]
+  (fn [system common-feature-extractor args]
+    (assert (= (count args)
+               (count arg-specs)))
+    (let [evaluated (map (fn [arg-spec arg]
+                           (evaluate-arg-match system common-feature-extractor arg-spec arg))
+                         arg-specs
+                         args)
+          all-satisfied? (every? :satisfied? evaluated)
+          generality (if all-satisfied?
+                       (transduce (map :generality)
+                                  +
+                                  0
+                                  evaluated))]
+      {:args evaluated
+       :satisfied? all-satisfied?
+       :generality generality})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -75,9 +139,13 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Specifying relationships between types, etc.
 (def add (forward-set-fn ss/add))
-(def member-of (forward-set-fn ss/member-of))
 (def subset-of (forward-set-fn ss/subset-of))
+
+;; Query API
+(def universe ss/universe)
+(def complement ss/complement)
 
 
 ;; The set system used
@@ -97,7 +165,7 @@
     `(let [state-atom# (~(:name parsed))]
        (add-method state-atom#
                    ~(count (:args parsed))
-                   {:match-fn (make-match-fn ~@(map (fn [x] (dissoc x :binding))
+                   {:match-fn (make-match-fn ~(mapv (fn [x] (dissoc x :binding))
                                                     (:args parsed)))
                     :fn (fn [~@(map :binding (:args parsed))]
                           ~@(:body parsed))}))))
