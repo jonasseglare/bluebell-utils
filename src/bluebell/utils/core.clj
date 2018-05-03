@@ -1,6 +1,7 @@
 (ns bluebell.utils.core
   (:require [clojure.set]
             [clojure.spec.alpha :as spec]
+            [clojure.pprint :as pprint]
             [bluebell.utils.debug :as debug]
             [clojure.spec.test.alpha :as stest]))
             
@@ -552,3 +553,74 @@
 
 (defn first-arg [x & args]
   x)
+
+(defn copy-to-key [dst-map src-fun dst-key]
+  (assoc dst-map dst-key (src-fun dst-map)))
+
+(defn ensure-not-nil [x]
+  (assert (not (nil? x)))
+  x)
+
+(defn crash-if-called [& args]
+  (throw (ex-info "This function should never be called!" {:args args})))
+
+(def keyset (comp set keys))
+
+
+
+
+(defn data-to-string
+  ([data] (data-to-string data 300))
+  ([data n]
+   (abbreviate
+    (with-out-str
+      (pprint/pprint data)) n)))
+
+(spec/def ::error-context-args (spec/cat :desc string?
+                                         :data any?
+                                         :body (spec/* any?)))
+(defmacro error-context [& args0]
+  (let [args (spec/conform ::error-context-args args0)]
+    (assert (not= args ::spec/invalid))
+    `(try
+       ~@(:body args)
+       (catch Throwable e#
+         (println ~(str "Error in this context: '"
+                        (:desc args) "'\n"))
+         (println "  Error data:\n" (data-to-string ~(:data args)))
+         (throw e#)))))
+
+
+(defmacro with-value-export [f-sym & body]
+  `(let [dst# (atom [])
+         ~f-sym (fn [x#] (swap! dst# conj x#) x#)
+         ret# (do ~@body)]
+     [ret# (deref dst#)]))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Counting items
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn count-item
+  "Used by count-values"
+  ([] {})
+  ([m] m)
+  ([m item]
+   (if (contains? m item)
+     (update m item inc)
+     (assoc m item 1))))
+
+(defn count-values
+  "Takes a collection and counts how many times each item occurs in the collection."
+  [collection]
+  (reduce
+   count-item
+   {}
+   collection))
+
+(defn count-or-0 [count-map x]
+  (get count-map x 0))

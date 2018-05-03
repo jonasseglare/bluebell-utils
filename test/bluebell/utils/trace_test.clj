@@ -67,5 +67,5 @@
                                 (fib (- i 2))))]
                 (end f [:fib i])
                 result))]
-    (fib 5)
+    (fib n)
     (disp-trace f)))

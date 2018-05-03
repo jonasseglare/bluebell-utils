@@ -4,6 +4,12 @@
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 
+(defn visiting-accessor [old-v new-v]
+  (fn 
+    ([] {:desc "mapping-accessor"})
+    ([x] (old-v x) x)
+    ([x y] (old-v x) (new-v y) y)))
+
 (defn access-identity
   ([] {:desc "access-idenity"})
   ([obj] obj)

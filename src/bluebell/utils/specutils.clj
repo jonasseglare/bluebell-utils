@@ -6,7 +6,8 @@
     (if (= y ::spec/invalid)
       (throw (ex-info "Failed to conform to spec"
                       {:spec dst-spec
-                       :x x}))
+                       :x x
+                       :explanation (spec/explain-str dst-spec x)}))
       y)))
 
 
@@ -16,3 +17,6 @@
     (throw (ex-info "Spec validation failed"
                     {:explanation (spec/explain-str speck x)})))
   x)
+
+(defn pred [speck]
+  (fn [x] (spec/valid? speck x)))
