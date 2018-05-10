@@ -82,6 +82,9 @@
                                         args)))
                           (get-in dispatch-state [:dispatch-map arity]))
         matching-alternatives (sort-by :generality (filter :satisfied? alternatives))]
+
+    (println "The alternatives are " (clean-alts matching-alternatives))
+    
     (cond
       (empty? matching-alternatives) (throw (ex-info "No matching set-fn for this arity."
                                                      (match-error-map
