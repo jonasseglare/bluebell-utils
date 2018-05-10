@@ -128,11 +128,11 @@
                                          arity
                                          alternatives)))
       (< 1 (count frontier)) (throw
-                                                        (ex-info
-                                                         "Ambiguous set-based dispatch"
-                                                         (match-error-map
-                                                          arity
-                                                          matching-alternatives)))
+                              (ex-info
+                               "Ambiguous set-based dispatch"
+                               (match-error-map
+                                arity
+                                matching-alternatives)))
       :default (apply (-> frontier
                           first
                           :fn)
@@ -158,11 +158,19 @@
                       (check-not-used set-registry)
                       (apply f `(~set-registry ~@rest-args)))))))
 
+(defn arg-key [arg]
+  (select-keys arg [:query :binding]))
+
+(defn args-key [args]
+  (mapv arg-key args))
+
 (defn add-method [state-atom arity method]
   (swap! state-atom
          (fn [state]
            (update-in state [:dispatch-map arity]
-                      #(conj (or % {}) [(:args method) method])))))
+                      #(conj (or % {})
+                             [(args-key (:args method))
+                              method])))))
 
 (def memoized-evaluate-query (memoize ss/evaluate-query))
 
