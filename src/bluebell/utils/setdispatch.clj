@@ -38,7 +38,7 @@
 
 (spec/def ::fn fn?)
 (spec/def ::match-fn fn?)
-(spec/def ::feature-extractor any?) ;; TODO
+(spec/def ::feature-extractor clojure.core/any?) ;; TODO
 
 (spec/def ::arity integer?)
 (spec/def ::fn-info (spec/keys :req-un [::fn ::match-fn]))
@@ -177,9 +177,23 @@
 
 (def memoized-evaluate-query (memoize ss/evaluate-query))
 
+(defn feature-extractor [classifier]
+  {:classifier classifier
+   :set-indicators (atom {})})
+
+(defn evaluate-feature [feature x]
+  (transduce
+   (comp (filter (fn [[_ indicator]]
+                   (indicator x)))
+         (map first))
+   conj
+   #{((:classifier feature) x)}
+   (deref (:set-indicators feature))))
+
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
   (let [fe common-feature-extractor
-        element (first (evaluate-feature fe arg))
+        set-memberships (evaluate-feature fe arg)
+        element (first set-memberships)
 
         _ (utils/data-assert (ss/element? system element)
                              "Not an element"
@@ -194,10 +208,10 @@
 
         ;; NOTE: A a query can be satisfied even if the elements returned by
         ;; evaluate-query is empty.
-        satisfied? (ss/satisfies-query? system query element)
+        satisfied? (some (partial ss/satisfies-query? system query) set-memberships)
         
         generality (count elements)]
-    (utils/map-of element satisfied? generality raw-query elements)))
+    (utils/map-of element satisfied? generality raw-query elements set-memberships)))
 
 (defn make-match-fn [meta arg-specs]
   (fn [system common-feature-extractor args]
@@ -224,19 +238,6 @@
       (ss/add b)
       (ss/subset-of a b)))
 
-
-(defn feature-extractor [classifier]
-  {:classifier classifier
-   :set-indicators (atom {})})
-
-(defn evaluate-feature [feature x]
-  (transduce
-   (comp (filter (fn [[_ indicator]]
-                   (indicator x)))
-         (map first))
-   conj
-   #{((:classifier feature) x)}
-   (deref (:set-indicators feature))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;

@@ -28,6 +28,8 @@
 (subset-of ts :string :atom)
 (subset-of ts :coll :all)
 (subset-of ts :atom :all)
+(subset-of ts :complex :number)
+(subset-of ts :complex :map)
 
 (def exotic-number (difference :number
                                (union :double :float :integer)))
@@ -56,6 +58,14 @@
   [[:float a]
    [:float b]]
   [:float-sum (+ a b)])
+
+(def-set-method my-plus "Complex number addition"
+  [[:complex a]
+   [:complex b]]
+  {:imag (+ (:imag a)
+            (:imag b))
+   :real (+ (:real a)
+            (:real b))})
 
 (def-set-method my-plus "General addition"
   [[:number a]
@@ -117,7 +127,11 @@
          [:special-double-add :a 3.4]))
   (is (thrown?
        Throwable
-       (my-plus 1 2 :a))))
+       (my-plus 1 2 :a)))
+  (is (= (my-plus {:imag 1 :real 10}
+                  {:imag 2 :real 119})
+         {:imag 3
+          :real 129})))
 
 (deftest set-compare-test
   (is (= 1 (compare-sets [1 2] [1])))
