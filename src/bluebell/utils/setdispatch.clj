@@ -38,6 +38,7 @@
 (spec/def ::match-fn fn?)
 (spec/def ::feature-extractor fn?)
 
+(spec/def ::arity integer?)
 (spec/def ::fn-info (spec/keys :req-un [::fn ::match-fn]))
 (spec/def ::fns-per-arty (spec/map-of integer? ::fn-info))
 (spec/def ::dispatch-map (spec/map-of ::arity ::fns-per-arity))
@@ -74,7 +75,7 @@
 
 (defn resolve-fn-call [system dispatch-state args]
   (let [arity (count args)
-        alternatives (map (fn [alt]
+        alternatives (map (fn [[k alt]]
                             (merge alt ((:match-fn alt)
                                         system
                                         (:feature-extractor dispatch-state)
@@ -122,7 +123,7 @@
   (swap! state-atom
          (fn [state]
            (update-in state [:dispatch-map arity]
-                      #(conj % method)))))
+                      #(conj (or % {}) [(:args method) method])))))
 
 (def memoized-evaluate-query (memoize ss/evaluate-query))
 
@@ -220,15 +221,18 @@
 ;;
 ;; NOTE: This form does not necessarily have to be top-level, it can also
 ;; be generated.
-(defmacro def-set-method [& args]
-  (let [parsed (sutils/force-conform ::method-args args)]
+(defmacro def-set-method [& args0]
+  (let [parsed (sutils/force-conform ::method-args args0)
+        args (:args parsed)
+        arity (count args)]
     `(let [state-atom# (~(:name parsed))]
        (add-method state-atom#
-                   ~(count (:args parsed))
-                   {:match-fn (make-match-fn ~(:meta parsed)
+                   ~arity
+                   {:args (quote ~args)
+                    :match-fn (make-match-fn ~(:meta parsed)
                                              ~(mapv (fn [x] (dissoc x :binding))
-                                                    (:args parsed)))
-                    :fn (fn [~@(map :binding (:args parsed))]
+                                                    args))
+                    :fn (fn [~@(map :binding args)]
                           ~@(:body parsed))}))))
 
 #_ (defmacro def-) ;;; TODO: For every argument a function that produces an element...
