@@ -45,7 +45,7 @@
   (is (= #{:complex :map} (evaluate-feature type-feature {:real 3 :imag 3})))
   (is (= #{:integer} (evaluate-feature type-feature 9))))
 
-(def-dispatch my-plus ts get-feature)
+(def-dispatch my-plus ts type-feature)
 
 (def-set-method my-plus "Double addition"
   [[:double a]

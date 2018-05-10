@@ -38,7 +38,7 @@
 
 (spec/def ::fn fn?)
 (spec/def ::match-fn fn?)
-(spec/def ::feature-extractor fn?)
+(spec/def ::feature-extractor any?) ;; TODO
 
 (spec/def ::arity integer?)
 (spec/def ::fn-info (spec/keys :req-un [::fn ::match-fn]))
@@ -179,7 +179,7 @@
 
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
   (let [fe common-feature-extractor
-        element (fe arg)
+        element (first (evaluate-feature fe arg))
 
         _ (utils/data-assert (ss/element? system element)
                              "Not an element"
@@ -278,9 +278,9 @@
                                   empty-dispatch-state))))
 
 ;; This defines the root function that will do the actual dispatch.
-(defmacro def-dispatch [fn-name system feature-extractor?]
+(defmacro def-dispatch [fn-name system feature-extractor]
   (assert (symbol? fn-name))
-  `(let [state# (atom (initialize-dispatch-state ~feature-extractor?))]
+  `(let [state# (atom (initialize-dispatch-state ~feature-extractor))]
      (def ~fn-name (dispatch-root ~system state#))))
 
 
