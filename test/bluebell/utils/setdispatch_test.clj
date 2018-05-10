@@ -32,6 +32,15 @@
 (def exotic-number (difference :number
                                (union :double :float :integer)))
 
+(def-feature type-feature get-feature)
+
+(defn complex? [x]
+  (and (map? x)
+       (contains? x :real)
+       (contains? x :imag)))
+
+(register-indicator type-feature :complex complex?)
+
 (def-dispatch my-plus ts get-feature)
 
 (def-set-method my-plus "Double addition"
@@ -65,13 +74,13 @@
    [:string b]]
   (str a b))
 
-(defn coarse-feature [x]
+#_(defn coarse-feature [x]
   (cond
     (number? x) :number
     (coll? x) :coll
     :default :atom))
 
-(def-set-method my-plus [[coarse-feature :number a]
+#_(def-set-method my-plus [[coarse-feature :number a]
                          [coarse-feature :number b]
                          [coarse-feature :number c]]
   [:triple-plus (+ a b c)])
@@ -109,7 +118,7 @@
   (is (= {:a 3 :b 4}
          (my-plus {:a 3}
                   {:b 4})))
-  (is (= [:triple-plus 6]
+  #_(is (= [:triple-plus 6]
          (my-plus 1 2 3)))
   (is (= [:exotic 5/7]
          (my-plus 3/7 2/7)))

@@ -226,11 +226,22 @@
       (ss/add b)
       (ss/subset-of a b)))
 
+
+(defn feature-extractor [classifier]
+  {:classifier classifier
+   :set-indicators (atom {})})
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  High level API
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro def-feature [name extractor]
+  `(def ~name (feature-extractor ~extractor)))
+
+(defn register-indicator [feature set-key indicator]
+  (swap! (:set-indicators feature) (fn [indicators] (assoc indicators set-key indicator))))
 
 ;; Use this function to register a type in the system
 (def add (forward-set-fn ss/add))
