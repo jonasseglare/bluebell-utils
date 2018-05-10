@@ -3,7 +3,8 @@
             [clojure.spec.alpha :as spec]
             [bluebell.utils.core :as utils]
             [bluebell.utils.specutils :as sutils]
-            [clojure.set :as cljset])
+            [clojure.set :as cljset]
+            [bluebell.utils.pareto :as pareto])
   (:refer-clojure :exclude [complement any?]))
 
 
@@ -74,6 +75,41 @@
   {:arity arity
    :alternatives (sort-by :generality (clean-alts alts))})
 
+(defn compare-sets
+  "Encode the relationship between two sets:
+  
+  left = rigth => 0
+  left subset of right => -1
+  right subset of left => 1
+  Otherwise nil"
+  
+  [set-a0 set-b0]
+  (let [set-a (set set-a0)
+        set-b (set set-b0)]
+    (cond
+      (= set-a set-b) 0
+      (cljset/subset? set-a set-b) -1
+      (cljset/subset? set-b set-a) 1
+      :default nil)))
+
+(defn set-vectors-dominate?
+  "va and vb are collections of sets. va is said to dominate vb if all of its sets
+  are subsets of the corresponding sets of vb and at least one of these relations is strict subset"
+  [va vb]
+  (let [comparisons (map compare-sets va vb)]
+    (and (not (some nil? comparisons))
+         (every? #(<= % 0) comparisons)
+         (some (partial = -1) comparisons))))
+
+(defn alt-set-vector [alt]
+  (mapv :elements (:args alt)))
+
+(def memoized-set-vectors-dominate? (memoize set-vectors-dominate?))
+
+(defn alt-dominates? [a b]
+  (memoized-set-vectors-dominate? (alt-set-vector a)
+                                  (alt-set-vector b)))
+
 (defn resolve-fn-call [system dispatch-state args]
   (let [arity (count args)
         alternatives (map (fn [[k alt]]
@@ -82,24 +118,22 @@
                                         (:feature-extractor dispatch-state)
                                         args)))
                           (get-in dispatch-state [:dispatch-map arity]))
-        matching-alternatives (sort-by :generality (filter :satisfied? alternatives))]
-
-    (println "The alternatives are ")
-    (clojure.pprint/pprint matching-alternatives)
-    
+        matching-alternatives (filter :satisfied? alternatives)
+        frontier (pareto/elements (reduce pareto/insert
+                                          (pareto/frontier alt-dominates?)
+                                          matching-alternatives))]
     (cond
-      (empty? matching-alternatives) (throw (ex-info "No matching set-fn for this arity."
-                                                     (match-error-map
-                                                      arity
-                                                      alternatives)))
-      (= (:generality (first matching-alternatives))
-         (:generality (second matching-alternatives))) (throw
+      (empty? frontier) (throw (ex-info "No matching set-fn for this arity."
+                                        (match-error-map
+                                         arity
+                                         alternatives)))
+      (< 1 (count frontier)) (throw
                                                         (ex-info
                                                          "Ambiguous set-based dispatch"
                                                          (match-error-map
                                                           arity
                                                           matching-alternatives)))
-      :default (apply (-> matching-alternatives
+      :default (apply (-> frontier
                           first
                           :fn)
                       args))))
@@ -154,32 +188,6 @@
         
         generality (count elements)]
     (utils/map-of element satisfied? generality raw-query elements)))
-
-(defn compare-sets
-  "Encode the relationship between two sets:
-  
-  left = rigth => 0
-  left subset of right => -1
-  right subset of left => 1
-  Otherwise nil"
-  
-  [set-a0 set-b0]
-  (let [set-a (set set-a0)
-        set-b (set set-b0)]
-    (cond
-      (= set-a set-b) 0
-      (cljset/subset? set-a set-b) -1
-      (cljset/subset? set-b set-a) 1
-      :default nil)))
-
-(defn set-vectors-dominate?
-  "va and vb are collections of sets. va is said to dominate vb if all of its sets
-  are subsets of the corresponding sets of vb and at least one of these relations is strict subset"
-  [va vb]
-  (let [comparisons (map compare-sets va vb)]
-    (and (not (some nil? comparisons))
-         (every? #(<= % 0) comparisons)
-         (some (partial = -1) comparisons))))
 
 (defn make-match-fn [meta arg-specs]
   (fn [system common-feature-extractor args]
