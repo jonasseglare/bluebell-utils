@@ -60,13 +60,6 @@
   (merge a b))
 
 (def-set-method my-plus
-  "Returns a data structure representing string concatenation"
-  [[:string a]
-   [:string b]]
-  
-  [:str-cat a b])
-
-(def-set-method my-plus
   "Actually concatenates the strings"
   [[:string a]
    [:string b]]
@@ -109,9 +102,7 @@
        (my-plus :a :b)))
 
   ;; Thrown because ambiguous
-  (is (thrown?
-       Throwable
-       (my-plus "a" "b")))
+  (is (= "ab" (my-plus "a" "b")))
   (is (= [:a :b :c]
          (my-plus [:a :b]
                   #{:c})))
