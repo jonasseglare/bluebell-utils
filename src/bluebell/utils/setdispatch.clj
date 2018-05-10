@@ -93,8 +93,12 @@
       :default nil)))
 
 (defn set-vectors-dominate?
-  "va and vb are collections of sets. va is said to dominate vb if all of its sets
-  are subsets of the corresponding sets of vb and at least one of these relations is strict subset"
+  
+  "va and vb are collections of sets. va is said 
+  to dominate vb if all of its sets
+  are subsets of the corresponding sets of vb and 
+  at least one of these relations is strict subset"
+  
   [va vb]
   (let [comparisons (map compare-sets va vb)]
     (and (not (some nil? comparisons))
