@@ -74,17 +74,6 @@
    [:string b]]
   (str a b))
 
-#_(defn coarse-feature [x]
-  (cond
-    (number? x) :number
-    (coll? x) :coll
-    :default :atom))
-
-#_(def-set-method my-plus [[coarse-feature :number a]
-                         [coarse-feature :number b]
-                         [coarse-feature :number c]]
-  [:triple-plus (+ a b c)])
-
 (def-set-method my-plus "Special double addition"
   [[ss/any? a]
    [:double b]]
@@ -118,8 +107,6 @@
   (is (= {:a 3 :b 4}
          (my-plus {:a 3}
                   {:b 4})))
-  #_(is (= [:triple-plus 6]
-         (my-plus 1 2 3)))
   (is (= [:exotic 5/7]
          (my-plus 3/7 2/7)))
   (is (= (my-plus :a 3.4)
