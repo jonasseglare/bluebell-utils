@@ -48,8 +48,7 @@
 (spec/def ::dispatch-state (spec/keys :req-un [::dispatch-map ::feature-extractor]))
 
 (def cljany? clojure.core/any?)
-(spec/def ::arg (spec/spec (spec/cat :feature-extractor (spec/? cljany?)
-                                     :query cljany?
+(spec/def ::arg (spec/spec (spec/cat :query cljany?
                                      :binding cljany?)))
 
 (spec/def ::method-meta #(or (map? %)
@@ -179,8 +178,7 @@
 (def memoized-evaluate-query (memoize ss/evaluate-query))
 
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
-  (let [fe (or (:feature-extractor arg-spec)
-               common-feature-extractor)
+  (let [fe common-feature-extractor
         element (fe arg)
 
         _ (utils/data-assert (ss/element? system element)
@@ -230,6 +228,15 @@
 (defn feature-extractor [classifier]
   {:classifier classifier
    :set-indicators (atom {})})
+
+(defn evaluate-feature [feature x]
+  (transduce
+   (comp (filter (fn [[_ indicator]]
+                   (indicator x)))
+         (map first))
+   conj
+   #{((:classifier feature) x)}
+   (deref (:set-indicators feature))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
