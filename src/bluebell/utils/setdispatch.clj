@@ -2,7 +2,8 @@
   (:require [bluebell.utils.symset :as ss]
             [clojure.spec.alpha :as spec]
             [bluebell.utils.core :as utils]
-            [bluebell.utils.specutils :as sutils])
+            [bluebell.utils.specutils :as sutils]
+            [clojure.set :as cljset])
   (:refer-clojure :exclude [complement any?]))
 
 
@@ -83,7 +84,8 @@
                           (get-in dispatch-state [:dispatch-map arity]))
         matching-alternatives (sort-by :generality (filter :satisfied? alternatives))]
 
-    (println "The alternatives are " (clean-alts matching-alternatives))
+    (println "The alternatives are ")
+    (clojure.pprint/pprint matching-alternatives)
     
     (cond
       (empty? matching-alternatives) (throw (ex-info "No matching set-fn for this arity."
@@ -151,7 +153,33 @@
         satisfied? (ss/satisfies-query? system query element)
         
         generality (count elements)]
-    (utils/map-of element satisfied? generality raw-query)))
+    (utils/map-of element satisfied? generality raw-query elements)))
+
+(defn compare-sets
+  "Encode the relationship between two sets:
+  
+  left = rigth => 0
+  left subset of right => -1
+  right subset of left => 1
+  Otherwise nil"
+  
+  [set-a0 set-b0]
+  (let [set-a (set set-a0)
+        set-b (set set-b0)]
+    (cond
+      (= set-a set-b) 0
+      (cljset/subset? set-a set-b) -1
+      (cljset/subset? set-b set-a) 1
+      :default nil)))
+
+(defn set-vectors-dominate?
+  "va and vb are collections of sets. va is said to dominate vb if all of its sets
+  are subsets of the corresponding sets of vb and at least one of these relations is strict subset"
+  [va vb]
+  (let [comparisons (map compare-sets va vb)]
+    (and (not (some nil? comparisons))
+         (every? #(<= % 0) comparisons)
+         (some (partial = -1) comparisons))))
 
 (defn make-match-fn [meta arg-specs]
   (fn [system common-feature-extractor args]

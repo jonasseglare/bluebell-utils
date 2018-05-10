@@ -118,3 +118,21 @@
   (is (thrown?
        Throwable
        (my-plus 1 2 :a))))
+
+(deftest set-compare-test
+  (is (= 1 (compare-sets [1 2] [1])))
+  (is (= -1 (compare-sets [1] [1 2])))
+  (is (= 0 (compare-sets [1 2] [1 2])))
+  (is (= nil (compare-sets [1 2] [1 3]))))
+
+(deftest set-domination-test
+  (is (set-vectors-dominate? [[1] [2]]
+                             [[1] [2 3]]))
+  (is (not (set-vectors-dominate? [[1] [2]]
+                                  [[1] [2]])))
+  (is (not (set-vectors-dominate? [[1] [2 3]]
+                                  [[1 2] [2 4]])))
+  (is (set-vectors-dominate? [[1]]
+                             [[1 2]]))
+  (is (not (set-vectors-dominate? [[1 2]]
+                                  [[1]]))))
