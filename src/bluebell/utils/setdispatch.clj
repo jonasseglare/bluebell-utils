@@ -113,13 +113,24 @@
   (memoized-set-vectors-dominate? (alt-set-vector a)
                                   (alt-set-vector b)))
 
+(defn evaluate-feature-set-memberships [feature x]
+  (transduce
+   (map (fn [[_ indicator]]
+          (or (indicator x) #{})))
+   clojure.set/union
+   #{((:classifier feature) x)}
+   (deref (:set-indicators feature))))
+
 (defn resolve-fn-call [system dispatch-state args]
   (let [arity (count args)
+        feature-extractor (:feature-extractor dispatch-state)
+        args-memberships (map (partial evaluate-feature-set-memberships
+                                       feature-extractor)
+                              args)
         alternatives (map (fn [[k alt]]
                             (merge alt ((:match-fn alt)
                                         system
-                                        (:feature-extractor dispatch-state)
-                                        args)))
+                                        args-memberships)))
                           (get-in dispatch-state [:dispatch-map arity]))
         matching-alternatives (filter :satisfied? alternatives)
         frontier (pareto/elements (reduce pareto/insert
@@ -181,18 +192,8 @@
   {:classifier classifier
    :set-indicators (atom {})})
 
-(defn evaluate-feature-set-memberships [feature x]
-  (transduce
-   (map (fn [[_ indicator]]
-          (or (indicator x) #{})))
-   clojure.set/union
-   #{((:classifier feature) x)}
-   (deref (:set-indicators feature))))
-
-(defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
-  (let [fe common-feature-extractor
-        set-memberships (evaluate-feature-set-memberships fe arg)
-        system (reduce ss/add system set-memberships)
+(defn evaluate-arg-match [system arg-spec set-memberships]
+  (let [system (reduce ss/add system set-memberships)
         element (first set-memberships)
 
         _ (utils/data-assert (ss/element? system element)
@@ -214,13 +215,13 @@
     (utils/map-of element satisfied? generality raw-query elements set-memberships)))
 
 (defn make-match-fn [meta arg-specs]
-  (fn [system common-feature-extractor args]
-    (assert (= (count args)
+  (fn [system args-memberships]
+    (assert (= (count args-memberships)
                (count arg-specs)))
-    (let [evaluated (map (fn [arg-spec arg]
-                           (evaluate-arg-match system common-feature-extractor arg-spec arg))
+    (let [evaluated (map (fn [arg-spec arg-memberships]
+                           (evaluate-arg-match system arg-spec arg-memberships))
                          arg-specs
-                         args)
+                         args-memberships)
           all-satisfied? (every? :satisfied? evaluated)
           generality (if all-satisfied?
                        (transduce (map :generality)
