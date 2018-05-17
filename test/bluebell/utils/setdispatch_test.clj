@@ -7,14 +7,17 @@
 
 (def-system ts)
 
-(spec/def ::prefixed (spec/cat :prefix keyword?
-                               :value cljany?))
+(spec/def ::prefixed-value (spec/cat :prefix keyword?
+                                     :value cljany?))
+
+(spec/def ::prefixed-set (spec/cat :prefix #{:prefix}
+                                   :value cljany?))
 
 (defn prefixed-indicator [x]
-  (let [c (spec/conform ::prefixed x)]
+  (let [c (spec/conform ::prefixed-value x)]
     (if (= c ::spec/invalid)
       #{}
-      #{[:prefixed (:prefix c)]})))
+      #{[:prefix (:prefix c)]})))
 
 (defn get-feature [x]
   (cond
@@ -109,6 +112,11 @@
   [[exotic-number a]
    [exotic-number b]]
   [:exotic (+ a b)])
+
+(def-set-method my-plus "Adding prefixed 'kattskit' values"
+  [[[:prefix :kattskit] a]
+   [[:prefix :kattskit] b]]
+  [:kattskit (+ a b)])
 
 
 (deftest test-it
