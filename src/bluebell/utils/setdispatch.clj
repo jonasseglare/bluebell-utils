@@ -136,7 +136,7 @@
      system
      (clojure.set/difference all-sets all-elements))))
 
-(defn compute-alternatives [system dispatch-state args-memberships]
+(defn compute-specific-function [system dispatch-state args-memberships]
   (let [arity (count args-memberships)
         system (add-set-canonical-elements
                 (transduce cat
@@ -153,21 +153,6 @@
         frontier (pareto/elements (reduce pareto/insert
                                           (pareto/frontier alt-dominates?)
                                           matching-alternatives))]
-    (utils/map-of arity alternatives matching-alternatives frontier)))
-
-(def memoized-compute-alternatives (memoize compute-alternatives))
-
-(defn resolve-fn-call [system dispatch-state args]
-  (let [args-memberships (map (partial evaluate-feature-set-memberships
-                                       (:feature-extractor dispatch-state))
-                              args)
-        {:keys [arity
-                frontier
-                alternatives
-                matching-alternatives]} (memoized-compute-alternatives
-                                         system
-                                         dispatch-state
-                                         args-memberships)]
     (cond
       (empty? frontier) (throw (ex-info "No matching set-fn for this arity."
                                         (match-error-map
@@ -179,10 +164,21 @@
                                (match-error-map
                                 arity
                                 matching-alternatives)))
-      :default (apply (-> frontier
-                          first
-                          :fn)
-                      args))))
+      :default (-> frontier
+                   first
+                   :fn))))
+
+(def memoized-compute-specific-function (memoize compute-specific-function))
+
+(defn resolve-fn-call [system dispatch-state args]
+  (let [args-memberships (map (partial evaluate-feature-set-memberships
+                                       (:feature-extractor dispatch-state))
+                              args)
+        f (memoized-compute-specific-function
+           system
+           dispatch-state
+           args-memberships)]
+    (apply f args)))
 
 (defn dispatch-root [system dispatch-state]
   (fn [& args]
