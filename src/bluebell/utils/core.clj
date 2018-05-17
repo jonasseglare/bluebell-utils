@@ -492,29 +492,37 @@
   `(binding ~(reduce into [] (map (fn [x] [x true]) flags))
      ~@body))
 
-(defn indent-sub [step prefix data]
-  (if (coll? data)
-    (apply
-     str
-     (map (partial
-           indent-sub
-           step
-           (str prefix step))
-          data))
-    (str prefix data)))
+
+(declare indent-nested-sub2)
+
+(defn reduce-indented-with-prefix [result data prefix step]
+  (reduce (fn [result x]
+            (indent-nested-sub2 result x prefix step))
+          result data))
+
+(defn indent-nested-sub2 [result data prefix step]
+  (if (string? data)
+    (str result prefix data)
+    (let [f (first data)]
+      (if (map? f)
+        (let [new-values (merge {:prefix prefix
+                                 :step step} f)]
+          (reduce-indented-with-prefix result
+                                       (rest data)
+                                       (:prefix new-values)
+                                       (:step new-values)))
+        (reduce-indented-with-prefix result data (str prefix step) step)))))
 
 (defn indent-nested
+  ([data] (indent-nested {:prefix "\n" :step "  "}))
   ([settings data]
-   (apply
-    str
-    (map (partial indent-sub
-                  (:step settings)
-                  (:prefix settings))
-         data)))
-  ([data]
-   (indent-nested {:prefix "\n"
-                   :step "  "}
-                  data)))
+   (if (string? data)
+     data
+     (reduce-indented-with-prefix
+      ""
+      data
+      (:prefix settings)
+      (:step settings)))))
 
 (defn data-assert-sub
   ([expr msg data]

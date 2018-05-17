@@ -103,3 +103,7 @@
          (get m {:a [1 2] :b [{:d [{:c 3}]}]})
          {:c 3}))))
 
+(deftest indentation-test
+  (is (= (indent-nested {:prefix "\n" :step "  "}
+                        ["a" "b" ["c" [{:prefix "\n--->"} "kattskit" ["bra va?"]]]])
+         "\na\nb\n  c\n--->kattskit\n--->  bra va?")))
