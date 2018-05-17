@@ -68,7 +68,7 @@
 (defn generate-supersets-for-set [set-registry s]
   (transduce
    (map (fn [[k g]]
-          (specutils/validate set? (g s))))
+          (specutils/validate set? (or (g s) #{}))))
    clojure.set/union
    #{}
    (:generators set-registry)))

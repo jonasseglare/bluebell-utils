@@ -180,3 +180,10 @@
                              [[1 2]]))
   (is (not (set-vectors-dominate? [[1 2]]
                                   [[1]]))))
+
+(def k (spec-indicator ::prefixed-value (fn [x] [:prefix (:prefix x)])))
+
+(deftest spec-indicator-test
+  (is (= [:prefix :katt]
+         (k [:katt 99])))
+  (is (empty? (k 9))))

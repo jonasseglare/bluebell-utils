@@ -117,7 +117,8 @@
 (defn evaluate-feature-set-memberships [feature x]
   (transduce
    (map (fn [[_ indicator]]
-          (specutils/validate set? (or (indicator x) #{}))))
+          (let [idval (indicator x)]
+            (specutils/validate set? (or idval #{})))))
    clojure.set/union
    #{}
    (deref (:set-indicators feature))))
@@ -348,3 +349,14 @@
                           ~@(:body parsed))}))))
 
 #_ (defmacro def-) ;;; TODO: For every argument a function that produces an element...
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Utilities
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn spec-indicator [sp f]
+  (fn [x]
+    (let [result (spec/conform sp x)]
+      (if (not= ::spec/invalid result)
+        (f result)))))
