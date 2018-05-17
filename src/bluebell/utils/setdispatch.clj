@@ -181,7 +181,7 @@
   {:classifier classifier
    :set-indicators (atom {})})
 
-(defn evaluate-feature [feature x]
+(defn evaluate-feature-set-memberships [feature x]
   (transduce
    (map (fn [[_ indicator]]
           (or (indicator x) #{})))
@@ -191,7 +191,7 @@
 
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
   (let [fe common-feature-extractor
-        set-memberships (evaluate-feature fe arg)
+        set-memberships (evaluate-feature-set-memberships fe arg)
         system (reduce ss/add system set-memberships)
         element (first set-memberships)
 

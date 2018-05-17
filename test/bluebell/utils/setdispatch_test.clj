@@ -56,8 +56,8 @@
 (register-indicator type-feature prefixed-indicator)
 
 (deftest feature-eval-test
-  (is (= #{:complex :map} (evaluate-feature type-feature {:real 3 :imag 3})))
-  (is (= #{:integer} (evaluate-feature type-feature 9))))
+  (is (= #{:complex :map} (evaluate-feature-set-memberships type-feature {:real 3 :imag 3})))
+  (is (= #{:integer} (evaluate-feature-set-memberships type-feature 9))))
 
 (def-dispatch my-plus ts type-feature)
 
