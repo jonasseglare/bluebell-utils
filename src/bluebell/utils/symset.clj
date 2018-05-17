@@ -1,5 +1,8 @@
 (ns bluebell.utils.symset
-  (:require [clojure.spec.alpha :as spec])
+  (:require [clojure.spec.alpha :as spec]
+            [bluebell.utils.core :as utils]
+            [bluebell.utils.specutils :as specutils]
+            )
   (:refer-clojure :exclude [complement any?]))
 
 ;; Type of operations:
@@ -65,6 +68,38 @@
     :default (fn [set-registry element]
                (member-of? set-registry element X))))
 
+(defn generate-supersets-for-set [set-registry s]
+  (transduce
+   (map (fn [[k g]]
+          (specutils/validate set? (g s))))
+   clojure.set/union
+   #{}
+   (:generators set-registry)))
+
+
+(declare subset-of)
+
+(defn generate-supersets [set-registry0 seen-sets0 unseen-sets0]
+  (println "unseen-sets" unseen-sets0)
+  (loop [set-registry set-registry0
+         seen-sets seen-sets0
+         unseen-sets unseen-sets0]
+    (assert (set? seen-sets))
+    (assert (set? unseen-sets))
+    (if (empty? unseen-sets)
+      set-registry
+      (let [f (first unseen-sets)
+            supersets-of-first (generate-supersets-for-set set-registry f)]
+        (assert (set? supersets-of-first))
+        (recur
+         (reduce (fn [reg sup] (subset-of reg f sup)) set-registry supersets-of-first)
+         (conj seen-sets f)
+         (set (clojure.set/difference
+               (clojure.set/union (rest unseen-sets) supersets-of-first)
+               seen-sets)))))))
+
+(defn add-superset-generator-sub [set-registry key generator]
+  (update set-registry :generators #(assoc % key generator)))
 
 
 
@@ -88,9 +123,6 @@
       (initialize-element element)
       (initialize-set set-id)
       (register-membership element set-id)))
-
-(defn add-superset-generator [set-registry key generator]
-  (update set-registry :generators #(conj % key generator)))
 
 (defn add
   "Adds it as both a set and as an element, the element belonging to its own set."
@@ -136,6 +168,11 @@
 
 (defn element? [set-registry element]
   (contains? (:element-map set-registry) element))
+
+(defn add-superset-generator [set-registry key generator]
+  (-> set-registry
+      (add-superset-generator-sub key generator)
+      (generate-supersets #{} (set (all-sets set-registry)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;

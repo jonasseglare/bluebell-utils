@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [bluebell.utils.specutils :as sutils]
             [bluebell.utils.symset :refer :all :as ss])
-  (:refer-clojure :exclude [complement]))
+  (:refer-clojure :exclude [complement any?]))
 
 (deftest basic-tests
   (is (set-registry? empty-set-registry))
@@ -43,3 +43,20 @@
                  (evaluate-query e universe)))
         ]
     ))
+
+(defn vec-gen [x]
+  (if (vector? x)
+    #{{:vec (count x)}} 
+    #{}))
+
+(defn map-gen [x]
+  (if (map? x)
+    #{:map} 
+    #{}))
+
+(deftest generator-test
+  (let [s empty-set-registry
+        s (add-superset-generator s :map-gen map-gen)
+        s (add-set s [:num :num :num])
+        s (add-superset-generator s :vec-gen vec-gen)]
+    (println (supersets-of s [:num :num :num]))))
