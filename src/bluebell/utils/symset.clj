@@ -16,15 +16,18 @@
 (spec/def ::set-map (spec/map-of ::set-id ::set-entry))
 (spec/def ::element-entry (spec/keys ::req-un [::set-ids]))
 (spec/def ::element-map (spec/map-of ::element-id ::element-entry))
-
-(spec/def ::registry (spec/keys :req-un [::set-map ::element-map]))
+(spec/def ::generator fn?)
+(spec/def ::generator-id keyword?)
+(spec/def ::generators (spec/map-of ::generator-id ::generator))
+(spec/def ::registry (spec/keys :req-un [::set-map ::element-map ::generators]))
 
 (def empty-element-entry {:set-ids #{}})
 
 (def empty-set-entry {:supersets #{}})
 
 (def empty-set-registry {:set-map {}
-                         :element-map {}})
+                         :element-map {}
+                         :generators {}})
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,7 +89,12 @@
       (initialize-set set-id)
       (register-membership element set-id)))
 
-(defn add [set-registry x]
+(defn add-superset-generator [set-registry key generator]
+  (update set-registry :generators #(conj % key generator)))
+
+(defn add
+  "Adds it as both a set and as an element, the element belonging to its own set."
+  [set-registry x]
   (member-of set-registry x x))
 
 (defn subset-of [set-registry set-id-a set-id-b]

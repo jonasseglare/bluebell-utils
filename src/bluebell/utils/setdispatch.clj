@@ -237,6 +237,12 @@
       (ss/add b)
       (ss/subset-of a b)))
 
+(defn register-indicator-for-key [feature key indicator]
+  (swap! (:set-indicators feature)
+         (fn [indicators]
+           (assoc indicators
+                  key
+                  indicator))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -249,11 +255,9 @@
 
 (defmacro register-indicator [feature indicator]
   (assert (symbol? indicator))
-  `(swap! (:set-indicators ~feature)
-          (fn [indicators#]
-            (assoc indicators#
-                   (utils/namespaced-keyword ~(str indicator))
-                   ~indicator))))
+  `(register-indicator-for-key ~feature
+                               ~(utils/namespaced-keyword (str indicator))
+                               ~indicator))
 
 ;; Use this function to register a type in the system
 (def add (forward-set-fn ss/add))
