@@ -136,12 +136,8 @@
      system
      (clojure.set/difference all-sets all-elements))))
 
-(defn resolve-fn-call [system dispatch-state args]
-  (let [arity (count args)
-        feature-extractor (:feature-extractor dispatch-state)
-        args-memberships (map (partial evaluate-feature-set-memberships
-                                       feature-extractor)
-                              args)
+(defn compute-alternatives [system dispatch-state args-memberships]
+  (let [arity (count args-memberships)
         system (add-set-canonical-elements
                 (transduce cat
                            tr-ss-add
@@ -157,6 +153,21 @@
         frontier (pareto/elements (reduce pareto/insert
                                           (pareto/frontier alt-dominates?)
                                           matching-alternatives))]
+    (utils/map-of arity alternatives matching-alternatives frontier)))
+
+(def memoized-compute-alternatives (memoize compute-alternatives))
+
+(defn resolve-fn-call [system dispatch-state args]
+  (let [args-memberships (map (partial evaluate-feature-set-memberships
+                                       (:feature-extractor dispatch-state))
+                              args)
+        {:keys [arity
+                frontier
+                alternatives
+                matching-alternatives]} (memoized-compute-alternatives
+                                         system
+                                         dispatch-state
+                                         args-memberships)]
     (cond
       (empty? frontier) (throw (ex-info "No matching set-fn for this arity."
                                         (match-error-map
