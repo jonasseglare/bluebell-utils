@@ -58,5 +58,9 @@
   (let [s empty-set-registry
         s (add-superset-generator s :map-gen map-gen)
         s (add-set s [:num :num :num])
-        s (add-superset-generator s :vec-gen vec-gen)]
-    (println (supersets-of s [:num :num :num]))))
+        s (add-superset-generator s :vec-gen vec-gen)
+        _ (is (= (supersets-of s #{[:num :num :num]})
+                 #{[:num :num :num]
+                   {:vec 3}
+                   :map}))]
+    ))

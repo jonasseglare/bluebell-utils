@@ -80,7 +80,6 @@
 (declare subset-of)
 
 (defn generate-supersets [set-registry0 seen-sets0 unseen-sets0]
-  (println "unseen-sets" unseen-sets0)
   (loop [set-registry set-registry0
          seen-sets seen-sets0
          unseen-sets unseen-sets0]
@@ -136,6 +135,8 @@
       (register-superset set-id-a set-id-b)))
 
 (defn supersets-of [set-registry set-ids]
+  (assert (or (coll? set-ids)
+              (nil? set-ids)))
   (transduce
    (comp (map (fn [set-id]
                 (supersets-of
