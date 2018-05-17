@@ -39,7 +39,8 @@
 (defn complex? [x]
   (and (map? x)
        (contains? x :real)
-       (contains? x :imag)))
+       (contains? x :imag)
+       #{:complex}))
 
 (register-indicator type-feature :complex complex?)
 

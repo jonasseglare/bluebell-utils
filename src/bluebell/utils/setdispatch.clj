@@ -183,10 +183,9 @@
 
 (defn evaluate-feature [feature x]
   (transduce
-   (comp (filter (fn [[_ indicator]]
-                   (indicator x)))
-         (map first))
-   conj
+   (map (fn [[_ indicator]]
+          (or (indicator x) #{})))
+   clojure.set/union
    #{((:classifier feature) x)}
    (deref (:set-indicators feature))))
 
