@@ -58,7 +58,7 @@
 (register-indicator type-feature complex?)
 (register-indicator type-feature prefixed-indicator)
 
-(defn superset-generator [x]
+(defn superset-generator [_ x]
   (if (spec/valid? ::prefixed-set x)
     #{:coll}
     #{}))

@@ -44,12 +44,12 @@
         ]
     ))
 
-(defn vec-gen [x]
+(defn vec-gen [_ x]
   (if (vector? x)
     #{{:vec (count x)}} 
     #{}))
 
-(defn map-gen [x]
+(defn map-gen [_ x]
   (if (map? x)
     #{:map} 
     #{}))
