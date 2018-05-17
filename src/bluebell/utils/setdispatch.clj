@@ -121,12 +121,21 @@
    #{((:classifier feature) x)}
    (deref (:set-indicators feature))))
 
+(defn tr-ss-add
+  ([system] system)
+  ([system x] (ss/add system x)))
+
 (defn resolve-fn-call [system dispatch-state args]
   (let [arity (count args)
         feature-extractor (:feature-extractor dispatch-state)
         args-memberships (map (partial evaluate-feature-set-memberships
                                        feature-extractor)
                               args)
+        system (transduce cat
+                          tr-ss-add
+                          system
+                          args-memberships)
+        
         alternatives (map (fn [[k alt]]
                             (merge alt ((:match-fn alt)
                                         system
@@ -193,15 +202,7 @@
    :set-indicators (atom {})})
 
 (defn evaluate-arg-match [system arg-spec set-memberships]
-  (let [system (reduce ss/add system set-memberships)
-        element (first set-memberships)
-
-        _ (utils/data-assert (ss/element? system element)
-                             "Not an element"
-                             {:x element
-                              :elements (ss/all-elements system)})
-        
-        raw-query (:query arg-spec)
+  (let [raw-query (:query arg-spec)
         query (ss/normalize-query raw-query)
 
         ;; TODO: This can be cached
@@ -212,7 +213,7 @@
         satisfied? (some (partial ss/satisfies-query? system query) set-memberships)
         
         generality (count elements)]
-    (utils/map-of element satisfied? generality raw-query elements set-memberships)))
+    (utils/map-of satisfied? generality raw-query elements set-memberships)))
 
 (defn make-match-fn [meta arg-specs]
   (fn [system args-memberships]
