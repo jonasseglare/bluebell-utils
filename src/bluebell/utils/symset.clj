@@ -92,7 +92,8 @@
          (reduce (fn [reg sup] (subset-of reg f sup)) set-registry supersets-of-first)
          (conj seen-sets f)
          (set (clojure.set/difference
-               (clojure.set/union (rest unseen-sets) supersets-of-first)
+               (clojure.set/union (set (rest unseen-sets))
+                                       supersets-of-first)
                seen-sets)))))))
 
 (declare all-sets)

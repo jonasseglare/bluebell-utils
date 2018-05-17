@@ -47,7 +47,7 @@
 (def exotic-number (difference :number
                                (union :double :float :integer)))
 
-(def-feature type-feature get-feature)
+(def-feature type-feature (comp (fn [x] #{x}) get-feature))
 
 (defn complex? [x]
   (and (map? x)
@@ -57,6 +57,13 @@
 
 (register-indicator type-feature complex?)
 (register-indicator type-feature prefixed-indicator)
+
+(defn superset-generator [x]
+  (if (spec/valid? ::prefixed-set x)
+    #{:coll}
+    #{}))
+
+(register-superset-generator ts superset-generator)
 
 (deftest feature-eval-test
   (is (= #{:complex :map} (evaluate-feature-set-memberships type-feature {:real 3 :imag 3})))
@@ -116,7 +123,8 @@
 (def-set-method my-plus "Adding prefixed 'kattskit' values"
   [[[:prefix :kattskit] a]
    [[:prefix :kattskit] b]]
-  [:kattskit (+ a b)])
+  [:kattskit (+ (second a)
+                (second b))])
 
 
 (deftest test-it
@@ -151,7 +159,9 @@
   (is (= (my-plus {:imag 1 :real 10}
                   {:imag 2 :real 119})
          {:imag 3
-          :real 129})))
+          :real 129}))
+  (is (= [:kattskit 7]
+         (my-plus [:kattskit 3] [:kattskit 4]))))
 
 (deftest set-compare-test
   (is (= 1 (compare-sets [1 2] [1])))

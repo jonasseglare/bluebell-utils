@@ -4,7 +4,8 @@
             [bluebell.utils.core :as utils]
             [bluebell.utils.specutils :as sutils]
             [clojure.set :as cljset]
-            [bluebell.utils.pareto :as pareto])
+            [bluebell.utils.pareto :as pareto]
+            [bluebell.utils.specutils :as specutils])
   (:refer-clojure :exclude [complement any?]))
 
 
@@ -116,14 +117,23 @@
 (defn evaluate-feature-set-memberships [feature x]
   (transduce
    (map (fn [[_ indicator]]
-          (or (indicator x) #{})))
+          (specutils/validate set? (or (indicator x) #{}))))
    clojure.set/union
-   #{((:classifier feature) x)}
+   #{}
    (deref (:set-indicators feature))))
 
 (defn tr-ss-add
   ([system] system)
   ([system x] (ss/add system x)))
+
+(defn add-set-canonical-elements [system]
+  (let [all-sets (-> system ss/all-sets set)
+        all-elements (-> system ss/all-elements set)]
+    (reduce
+     (fn [sys k]
+       (ss/add sys k))
+     system
+     (clojure.set/difference all-sets all-elements))))
 
 (defn resolve-fn-call [system dispatch-state args]
   (let [arity (count args)
@@ -131,10 +141,11 @@
         args-memberships (map (partial evaluate-feature-set-memberships
                                        feature-extractor)
                               args)
-        system (transduce cat
-                          tr-ss-add
-                          system
-                          args-memberships)
+        system (add-set-canonical-elements
+                (transduce cat
+                           tr-ss-add
+                           system
+                           args-memberships))
         
         alternatives (map (fn [[k alt]]
                             (merge alt ((:match-fn alt)
@@ -197,9 +208,12 @@
 
 (def memoized-evaluate-query (memoize ss/evaluate-query))
 
-(defn feature-extractor [classifier]
-  {:classifier classifier
-   :set-indicators (atom {})})
+(defn indicator-key [i]
+  (keyword (str "default-set-indicator-" i)))
+
+(defn feature-extractor [default-indicators]
+  {:set-indicators (atom (zipmap (map indicator-key (range (count default-indicators)))
+                                 default-indicators))})
 
 (defn prepare-system-with-query-element [system set-memberships]
   (reduce (fn [sys s]
@@ -264,8 +278,8 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro def-feature [name extractor]
-  `(def ~name (feature-extractor ~extractor)))
+(defmacro def-feature [name & extractors]
+  `(def ~name (feature-extractor ~(vec extractors))))
 
 (defmacro register-indicator [feature indicator]
   (assert (symbol? indicator))
@@ -275,7 +289,7 @@
 
 (defmacro register-superset-generator [system generator]
   (assert (symbol? generator))
-  `(register-generator-for-key ~system
+  `(register-superset-generator-for-key ~system
                                ~(utils/namespaced-keyword (str generator))
                                ~generator))
 
