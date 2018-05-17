@@ -192,6 +192,7 @@
 (defn evaluate-arg-match [system common-feature-extractor arg-spec arg]
   (let [fe common-feature-extractor
         set-memberships (evaluate-feature fe arg)
+        system (reduce ss/add system set-memberships)
         element (first set-memberships)
 
         _ (utils/data-assert (ss/element? system element)
@@ -244,6 +245,9 @@
                   key
                   indicator))))
 
+(defn register-superset-generator-for-key [system key gen]
+  (swap! system #(ss/add-superset-generator % key gen)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  High level API
@@ -258,6 +262,12 @@
   `(register-indicator-for-key ~feature
                                ~(utils/namespaced-keyword (str indicator))
                                ~indicator))
+
+(defmacro register-superset-generator [system generator]
+  (assert (symbol? generator))
+  `(register-generator-for-key ~system
+                               ~(utils/namespaced-keyword (str generator))
+                               ~generator))
 
 ;; Use this function to register a type in the system
 (def add (forward-set-fn ss/add))

@@ -1,10 +1,20 @@
 (ns bluebell.utils.setdispatch-test
   (:require [bluebell.utils.symset :as ss]
-            [clojure.test :refer :all])
+            [clojure.test :refer :all]
+            [clojure.spec.alpha :as spec])
   (:require [bluebell.utils.setdispatch :refer :all] :reload)
   (:refer-clojure :exclude [complement any?]))
 
 (def-system ts)
+
+(spec/def ::prefixed (spec/cat :prefix keyword?
+                               :value cljany?))
+
+(defn prefixed-indicator [x]
+  (let [c (spec/conform ::prefixed x)]
+    (if (= c ::spec/invalid)
+      #{}
+      #{[:prefixed (:prefix c)]})))
 
 (defn get-feature [x]
   (cond
@@ -43,6 +53,7 @@
        #{:complex}))
 
 (register-indicator type-feature complex?)
+(register-indicator type-feature prefixed-indicator)
 
 (deftest feature-eval-test
   (is (= #{:complex :map} (evaluate-feature type-feature {:real 3 :imag 3})))
