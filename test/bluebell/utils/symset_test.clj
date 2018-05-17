@@ -62,5 +62,13 @@
         _ (is (= (supersets-of s #{[:num :num :num]})
                  #{[:num :num :num]
                    {:vec 3}
-                   :map}))]
+                   :map}))
+        s (add-set s {:kattskit 119})
+        _ (is (= (supersets-of s #{{:kattskit 119}})
+                 #{:map {:kattskit 119}}))
+        _ (is (= (supersets-of s #{[:num :num :num]})
+                 #{[:num :num :num]
+                   {:vec 3}
+                   :map}))
+        ]
     ))
