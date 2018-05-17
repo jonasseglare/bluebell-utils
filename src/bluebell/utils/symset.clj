@@ -184,6 +184,11 @@
       (add-superset-generator-sub key generator)
       (generate-supersets #{} (set (all-sets set-registry)))))
 
+(defn direct-supersets-of [set-registry set-key]
+  (let [set-registry (add-set set-registry set-key)]
+    (clojure.set/union (generate-supersets-for-set set-registry set-key)
+                       (get-in set-registry [:set-map set-key :supersets]))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Query API

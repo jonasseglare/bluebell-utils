@@ -70,5 +70,7 @@
                  #{[:num :num :num]
                    {:vec 3}
                    :map}))
+        _ (is (= #{{:vec 2}}
+                 (direct-supersets-of s [:num :num])))
         ]
     ))
