@@ -201,30 +201,25 @@
   {:classifier classifier
    :set-indicators (atom {})})
 
-(defn satisfies-query? [system query set-memberhips]
-  (let [system (reduce (fn [sys s]
-                         (ss/member-of sys ::query-element s))
-                       system
-                       set-memberhips)]
-    (assert (ss/element? system ::query-element))
-    (ss/satisfies-query?
+(defn prepare-system-with-query-element [system set-memberships]
+  (reduce (fn [sys s]
+            (ss/member-of sys ::query-element s))
+          system
+          set-memberships))
 
-     ;; A system where we have registered the membership of ::query-element in all sets
-     ;; that it belongs to.
-     system
-
-     query
-
-     ::query-element)))
+(defn satisfies-query? [system query]
+  (assert (ss/element? system ::query-element))
+  (ss/satisfies-query?
+   system
+   query
+   ::query-element))
 
 (defn evaluate-arg-match [system arg-spec set-memberships]
   (let [raw-query (:query arg-spec)
         query (ss/normalize-query raw-query)
-
+        system (prepare-system-with-query-element system set-memberships)
         elements (memoized-evaluate-query system query)
-
-        satisfied? (satisfies-query? system query set-memberships)
-        
+        satisfied? (satisfies-query? system query)
         generality (count elements)]
     (utils/map-of satisfied? generality raw-query elements set-memberships)))
 
