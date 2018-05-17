@@ -47,9 +47,6 @@
 (defn initialize-element [set-registry element]
   (update-in set-registry [:element-map element] #(or % empty-element-entry)))
 
-(defn initialize-set [set-registry set-id]
-  (update-in set-registry [:set-map set-id] #(or % empty-set-entry)))
-
 (defn register-membership [set-registry element set-id]
   (-> set-registry
       (update-in [:element-map element :set-ids] #(conj % set-id))))
@@ -77,6 +74,7 @@
    (:generators set-registry)))
 
 
+
 (declare subset-of)
 
 (defn generate-supersets [set-registry0 seen-sets0 unseen-sets0]
@@ -96,6 +94,16 @@
          (set (clojure.set/difference
                (clojure.set/union (rest unseen-sets) supersets-of-first)
                seen-sets)))))))
+
+(declare all-sets)
+
+(defn initialize-set [set-registry set-id]
+  (let [new-registry (update-in set-registry [:set-map set-id] #(or % empty-set-entry))]
+    (if (= new-registry set-registry)
+      set-registry
+      (generate-supersets new-registry
+                          (all-sets set-registry)
+                          #{set-id}))))
 
 (defn add-superset-generator-sub [set-registry key generator]
   (update set-registry :generators #(assoc % key generator)))
