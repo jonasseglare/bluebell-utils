@@ -42,7 +42,7 @@
        (contains? x :imag)
        #{:complex}))
 
-(register-indicator type-feature :complex complex?)
+(register-indicator type-feature complex?)
 
 (deftest feature-eval-test
   (is (= #{:complex :map} (evaluate-feature type-feature {:real 3 :imag 3})))

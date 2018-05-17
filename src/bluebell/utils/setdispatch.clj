@@ -247,8 +247,13 @@
 (defmacro def-feature [name extractor]
   `(def ~name (feature-extractor ~extractor)))
 
-(defn register-indicator [feature set-key indicator]
-  (swap! (:set-indicators feature) (fn [indicators] (assoc indicators set-key indicator))))
+(defmacro register-indicator [feature indicator]
+  (assert (symbol? indicator))
+  `(swap! (:set-indicators ~feature)
+          (fn [indicators#]
+            (assoc indicators#
+                   (utils/namespaced-keyword ~(str indicator))
+                   ~indicator))))
 
 ;; Use this function to register a type in the system
 (def add (forward-set-fn ss/add))
