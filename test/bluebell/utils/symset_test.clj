@@ -74,3 +74,39 @@
                  (direct-supersets-of s [:num :num])))
         ]
     ))
+
+
+(defn g0 [_ x]
+  #{[:katt x]})
+
+(defn g1 [_ x]
+  #{[:skit x]})
+
+(def g01 (compose-superset-generators g0 g1))
+
+(deftest composite-generator-test
+  (is (= #{[:katt 119] [:skit 119]}
+         (g01 nil 119))))
+
+(def inj (injecting-superset-generator
+          (fn [x]
+            (and (map? x)
+                 (contains? x :value)))
+          (fn
+            ([x] (:value x))
+            ([x y] (assoc x :value y)))))
+
+(deftest inj-test
+  (let [s (-> empty-set-registry
+              (subset-of :a :b)
+              (add-superset-generator :inj inj))]
+    (is (= #{{:value :b}}
+           (direct-supersets-of s {:value :a})))))
+
+(def c0 (constant-superset-generator number? #{:number}))
+
+(deftest constant-sup-set-gen
+  (is (= #{:number}
+         (c0 9)))
+  (is (= #{}
+         (c0 :a))))

@@ -1,5 +1,6 @@
 (ns bluebell.utils.symset
   (:require [clojure.spec.alpha :as spec]
+            [clojure.set]
             [bluebell.utils.core :as utils]
             [bluebell.utils.specutils :as specutils]
             )
@@ -233,6 +234,47 @@
 (defn satisfies-query? [set-registry query x]
   (let [f (normalize-query query)]
     (f set-registry x)))
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Utilities
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn compose-superset-generators [& gens]
+  (fn [set-reg x]
+    (transduce
+     (comp (map (fn [g] (g set-reg x)))
+           cat)
+     conj
+     #{}
+     gens)))
+
+(defn injecting-superset-generator [condition-fn access-fn]
+  (fn [sym-reg x]
+    (if (condition-fn x)
+      (let [supersets (direct-supersets-of sym-reg (access-fn x))]
+        (transduce
+         (map #(access-fn x %))
+         conj
+         #{}
+         supersets))
+      #{})))
+
+(defn constant-superset-generator
+  ([condition-fn set-on-true set-on-false]
+   (fn [x]
+     (if (condition-fn x)
+       set-on-true
+       set-on-false)))
+  ([condition-fn set-on-true]
+   (constant-superset-generator condition-fn
+                                set-on-true
+                                #{})))
+
 
 
 

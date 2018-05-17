@@ -71,8 +71,11 @@
 (defn clean-alts [alts]
   (map clean-alt alts))
 
-(defn match-error-map [arity alts]
-  {:arity arity
+(defn match-error-map [args-memberships
+                       arity
+                       alts]
+  {:args-memberships args-memberships
+   :arity arity
    :alternatives (sort-by :generality (clean-alts alts))})
 
 (defn compare-sets
@@ -156,12 +159,14 @@
     (cond
       (empty? frontier) (throw (ex-info "No matching set-fn for this arity."
                                         (match-error-map
+                                         args-memberships
                                          arity
                                          alternatives)))
       (< 1 (count frontier)) (throw
                               (ex-info
                                "Ambiguous set-based dispatch"
                                (match-error-map
+                                args-memberships
                                 arity
                                 matching-alternatives)))
       :default (-> frontier
