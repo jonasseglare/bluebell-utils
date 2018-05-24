@@ -514,7 +514,7 @@
         (reduce-indented-with-prefix result data (str prefix step) step)))))
 
 (defn indent-nested
-  ([data] (indent-nested {:prefix "\n" :step "  "}))
+  ([data] (indent-nested {:prefix "\n" :step "  "} data))
   ([settings data]
    (if (string? data)
      data

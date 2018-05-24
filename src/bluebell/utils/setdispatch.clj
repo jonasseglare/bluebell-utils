@@ -46,7 +46,8 @@
 (spec/def ::fns-per-arty (spec/map-of integer? ::fn-info))
 (spec/def ::dispatch-map (spec/map-of ::arity ::fns-per-arity))
 (spec/def ::feature-extractor fn?)
-(spec/def ::dispatch-state (spec/keys :req-un [::dispatch-map ::feature-extractor]))
+(spec/def ::fn-name symbol?)
+(spec/def ::dispatch-state (spec/keys :req-un [::dispatch-map ::feature-extractor ::fn-name]))
 
 (def cljany? clojure.core/any?)
 (spec/def ::arg (spec/spec (spec/cat :query cljany?
@@ -71,10 +72,12 @@
 (defn clean-alts [alts]
   (map clean-alt alts))
 
-(defn match-error-map [args-memberships
+(defn match-error-map [fn-name
+                       args-memberships
                        arity
                        alts]
-  {:args-memberships args-memberships
+  {:fn-name fn-name
+   :args-memberships args-memberships
    :arity arity
    :alternatives (sort-by :generality (clean-alts alts))})
 
@@ -140,7 +143,8 @@
      (clojure.set/difference all-sets all-elements))))
 
 (defn compute-specific-function [system dispatch-state args-memberships]
-  (let [arity (count args-memberships)
+  (let [fn-name (:fn-name dispatch-state)
+        arity (count args-memberships)
         system (add-set-canonical-elements
                 (transduce cat
                            tr-ss-add
@@ -156,9 +160,11 @@
         frontier (pareto/elements (reduce pareto/insert
                                           (pareto/frontier alt-dominates?)
                                           matching-alternatives))]
+    (assert (symbol? fn-name))
     (cond
       (empty? frontier) (throw (ex-info "No matching set-fn for this arity."
                                         (match-error-map
+                                         fn-name
                                          args-memberships
                                          arity
                                          alternatives)))
@@ -166,6 +172,7 @@
                               (ex-info
                                "Ambiguous set-based dispatch"
                                (match-error-map
+                                fn-name
                                 args-memberships
                                 arity
                                 matching-alternatives)))
@@ -194,8 +201,9 @@
                          (deref dispatch-state)
                          args)))))
 
-(defn initialize-dispatch-state [feature-extractor]
+(defn initialize-dispatch-state [fn-name feature-extractor]
   {:dispatch-map {}
+   :fn-name fn-name
    :feature-extractor feature-extractor})
 
 (defn forward-set-fn [f]
@@ -336,7 +344,9 @@
 ;; This defines the root function that will do the actual dispatch.
 (defmacro def-dispatch [fn-name system feature-extractor]
   (assert (symbol? fn-name))
-  `(let [state# (atom (initialize-dispatch-state ~feature-extractor))]
+  `(let [state# (atom (initialize-dispatch-state
+                       (quote ~fn-name)
+                       ~feature-extractor))]
      (def ~fn-name (dispatch-root ~system state#))))
 
 
