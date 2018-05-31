@@ -319,11 +319,14 @@
 
 ;; Use this function to specify that some set is a subset of another set,
 ;; e.g. floating point numbers are a subset of numbers
-(defn subset-of [system-atom a b]
+(defn subset-of [system-atom a & supersets]
   (swap! system-atom
          (fn [system]
            (check-not-used system)
-           (subset-of-sub system a b))))
+           (reduce
+            (fn [sys x] (subset-of-sub sys a x))
+            system
+            supersets))))
 
 ;; Query API: Use these functions to build complex set queries
 ;; for the function arguments
