@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [update])
   (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.debug :as dbg]
+            [bluebell.utils.specutils :as sutils]
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 
@@ -50,6 +51,17 @@
                                       default-value
                                      y))))))
 
+(spec/def ::setter fn?)
+(spec/def ::getter fn?)
+(spec/def ::spec/default-value any?)
+(spec/def ::empty-base any?)
+(spec/def ::desc any?)
+(spec/def ::get-or-default fn?)
+(spec/def ::source (spec/keys :req-un [::setter ::getter]))
+(spec/def ::accessor-map (spec/keys :req-un [::setter
+                                             ::getter
+                                             ::get-or-default]))
+
 (def wrap-accessor (comp expose-accessor-function
                          decorate-get-or-default
                          nil-protect-setter
@@ -57,7 +69,8 @@
                          wrap-accessor-source))
 
 (defn update-accessor [accessor extra-map]
-  (wrap-accessor (merge (:source (accessor)) extra-map)))
+  (let [m (sutils/validate ::accessor-map (accessor))]
+    (wrap-accessor (merge (:source m) extra-map))))
 
 (defn visiting-accessor [old-v new-v]
   (fn 
@@ -93,6 +106,8 @@
 
         gda (:get-or-default av)
         gdb (:get-or-default bv)]
+    (assert (fn? gda))
+    (assert (fn? gdb))
     (-> {:desc "(chain2 " (:desc av) " " (:desc bv) ")"
          :getter (fn [obj] (b (a obj)))
          :setter (fn [obj x] (a obj (b (a obj) x)))
@@ -153,8 +168,7 @@
 ;; TODO: If we get nil, then use the default value when we update.
 (defn update [obj accessor f]
   "Use an accessor to update an object"
-  (let [m (accessor)
-        _ (assert (map? m))
+  (let [m (sutils/validate ::accessor-map (accessor))
         g (:get-or-default m)]
     (accessor obj (f (g obj)))))
 
