@@ -16,6 +16,13 @@
                  (accessor empty-base y))
                (accessor x y))))))
 
+(defn with-default-value [accessor value]
+  (let [d (merge (accessor) {:default-value value})]
+    (fn
+      ([] d)
+      ([x] (accessor x))
+      ([x y] (accessor x y)))))
+
 (defn visiting-accessor [old-v new-v]
   (fn 
     ([] {:desc "mapping-accessor"})
@@ -64,10 +71,12 @@
 (defn index-accessor
   "Create an accessor for indices"
   [i]
-  (fn
-    ([] {:desc "(index-accessor " i ")"})
-    ([obj] (nth obj i))
-    ([obj x] (assoc obj i x))))
+  (wrap-accessor
+   (fn
+     ([] {:desc "(index-accessor " i ")"
+          :empty-base (vec (take (inc i) (repeat nil)))})
+     ([obj] (nth obj i))
+     ([obj x] (assoc obj i x)))))
 
 (defn chain2 [a b]
   (fn
@@ -79,9 +88,13 @@
   "Connect accessors in a chain"
   (reduce chain2 args))
 
+;; TODO: If we get nil, then use the default value when we update.
 (defn update [obj accessor f]
   "Use an accessor to update an object"
   (accessor obj (f (accessor obj))))
+
+;; TODO: build-default-value
+;; using a series of accessors
 
 (defn updater [accessor]
   (fn [obj f]

@@ -8,12 +8,14 @@
 
 (deftest key-test
   (is (= 9 (mjao {:mjao 9})))
-  (is (= {:mjao 9} (mjao {} 9))))
+  (is (= {:mjao 9} (mjao {} 9)))
+  (is (= {:mjao 119} (mjao nil 119))))
 
 (def katt (index-accessor 2))
 
 (deftest index-test
-  (is (= 9 (katt [1 2 9 0 4]))))
+  (is (= 9 (katt [1 2 9 0 4])))
+  (is (= [nil nil 45] (katt nil 45))))
 
 (def mjao-katt (chain2 mjao katt))
 
