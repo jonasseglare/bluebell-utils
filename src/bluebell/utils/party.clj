@@ -4,6 +4,18 @@
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 
+(defn wrap-accessor [accessor]
+  (let [data (accessor)
+        empty-base (:empty-base data)]
+    (fn
+      ([] (accessor))
+      ([x] (if (not (nil? x))
+             (accessor x)))
+      ([x y] (if (nil? x)
+               (if (not (nil? empty-base))
+                 (accessor empty-base y))
+               (accessor x y))))))
+
 (defn visiting-accessor [old-v new-v]
   (fn 
     ([] {:desc "mapping-accessor"})
@@ -33,19 +45,21 @@
    (let [{req-on-get :req-on-get
           req-on-assoc :req-on-assoc} (merge default-key-accessor-settings
                                              settings)]
-     (fn
-       ([] {:desc (str "(key-accessor " k ")")})
-       ([obj]
-        (utils/data-assert (map? obj) "Not a map"
-                           {:not-a-map obj
-                            :key k})
-        (assert (utils/implies req-on-get (contains? obj k))
-                (missing-key-msg obj k))
-        (get obj k))
-       ([obj x]
-        (assert (utils/implies req-on-assoc (contains? obj k))
-                (missing-key-msg obj k))
-        (assoc obj k x))))))
+     (wrap-accessor
+      (fn
+        ([] {:desc (str "(key-accessor " k ")")
+             :empty-base {}})
+        ([obj]
+         (utils/data-assert (map? obj) "Not a map"
+                            {:not-a-map obj
+                             :key k})
+         (assert (utils/implies req-on-get (contains? obj k))
+                 (missing-key-msg obj k))
+         (get obj k))
+        ([obj x]
+         (assert (utils/implies req-on-assoc (contains? obj k))
+                 (missing-key-msg obj k))
+         (assoc obj k x)))))))
 
 (defn index-accessor
   "Create an accessor for indices"
@@ -205,3 +219,46 @@
     ([] {:desc "Filter set"})
     ([x] x)
     ([x y] (if (pred? y) y x))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  What is missing, what can be done better?
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+;; How can we provide a notion of default values?
+;; So that if we have a bunch of accessors, how can they together produce a default value?
+;; Something like this
+;;
+;; (def initial-value (composite-initial-value acc-1 acc-2 acc-3))
+;;
+;; Answer: For zeroth arity, we return a map with extra data, notably
+;;  - :default-value : The default value return in case of absense.
+;;  - :empty-base    : An empty root value (can be absent, in which case we choose another base)
+
+
+
+
+
+;; How can we handle optionality?
+;;
+;; We treat the value nil as absence of value
+;; When we chain things, we test for nil. So if the base value that we apply an
+;; accessor on is nil, then the returned value of the accessor will be nil too.
+;;
+;; We can have an accessor that makes sure that something is not nil.
+;;
+;; Note that (assoc nil :a 3) returns {:a 3}
+;; So it is useful that when we try to apply an accessor to set something on nil,
+;; we will actually use the empty base value.
+
+
+;; How can we require a value to be present?
+;;
+;; We use a never-nil accessor on top of it. So if a key is not present in a map,
+;; the first accessor will return nil and the following one will fire an error.
