@@ -1,27 +1,71 @@
 (ns bluebell.utils.party
   (:refer-clojure :exclude [update])
   (:require [clojure.spec.alpha :as spec]
+            [bluebell.utils.debug :as dbg]
             [bluebell.utils.defmultiple :refer [defmultiple]]
             [bluebell.utils.core :as utils]))
 
-(defn wrap-accessor [accessor]
-  (let [data (accessor)
-        empty-base (:empty-base data)]
-    (fn
-      ([] (accessor))
-      ([x] (if (not (nil? x))
-             (accessor x)))
-      ([x y] (if (nil? x)
-               (if (not (nil? empty-base))
-                 (accessor empty-base y))
-               (accessor x y))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Implementation
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn with-default-value [accessor value]
-  (let [d (merge (accessor) {:default-value value})]
+(defn wrap-accessor-source [accessor-map]
+  {:pre [(map? accessor-map)]}
+  (assoc accessor-map :source accessor-map))
+
+(defn expose-accessor-function [m]
+  (let [getter (:getter m)
+        setter (:setter m)]
     (fn
-      ([] d)
-      ([x] (accessor x))
-      ([x y] (accessor x y)))))
+      ([] m)
+      ([x] (getter x))
+      ([x y] (setter x y)))))
+
+(defn nil-protect-getter [m]
+  (update-in m [:getter] (fn [g]
+                           (fn [x]
+                             
+                             (let [r  (if (not (nil? x))
+                                        (g x))]
+                               (println "Getter of" (:desc m) " returns " r)
+                               r)))))
+
+(defn nil-protect-setter [m]
+  (update-in m [:setter] (fn [s]
+                           (fn [x y]
+                             (let [r (if (nil? x)
+                                       (s (:empty-base m) y)
+                                       (s x y))]
+                               (println "Setter of" (:desc m) " returns " r " on x=" x " y=" y)
+                               r)
+                             
+                             ))))
+
+(defn assoc-p [m k v]
+  (if (contains? m k)
+    m
+    (assoc m k v)))
+
+(defn decorate-get-or-default [m]
+  (let [g (:getter m)
+        default-value (:default-value m)]
+    (assoc-p m :get-or-default (fn [x]
+                                 (println "default-value of " (:desc m) " is " default-value)
+                                 (let [y (g x)]
+                                   (if (nil? y)
+                                      default-value
+                                     y))))))
+
+(def wrap-accessor (comp expose-accessor-function
+                         decorate-get-or-default
+                         nil-protect-setter
+                         nil-protect-getter
+                         wrap-accessor-source))
+
+(defn update-accessor [accessor extra-map]
+  (wrap-accessor (merge (:source (accessor)) extra-map)))
 
 (defn visiting-accessor [old-v new-v]
   (fn 
@@ -45,6 +89,32 @@
 (defn missing-key-msg [obj k]
   (str "No key " k " in " (utils/abbreviate obj)))
 
+(defn chain2 [a b]
+  (let [av (a)
+        bv (b)
+
+        gda (:get-or-default av)
+        gdb (:get-or-default bv)]
+    (println "default value of bv is" (:default-value bv))
+    (wrap-accessor
+     {:desc "(chain2 " (:desc av) " " (:desc bv) ")"
+      :default-value (:default-value bv) ;; TODO: Think this through
+      :empty-base (:empty-base av)                  ;; TODO: Think this through
+      :getter (fn [obj] (b (a obj)))
+      :setter (fn [obj x] (a obj (b (a obj) x)))
+      :get-or-default (comp gdb gda)})))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Interface
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn with-default-value [accessor value]
+  (update-accessor accessor {:default-value value}))
+
+
 (defn key-accessor
   "Create an accessor for map keys"
   ([k] (key-accessor k default-key-accessor-settings))
@@ -53,36 +123,31 @@
           req-on-assoc :req-on-assoc} (merge default-key-accessor-settings
                                              settings)]
      (wrap-accessor
-      (fn
-        ([] {:desc (str "(key-accessor " k ")")
-             :empty-base {}})
-        ([obj]
-         (utils/data-assert (map? obj) "Not a map"
-                            {:not-a-map obj
-                             :key k})
-         (assert (utils/implies req-on-get (contains? obj k))
-                 (missing-key-msg obj k))
-         (get obj k))
-        ([obj x]
-         (assert (utils/implies req-on-assoc (contains? obj k))
-                 (missing-key-msg obj k))
-         (assoc obj k x)))))))
+      {:desc (str "(key-accessor " k ")")
+       :empty-base {}
+       :getter (fn [obj]
+                 (utils/data-assert (map? obj) "Not a map"
+                                    {:not-a-map obj
+                                     :key k})
+                 (assert (utils/implies req-on-get (contains? obj k))
+                         (missing-key-msg obj k))
+                 (get obj k))
+       :setter (fn [obj x]
+                 (assert (utils/implies req-on-assoc (contains? obj k))
+                         (missing-key-msg obj k))
+                 (assoc obj k x))}
+      
+      ))))
 
 (defn index-accessor
   "Create an accessor for indices"
   [i]
   (wrap-accessor
-   (fn
-     ([] {:desc "(index-accessor " i ")"
-          :empty-base (vec (take (inc i) (repeat nil)))})
-     ([obj] (nth obj i))
-     ([obj x] (assoc obj i x)))))
+   {:desc "(index-accessor " i ")"
+    :empty-base (vec (take (inc i) (repeat nil)))
+    :getter (fn [obj] (nth obj i))
+    :setter (fn [obj x] (assoc obj i x))}))
 
-(defn chain2 [a b]
-  (fn
-    ([] {:desc "(chain2 " (:desc (a)) " " (:desc (b)) ")"})
-    ([obj] (b (a obj)))
-    ([obj x] (a obj (b (a obj) x)))))
 
 (defn chain [& args]
   "Connect accessors in a chain"
@@ -91,7 +156,10 @@
 ;; TODO: If we get nil, then use the default value when we update.
 (defn update [obj accessor f]
   "Use an accessor to update an object"
-  (accessor obj (f (accessor obj))))
+  (let [m (accessor)
+        g (:get-or-default m)]
+    (println "G(obj) is " (g obj))
+    (accessor obj (f (g obj)))))
 
 ;; TODO: build-default-value
 ;; using a series of accessors
@@ -99,6 +167,19 @@
 (defn updater [accessor]
   (fn [obj f]
     (update obj accessor f)))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;; Validation
 (defn validate [v? x cmt]
