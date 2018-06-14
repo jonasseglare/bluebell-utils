@@ -26,22 +26,15 @@
 (defn nil-protect-getter [m]
   (update-in m [:getter] (fn [g]
                            (fn [x]
-                             
-                             (let [r  (if (not (nil? x))
-                                        (g x))]
-                               (println "Getter of" (:desc m) " returns " r)
-                               r)))))
+                             (if (not (nil? x))
+                               (g x))))))
 
 (defn nil-protect-setter [m]
   (update-in m [:setter] (fn [s]
                            (fn [x y]
-                             (let [r (if (nil? x)
-                                       (s (:empty-base m) y)
-                                       (s x y))]
-                               (println "Setter of" (:desc m) " returns " r " on x=" x " y=" y)
-                               r)
-                             
-                             ))))
+                             (if (nil? x)
+                               (s (:empty-base m) y)
+                               (s x y))))))
 
 (defn assoc-p [m k v]
   (if (contains? m k)
@@ -52,7 +45,6 @@
   (let [g (:getter m)
         default-value (:default-value m)]
     (assoc-p m :get-or-default (fn [x]
-                                 (println "default-value of " (:desc m) " is " default-value)
                                  (let [y (g x)]
                                    (if (nil? y)
                                       default-value
@@ -89,20 +81,25 @@
 (defn missing-key-msg [obj k]
   (str "No key " k " in " (utils/abbreviate obj)))
 
+(defn copy-key [dst k source]
+  (if (contains? source k)
+    (assoc dst k (get source k))))
+
+
+
 (defn chain2 [a b]
   (let [av (a)
         bv (b)
 
         gda (:get-or-default av)
         gdb (:get-or-default bv)]
-    (println "default value of bv is" (:default-value bv))
-    (wrap-accessor
-     {:desc "(chain2 " (:desc av) " " (:desc bv) ")"
-      :default-value (:default-value bv) ;; TODO: Think this through
-      :empty-base (:empty-base av)                  ;; TODO: Think this through
-      :getter (fn [obj] (b (a obj)))
-      :setter (fn [obj x] (a obj (b (a obj) x)))
-      :get-or-default (comp gdb gda)})))
+    (-> {:desc "(chain2 " (:desc av) " " (:desc bv) ")"
+         :getter (fn [obj] (b (a obj)))
+         :setter (fn [obj x] (a obj (b (a obj) x)))
+         :get-or-default (comp gdb gda)}
+        (copy-key :default-value bv)
+        (copy-key :empty-base av)
+        wrap-accessor)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,7 +108,7 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn with-default-value [accessor value]
+(defn default-value [accessor value]
   (update-accessor accessor {:default-value value}))
 
 
@@ -157,8 +154,8 @@
 (defn update [obj accessor f]
   "Use an accessor to update an object"
   (let [m (accessor)
+        _ (assert (map? m))
         g (:get-or-default m)]
-    (println "G(obj) is " (g obj))
     (accessor obj (f (g obj)))))
 
 ;; TODO: build-default-value
@@ -168,7 +165,21 @@
   (fn [obj f]
     (update obj accessor f)))
 
-
+(defn build-default-value [& accessors]
+  (let [accessor-maps (map (fn [accessor] (accessor)) accessors)
+        empty-base (first (transduce
+                           (comp (filter #(contains? % :empty-base))
+                                 (map :empty-base)
+                                 (take 1))
+                           conj
+                           []
+                           accessor-maps))]
+    (reduce (fn [dst accessor-map]
+              (if (contains? accessor-map :default-value)
+                ((:setter accessor-map) dst (:default-value accessor-map))
+                dst))
+            empty-base
+            accessor-maps)))
 
 
 

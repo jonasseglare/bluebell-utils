@@ -11,7 +11,7 @@
   (is (= {:mjao 9} (mjao {} 9)))
   (is (= {:mjao 119} (mjao nil 119))))
 
-(def katt (with-default-value (index-accessor 2) 0))
+(def katt (default-value (index-accessor 2) 0))
 
 (deftest index-test
   (is (nil? (katt nil)))
@@ -51,3 +51,11 @@
   (is (= {:nam nil
           :age 31}
          (age gos 31))))
+
+(def ak (default-value (key-accessor :a) 119))
+(def bk (default-value (key-accessor :b) :bla))
+
+(def abk-default (build-default-value ak bk))
+
+(deftest default-value-test
+  (is (= abk-default {:a 119 :b :bla})))
