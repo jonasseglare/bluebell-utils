@@ -107,8 +107,6 @@
         gdb (:get-or-default bv)]
     (assert (fn? gda))
     (assert (fn? gdb))
-    (println "av=" av)
-    (println "bv=" bv)
     (-> {:desc "(chain2 " (:desc av) " " (:desc bv) ")"
          :getter (fn [obj] (b (a obj)))
          :setter (fn [obj x] (a obj (b (a obj) x)))
