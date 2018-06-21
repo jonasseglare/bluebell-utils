@@ -83,11 +83,6 @@
   ([obj] obj)
   ([old-val new-val] new-val))
 
-(defn access-coll-as-vec
-  ([] {:desc "access-coll-as-vec"})
-  ([x] (utils/normalize-coll x))
-  ([x new-value] (utils/denormalize-coll x new-value)))
-
 (def default-key-accessor-settings {:req-on-get true
                                     :req-on-assoc false})
 
@@ -338,6 +333,8 @@
     ([] {:desc "Filter set"})
     ([x] x)
     ([x y] (if (pred? y) y x))))
+
+
 
 
 

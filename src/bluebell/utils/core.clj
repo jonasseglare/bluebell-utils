@@ -151,29 +151,17 @@
     (update-in dst [key] #(conj % x))
     (assoc dst key [x])))
 
-(defn make-empty [x]
-  (if (vector? x)
-    [] (empty x)))
 
-(defn reverse-if-seq [[state x]]
-  [state (if (seq? x) (reverse x) x)])
-
-;; Bug in Clojure?
+;;;;;;; Main
+(defn map-with-state [f state data]
+  (reduce
+   (fn [[state dst] x]
+     (let [[state y] (f state x)]
+       [state (conj dst y)]))
+   [state []] data))
 
 (defn comparable? [x]
   (instance? java.lang.Comparable x))
-
-(defn sort-pairs-if-possible [pairs]
-  ;(println "   Sort pairs")
-  (if (every? comparable? (map first pairs))
-    (do
-      ;(println "Keys are" (map first pairs))
-      (sort-by first pairs))
-    
-    (do
-      ;(println "CANNOT BE SORTED" (map first pairs))
-      ;(throw (ex-info "This is bad" {}))
-      pairs)))
 
 (defn compare-somehow [a b]
   (try
@@ -187,65 +175,8 @@
     (sort compare-somehow x)
     x))
 
-(defn normalize-coll [coll]
-  (cond
-    (map? coll) (vec (apply concat (sort-pairs-if-possible (vec coll))))
-    (set? coll) (sort-if-possible (vec coll))
-    :default (vec coll)))
-
-(defn make-map [proto coll]
-  (first
-   (reduce (fn [[m state] x]
-             (if (empty? state)
-               [m [x]]
-               [(conj m (conj state x)) []]))
-           [(make-empty proto) []] coll)))
-
-(defn make-seq [proto coll]
-  (reverse (into (make-empty proto) coll)))
-
-(defn denormalize-coll [proto coll]
-  (cond
-    (map? proto) (make-map proto coll)
-    (seq? proto) (make-seq proto coll)
-    :default (into (make-empty proto) coll)))
-
-;;;;;;; Main
-(defn map-with-state [f state data]
-  (reduce
-   (fn [[state dst] x]
-     (let [[state y] (f state x)]
-       [state (conj dst y)]))
-   [state []] data))
-
 (def sorted-keys (comp sort-if-possible keys))
 
-;; Access the values of a map. It has to be a map!
-(defn map-vals-accessor
-  ([] {:desc "map-vals-accessor"})
-  ([x]
-   (assert (map? x))
-   (vec (map (partial get x) (sorted-keys x))))
-  ([x y]
-   (assert (map? x))
-   (assert (= (count x)
-              (count y)))
-   (into x (map vector (sorted-keys x) (vec y)))))
-
-(defn normalized-coll-accessor
-  ([] {:desc "Normalized coll accessor"})
-  ([x] (if (coll? x)
-         (normalize-coll x)
-         []))
-  ([x y] (if (coll? x)
-           (denormalize-coll x y)
-           x)))
-
-;; To check that the accessor is effective
-(defn null-accessor
-  ([] {:desc "Null accessor"})
-  ([x] [])
-  ([x y] x))
 
 ;;;;;;;;;;;;;;;;;;; Helpers
 (defn only-visit [x? v]
@@ -258,121 +189,6 @@
     [state (f x)]))
 
 
-;;;;;;;;;;;;;;;;;;;;;;; Traversal
-(declare traverse-postorder-cached-sub)
-
-(defn traverse-postorder-cached-coll [m expr parent cfg]
-  (map-with-state
-   (fn [m x]
-     (traverse-postorder-cached-sub m x cfg parent))
-   m
-   expr))
-
-(defn descend? [cfg expr]
-  (let [d? (:descend? cfg)]
-    (or (not d?) (d? expr))))
-
-(defn add-parent [parents parent]
-  (update
-   parents parent
-   (fn [n] (inc (or n 0)))))
-
-(defn register-cached [orig cfg [m new-value] parent]
-  [(assoc m orig {:mapped new-value
-                  :parents (add-parent {} parent)}) new-value])
-
-(defn look-up-and-inc [m expr parent]
-  (let [{dst :mapped
-         parents :parents} (get m expr)]
-    [(assoc m expr {:mapped dst
-                    :parents (add-parent parents parent)}) dst]))
-
-(spec/def ::visit fn?)
-(spec/def ::traverse-config (spec/keys :req-un [::visit]
-                                       :opt-un [::access-coll]))
-
-(defn coll-accessor
-  ([] {:desc "coll-accessor"})
-  ([x] (if (coll? x) x []))
-  ([x new-val] (if (coll? x) new-val x)))
-
-(defn traverse-postorder-cached-sub
-  [m expr cfg parent]
-  (if (contains? m expr)
-    (look-up-and-inc m expr parent)
-    (register-cached
-     expr
-     cfg (let [c ((:access-coll cfg) expr)
-               [m c] (traverse-postorder-cached-coll m c expr cfg)]
-           [m ((:visit cfg) ((:access-coll cfg) expr c))])
-     parent)))
-
-(def normalized-coll-accessor)
-
-(def default-traverse-cfg {:access-coll normalized-coll-accessor
-                           :only-unique false})
-
-(defn traverse-postorder-cached
-  ([m expr cfg]
-   (traverse-postorder-cached-sub m expr (merge default-traverse-cfg cfg) ::parent))
-  ([expr cfg]
-   (second (traverse-postorder-cached {} expr cfg))))
-(spec/fdef traverse-postorder-cached :args
-           (spec/cat
-            :m (spec/? map?)
-            :expr (constantly true)
-            :cfg ::traverse-config))
-
-;;;;;;;;;;;;; Helper utility on the cached one
-(declare register-child-at)
-
-(defn register-child-at-parents [m child at n]
-  (let [parents (vec (get-in m [at :parents]))]
-    (reduce
-     (fn [m [k v]]
-       (register-child-at m child k (* n v)))
-     m
-     parents)))
-
-(defn register-child-here [m child at n]
-  (update-in m [at :children child] (fn [x] (+ n (or x 0)))))
-
-(defn register-child-at [m child at n]
-  (register-child-here
-   (register-child-at-parents m child at n)
-   child
-   at n))
-
-(defn register-children [m]
-  (reduce
-   (fn [m c]
-     (register-child-at m c c 1))
-   m
-   (keys m)))
-
-
-;;;;;;;;;;;;;;;;;;;;; Traverse with state
-
-(defn traverse-postorder-with-state-sub [state expr visit access]
-  (let [[state children] (map-with-state
-                          (fn [state x]
-                            (traverse-postorder-with-state-sub
-                             state x visit access))
-                          state (access expr))
-        expr (access expr children)]
-    (visit state expr)))
-
-(defn process-config [cfg]
-  (merge default-traverse-cfg cfg))
-
-(defn traverse-postorder-with-state
-  ([expr cfg]
-   (let [c (process-config cfg)]
-     (traverse-postorder-with-state-sub
-      (:state c) expr (:visit c) (:access-coll c))))
-  ([state expr cfg]
-   (traverse-postorder-with-state
-    expr (assoc cfg :state state))))
 
 
 ;;;;;;;;;;;;;;;;;;;;; Asynchronous composition
@@ -422,39 +238,6 @@
     (with-value-sub []
       init updates)))
 
-
-(def default-subexpr-cfg (merge default-traverse-cfg {:visit identity}))
-
-(defn insert-subexpr [result p k]
-  (update result p (fn [x] (conj (or x #{}) k))))
-
-(defn add-subexpression-to-parents-of [result lookup p k]
-  (if (= p ::parent)
-    result
-    (let [parents (keys (get-in lookup [p :parents]))]
-      (reduce
-       (fn [r x]
-         (add-subexpression-to-parents-of r lookup x k))
-       (insert-subexpr result p k)
-       parents))))
-
-(defn add-subexpression [result lookup k]
-  (add-subexpression-to-parents-of result lookup k k))
-
-(defn compute-subexpressions-sub [analyzed]
-  (reduce (fn [r k]
-            (add-subexpression r analyzed k))
-          {}
-          (keys analyzed)))
-
-(defn compute-subexpressions
-  ([expr]
-   (compute-subexpressions expr {}))
-  ([expr cfg]
-   (compute-subexpressions-sub
-    (first
-     (traverse-postorder-cached
-      {} expr (merge default-subexpr-cfg cfg))))))
 
 ;; Force get
 (defn fget [x k]
