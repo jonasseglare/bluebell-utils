@@ -1,4 +1,4 @@
-(defproject bluebell/utils "0.1.3-SNAPSHOT" ;; then remove snapshot and publish
+(defproject bluebell/utils "0.1.3" ;; then remove snapshot and publish
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
