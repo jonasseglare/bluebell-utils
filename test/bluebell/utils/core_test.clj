@@ -1,6 +1,7 @@
 (ns bluebell.utils.core-test
   (:require [clojure.test :refer :all]
             [clojure.spec.test.alpha :as stest]
+            [bluebell.utils.traverse :as traverse]
             [bluebell.utils.core :refer :all]))
 
 (stest/instrument)
@@ -40,10 +41,11 @@
 (defn count-and-inc [state x]
   [(inc state) (inc x)])
 
+;; TODO: unit test elsewhere.
 (deftest traverse-postorder
-  (is (= (traverse-postorder-cached [1 2 3] {:visit (only-visit number? inc)})
+  (is (= (traverse/traverse-postorder-cached [1 2 3] {:visit (only-visit number? inc)})
          [2 3 4]))
-  (is (= (traverse-postorder-cached
+  (is (= (traverse/traverse-postorder-cached
           {} [1 1 1 3]
           {:visit (only-visit number? inc)})
          [{1 {:mapped 2, :parents {[1 1 1 3] 3}},
@@ -55,13 +57,13 @@
 
 (deftest traverse-with-state
   (is (= [7 [["0" "3" "4"] "3" "4"]]
-         (traverse-postorder-with-state
+         (traverse/traverse-postorder-with-state
           0 
           [[0 3 4] 3 4] 
           {:visit (fn [state x]
                     [(inc state) (if (coll? x) x (str x))])
            })))
-  (is (= (traverse-postorder-with-state
+  (is (= (traverse/traverse-postorder-with-state
                       0 {:a 3 :b 3}
                       {:visit (fn [state x]
                                 (if (number? x)
@@ -74,12 +76,12 @@
   (let [top [3 {:a [9 [2 2 2]]}
              [2 2 2] ]
         m (first
-           (traverse-postorder-cached {} top
+           (traverse/traverse-postorder-cached {} top
                                       {:visit identity}))]
     (is (= {[2 2 2] 2}
-           (-> (get (register-child-at m [2 2 2] [2 2 2] 1) top)
+           (-> (get (traverse/register-child-at m [2 2 2] [2 2 2] 1) top)
                :children)))
-    (is (= 6 (get (:children (get (register-children m) top)) 2)))))
+    (is (= 6 (get (:children (get (traverse/register-children m) top)) 2)))))
                  
 (deftest with-value-test
   (is (= {:a 9 :b 4}
@@ -94,7 +96,7 @@
          (range 1 7))))
 
 (deftest subexpr-test
-  (let [m (compute-subexpressions {:a [1 2] :b [{:d [{:c 3}]}]})]
+  (let [m (traverse/compute-subexpressions {:a [1 2] :b [{:d [{:c 3}]}]})]
     (is (contains? (get m :a) :a))
     (is (not (contains? (get m :a) 1)))
     (is (contains? (get m [1 2]) 2))
