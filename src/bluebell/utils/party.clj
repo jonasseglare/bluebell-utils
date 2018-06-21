@@ -17,6 +17,7 @@
   (assoc accessor-map :source accessor-map))
 
 (defn expose-accessor-function [m]
+  {:pre [(map? m)]}
   (let [getter (:getter m)
         setter (:setter m)]
     (fn
@@ -62,6 +63,8 @@
                                              ::getter
                                              ::get-or-default]))
 
+
+;; Read from down to up...
 (def wrap-accessor (comp expose-accessor-function
                          decorate-get-or-default
                          nil-protect-setter
@@ -91,7 +94,8 @@
 
 (defn copy-key [dst k source]
   (if (contains? source k)
-    (assoc dst k (get source k))))
+    (assoc dst k (get source k))
+    dst))
 
 
 
@@ -103,6 +107,8 @@
         gdb (:get-or-default bv)]
     (assert (fn? gda))
     (assert (fn? gdb))
+    (println "av=" av)
+    (println "bv=" bv)
     (-> {:desc "(chain2 " (:desc av) " " (:desc bv) ")"
          :getter (fn [obj] (b (a obj)))
          :setter (fn [obj x] (a obj (b (a obj) x)))
@@ -208,17 +214,17 @@
 
 (defn validate-base [accessor v?]
   (let [cmt (str "(validate-base " (:desc (accessor)) " v?)")]
-    (fn
-      ([] {:desc cmt})
-      ([obj] (accessor (validate v? obj cmt)))
-      ([obj x] (accessor (validate v? obj cmt) x)))))
+    (wrap-accessor
+     {:desc cmt
+      :getter (fn [obj] (accessor (validate v? obj cmt)))
+      :setter (fn [obj x] (accessor (validate v? obj cmt) x))})))
 
 (defn validate-target [accessor v?]
   (let [cmt (str "(validate-target " (:desc (accessor)) " v?)")]
-    (fn
-      ([] {:desc cmt})
-      ([obj] (validate v? (accessor obj) cmt))
-      ([obj x] (accessor obj (validate v? x cmt))))))
+    (wrap-accessor
+     {:desc cmt
+      :getter (fn [obj] (validate v? (accessor obj) cmt))
+      :setter (fn [obj x] (accessor obj (validate v? x cmt)))})))
 
 ;;;;;;;;;;;;;;;;;;;;; pseudo record
 
@@ -310,29 +316,29 @@
 
 
 (defn conditional-accessor [accessor p?]
-  (fn
-    ([] {:desc "Conditional accessor"})
-    ([x] (if (p? x)
-           (accessor x) x))
-    ([x y] (if (p? x)
-             (accessor x y)
-             y))))
+  (wrap-accessor
+   {:desc "Conditional accessor"
+    :getter (fn [x] (if (p? x)
+                      (accessor x) x))
+    :setter (fn [x y] (if (p? x)
+                        (accessor x y)
+                        y))}))
 
 
 ;;;;;;;;;;;;;;;;;;;;; Checked
 (defn checked-accessor [pred?]
-  (fn 
-    ([] {:desc "Checked accessor"})
-    ([x] (assert (pred? x)) x)
-    ([x y] (assert (pred? y)) y)))
+  (wrap-accessor
+   {:desc "Checked accessor"
+    :getter (fn [x] (assert (pred? x)) x)
+    :setter (fn [x y] (assert (pred? y)) y)}))
 
 
 ;;;;;;;;;;;;;;;;;;;;;; Filter set
 (defn filter-set [pred?]
-  (fn
-    ([] {:desc "Filter set"})
-    ([x] x)
-    ([x y] (if (pred? y) y x))))
+  (wrap-accessor
+   {:desc "Filter set"
+    :getter (fn[x] x)
+    :setter (fn [x y] (if (pred? y) y x))}))
 
 
 

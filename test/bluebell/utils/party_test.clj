@@ -29,7 +29,8 @@
 
 (def mjao2 (-> mjao
                (validate-base map?)
-               (validate-target int?)))
+               (validate-target int?)
+               ))
 
 (deftest validated-test
   (is (= 9 (mjao2 {:mjao 9})))
