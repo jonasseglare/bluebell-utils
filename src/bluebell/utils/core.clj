@@ -47,6 +47,13 @@
   (if (map? x)
     (= ks (clojure.set/intersection (set (keys x)) ks))))
 
+(defn contains-keys?
+  ([ks]
+   #(contains-keys? % ks))
+  ([x ks]
+   (and (map? x)
+        (every? #(contains? x %) ks))))
+
 (defn compute-matrix-index [sizes indices]
   (assert (= (count sizes)
              (count indices)))

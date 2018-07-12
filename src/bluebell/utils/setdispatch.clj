@@ -16,9 +16,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; Flag used to check that we don't add extra definitions
-;; after having called dispatch functions
-(def empty-dispatch-state {:was-called? false})
+(def empty-dispatch-state {;; Flag used to check that we don't add extra definitions
+                           ;; after having called dispatch functions
+                           :was-called? false})
+
+
 
 
 
@@ -144,6 +146,7 @@
 
 (defn compute-specific-function [system dispatch-state args-memberships]
   (let [fn-name (:fn-name dispatch-state)
+        debug? (:debug? dispatch-state)
         arity (count args-memberships)
         system (add-set-canonical-elements
                 (transduce cat
@@ -176,6 +179,14 @@
                                 args-memberships
                                 arity
                                 matching-alternatives)))
+
+      debug? (throw (ex-info "Debug info"
+                             (match-error-map
+                              fn-name
+                              args-memberships
+                              arity
+                              matching-alternatives)))
+      
       :default (-> frontier
                    first
                    :fn))))
@@ -204,7 +215,12 @@
 (defn initialize-dispatch-state [fn-name feature-extractor]
   {:dispatch-map {}
    :fn-name fn-name
-   :feature-extractor feature-extractor})
+   :feature-extractor feature-extractor
+   :debug? false})
+
+(defn mark-debug
+  ([f] (mark-debug f true))
+  ([f value] (swap! (f) #(assoc % :debug? value))))
 
 (defn forward-set-fn [f]
   (fn [& args]
@@ -352,6 +368,14 @@
                        ~feature-extractor))]
      (def ~fn-name (dispatch-root ~system state#))))
 
+(defn get-state-atom [sym f]
+  (try
+    (f)
+    (catch Exception e
+      (throw
+       (ex-info
+        "Failed to get state atom of function. Is it a valid dispatch function?"
+        {:f f :symbol sym})))))
 
 ;; This defines a specific implementation that will be selected if the
 ;; arguments match the arg spec specifically enough. The more specific the arguments,
@@ -363,7 +387,9 @@
   (let [parsed (sutils/force-conform ::method-args args0)
         args (:args parsed)
         arity (count args)]
-    `(let [state-atom# (~(:name parsed))]
+    `(let [state-atom# (get-state-atom
+                        (quote ~(:name parsed))
+                        ~(:name parsed))]
        (add-method state-atom#
                    ~arity
                    {:args (quote ~args)
