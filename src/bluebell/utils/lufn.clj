@@ -40,7 +40,6 @@
                              :name (::name m#)})
           (let [f# (get m# key#)]
             (assert (fn? f#))
-            (println "Evaluate it on " args#)
             (apply f# args#)))))))
 
 (defmacro def-lufn
