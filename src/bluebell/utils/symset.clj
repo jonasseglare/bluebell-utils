@@ -196,15 +196,18 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def ^:dynamic debug? false)
+
 (defn any? [sym-registry x]
   true)
 
 (def universe element?)
 
 (defn union [& args]
-  (fn [set-registry element]
-    (some (fn [f] (f set-registry element))
-          (map normalize-query args))))
+  (let [normalized-queries (map normalize-query args)]
+    (fn union-fn [set-registry element]
+      (some (fn [f] (f set-registry element))
+            normalized-queries))))
 
 (defn intersection [& args]
   (fn [set-registry element]

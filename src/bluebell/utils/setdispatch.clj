@@ -270,6 +270,9 @@
         query (ss/normalize-query raw-query)
         system (prepare-system-with-query-element system set-memberships)
         elements (memoized-evaluate-query system query)
+        _ (if ss/debug?
+            (println "-->Evaluated the query" query "to" elements))
+
         satisfied? (satisfies-query? system query)
         generality (count elements)]
     (utils/map-of satisfied? generality raw-query elements set-memberships)))
@@ -327,8 +330,8 @@
 (defmacro register-superset-generator [system generator]
   (assert (symbol? generator))
   `(register-superset-generator-for-key ~system
-                               ~(utils/namespaced-keyword (str generator))
-                               ~generator))
+                                        ~(utils/namespaced-keyword (str generator))
+                                        ~generator))
 
 ;; Use this function to register a type in the system
 (def add (forward-set-fn ss/add))
@@ -366,7 +369,7 @@
   `(let [state# (atom (initialize-dispatch-state
                        (quote ~fn-name)
                        ~feature-extractor))]
-     (def ~fn-name (dispatch-root ~system state#))))
+     (defonce ~fn-name (dispatch-root ~system state#))))
 
 (defn get-state-atom [sym f]
   (try

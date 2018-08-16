@@ -466,3 +466,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn first-arg [& args]
   (first args))
+
+(defn insert-at [v index extra]
+  {:pre [(vector? v)
+         (int? index)
+         (coll? extra)]}
+  (reduce into [] [(subvec v 0 index)
+                   extra
+                   (subvec v index)]))

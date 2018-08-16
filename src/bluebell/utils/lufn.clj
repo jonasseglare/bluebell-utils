@@ -29,18 +29,19 @@
   "Declare a lookup function"
   [name]
   `(let [state# (atom {::name (quote ~name)})]
-     (defn ~name
-       ([] state#)
-       ([key# & args#]
-        (let [m# (deref state#)]
-          (core/data-assert (contains? m# key#)
-                            "Missing lookup function"
-                            {:key key#
-                             :existing-keys (keys m#)
-                             :name (::name m#)})
-          (let [f# (get m# key#)]
-            (assert (fn? f#))
-            (apply f# args#)))))))
+     (defonce ~name ;; So that the loading order doesnt matter
+       (fn
+         ([] state#)
+         ([key# & args#]
+          (let [m# (deref state#)]
+            (core/data-assert (contains? m# key#)
+                              "Missing lookup function"
+                              {:key key#
+                               :existing-keys (keys m#)
+                               :name (::name m#)})
+            (let [f# (get m# key#)]
+              (assert (fn? f#))
+              (apply f# args#))))))))
 
 (defmacro def-lufn
   "Define a lookup function"
