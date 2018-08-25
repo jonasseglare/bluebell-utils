@@ -291,8 +291,9 @@
           result data))
 
 (defn indent-nested-sub2 [result data prefix step]
-  (if (string? data)
-    (str result prefix data)
+  (cond
+    (string? data) (str result prefix data)
+    :default ;(sequential? data)
     (let [f (first data)]
       (if (map? f)
         (let [new-values (merge {:prefix prefix
@@ -301,7 +302,9 @@
                                        (rest data)
                                        (:prefix new-values)
                                        (:step new-values)))
-        (reduce-indented-with-prefix result data (str prefix step) step)))))
+        (reduce-indented-with-prefix result data (str prefix step) step)))
+
+    ))
 
 (defn indent-nested
   ([data] (indent-nested {:prefix "\n" :step "  "} data))

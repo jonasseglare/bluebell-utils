@@ -1,4 +1,5 @@
 (ns bluebell.utils.party
+  "Please rely on access, instead. It is newer."
   (:refer-clojure :exclude [update])
   (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.debug :as dbg]
