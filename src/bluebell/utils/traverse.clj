@@ -40,6 +40,7 @@
 
 (defn traverse-postorder-cached-sub
   [m expr cfg parent]
+  (println "Traverse postorder-cached-sub")
   (if (contains? m expr)
     (look-up-and-inc m expr parent)
     (register-cached
