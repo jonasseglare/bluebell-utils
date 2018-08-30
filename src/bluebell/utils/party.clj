@@ -323,7 +323,6 @@
                         (accessor x y)
                         y))}))
 
-
 ;;;;;;;;;;;;;;;;;;;;; Checked
 (defn checked-accessor [pred?]
   (wrap-accessor

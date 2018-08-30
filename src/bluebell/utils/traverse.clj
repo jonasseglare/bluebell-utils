@@ -23,14 +23,18 @@
    (fn [n] (inc (or n 0)))))
 
 (defn register-cached [orig cfg [m new-value] parent]
-  [(assoc m orig {:mapped new-value
+  [(assoc m orig {:count 1
+                  :mapped new-value
                   :parents (add-parent {} parent)}) new-value])
 
 (defn look-up-and-inc [m expr parent]
   (let [{dst :mapped
-         parents :parents} (get m expr)]
+         parents :parents
+         count :count} (get m expr)]
+    (println "Incoming count" count)
     [(assoc m expr {:mapped dst
-                    :parents (add-parent parents parent)}) dst]))
+                    :parents (add-parent parents parent)
+                    :count (inc count)}) dst]))
 
 (spec/def ::visit fn?)
 (spec/def ::traverse-config (spec/keys :req-un [::visit]
@@ -40,7 +44,7 @@
 
 (defn traverse-postorder-cached-sub
   [m expr cfg parent]
-  (println "Traverse postorder-cached-sub")
+  (println "Traverse postorder-cached-sub on" expr)
   (if (contains? m expr)
     (look-up-and-inc m expr parent)
     (register-cached
