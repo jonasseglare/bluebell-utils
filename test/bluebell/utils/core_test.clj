@@ -48,10 +48,10 @@
   (is (= (traverse/traverse-postorder-cached
           {} [1 1 1 3]
           {:visit (only-visit number? inc)})
-         [{1 {:mapped 2, :parents {[1 1 1 3] 3}},
-           3 {:mapped 4, :parents {[1 1 1 3] 1}},
+         [{1 {:mapped 2, :parents {[1 1 1 3] 3} :count 3},
+           3 {:mapped 4, :parents {[1 1 1 3] 1} :count 1},
            [1 1 1 3]
-           {:mapped [2 2 2 4], :parents #:bluebell.utils.traverse{:parent 1}}}
+           {:count 1 :mapped [2 2 2 4], :parents #:bluebell.utils.traverse{:parent 1}}}
           [2 2 2 4]]
          )))
 

@@ -40,17 +40,20 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn compute-factors [x]
-  (let [analysis (first (traverse/traverse-postorder-cached
-                         {}
-                         x
-                         {:visit identity}))
-        factors (identify-factors analysis)
-        replacements (merge {x ::top}
-                            (make-replacement-map factors))
-        replacer #(replace-factors % replacements)
-        replaced (map (fn [[k v]] [v (replacer k)]) replacements)
-        ]
-    (into {} replaced)))
+(defn factorize
+  ([x] (factorize x {}))
+  ([x traverse-settings]
+   (let [analysis (first (traverse/traverse-postorder-cached
+                          {}
+                          x
+                          (merge traverse-settings
+                                 {:visit identity})))
+         factors (identify-factors analysis)
+         replacements (merge {x ::top}
+                             (make-replacement-map factors))
+         replacer #(replace-factors % replacements)
+         replaced (map (fn [[k v]] [v (replacer k)]) replacements)
+         ]
+     (into {} replaced))))
 
-(def disp (comp pp/pprint compute-factors))
+(def disp (comp pp/pprint factorize))
