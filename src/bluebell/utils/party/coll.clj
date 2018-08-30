@@ -24,7 +24,11 @@
   (if (every? utils/comparable? (map first pairs))
     (do
       ;(println "Keys are" (map first pairs))
-      (sort-by first pairs))
+      (try
+        (sort-by first pairs)
+        (catch Throwable e
+          (println "Warning: Failed to sort pairs, maybe both comparables but different types.")
+          pairs)))
     
     (do
       ;(println "CANNOT BE SORTED" (map first pairs))
