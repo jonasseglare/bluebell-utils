@@ -31,7 +31,6 @@
   (let [{dst :mapped
          parents :parents
          count :count} (get m expr)]
-    (println "Incoming count" count)
     [(assoc m expr {:mapped dst
                     :parents (add-parent parents parent)
                     :count (inc count)}) dst]))
@@ -44,7 +43,6 @@
 
 (defn traverse-postorder-cached-sub
   [m expr cfg parent]
-  (println "Traverse postorder-cached-sub on" expr)
   (if (contains? m expr)
     (look-up-and-inc m expr parent)
     (register-cached
