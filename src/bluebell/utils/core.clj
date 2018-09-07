@@ -292,17 +292,25 @@
 
 (defn indent-nested-sub2 [result data prefix step]
   (cond
+    (nil? data) (do
+                  (println "Result so far:")
+                  (println result)
+                  (throw (ex-info "Nil not allowed!"
+                                  {:result-so-far result})))
     (string? data) (str result prefix data)
-    :default ;(sequential? data)
-    (let [f (first data)]
-      (if (map? f)
-        (let [new-values (merge {:prefix prefix
-                                 :step step} f)]
-          (reduce-indented-with-prefix result
-                                       (rest data)
-                                       (:prefix new-values)
-                                       (:step new-values)))
-        (reduce-indented-with-prefix result data (str prefix step) step)))
+    (sequential? data) (let [f (first data)]
+                         (if (map? f)
+                           (let [new-values (merge {:prefix prefix
+                                                    :step step} f)]
+                             (reduce-indented-with-prefix result
+                                                          (rest data)
+                                                          (:prefix new-values)
+                                                          (:step new-values)))
+                           (reduce-indented-with-prefix result data (str prefix step) step)))
+    :default (throw (ex-info
+                     (str "Cannot indent value of class "
+                          (class data))
+                     {}))
 
     ))
 
