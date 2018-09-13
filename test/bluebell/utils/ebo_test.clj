@@ -56,11 +56,11 @@
                        :pos [3 4 3.4]
                        :neg [:a]})
 
-(def-arg-spec vec-arg {:pred vector?
+(def-arg-spec vec-arg {:pred sequential?
                        :pos [ [] ]
                        :neg [ :a ]})
 
-(def-arg-spec a-vec-arg {:pred #(and (vector? %)
+(def-arg-spec a-vec-arg {:pred #(and (sequential? %)
                                      (= :a (first %)))
                          :pos [ [:a 3 4] [:a] ]
                          :neg [ [] [:b] ]})
@@ -83,7 +83,7 @@
 (deftest overload-state-test
   (let [s (#'ebo/init-overload-state 'kattskit)
         s (#'ebo/add-arg-spec s mummi)]
-    (is (cljset/subset? #{3/4 :a :b} (:samples s)))
+    (is (cljset/subset? #{3/4 :a :b} (set (:samples s))))
     (is (:dirty? s))
     (is (:key mummi))
     (is (= (:arg-specs s)
@@ -102,7 +102,7 @@
                                  :fn negate-a-vec})]
     (is (= 2 (-> s :overloads (get 1) count)))
     (is (= #{[] :a [:b] [:a] [:a 3 4]}
-           (:samples s)))
+           (set (:samples s))))
     (let [s (#'ebo/rebuild-arg-spec-samples s)
           s (#'ebo/rebuild-arg-spec-comparisons (#'ebo/unmark-dirty s))
           cmps (:arg-spec-comparisons s)
@@ -140,25 +140,25 @@
 
 ;;;------- The arg types -------
 (def-arg-spec any-arg0 {:pred (constantly true)
-                       :pos [nil false true {} []]
-                       :neg []})
+                        :pos [nil false true {} []]
+                        :neg []})
 
 (def-arg-spec number-arg0 {:pred number?
-                          :pos [1]
-                          :neg []})
+                           :pos [1]
+                           :neg []})
 
 (def-arg-spec neg-number-arg0 {:pred (fn [x]
-                                      (and (number? x)
-                                           (< x 0)))
-                              :pos [-3 -4 -1]
-                              :neg [3 4 :a 0]})
+                                       (and (number? x)
+                                            (< x 0)))
+                               :pos [-3 -4 -1]
+                               :neg [3 4 :a 0]})
 
-(def-arg-spec vector-arg0 {:pred vector?
-                          :pos [[]]})
+(def-arg-spec vector-arg0 {:pred sequential?
+                           :pos [[]]})
 
 
 (def-arg-spec complex-arg0 {:spec ::complex-arg
-                           :pos [[:complex 3.4 7.0]]})
+                            :pos [[:complex 3.4 7.0]]})
 
 
 ;;;------- The overloads -------
@@ -202,17 +202,17 @@
 
 ;;;------- More specs -------
 
-(def-arg-spec imag-arg0 {:pred (fn [x] (and (vector? x)
-                                           (= :imag (first x))))
-                        :pos [
-                              
-                              [:imag 3]
-                              
-                              [:imag :a]
+(def-arg-spec imag-arg0 {:pred (fn [x] (and (sequential? x)
+                                            (= :imag (first x))))
+                         :pos [
+                               
+                               [:imag 3]
+                               
+                               [:imag :a]
 
-                              ]
-                        
-                        :neg [[] 9 34]})
+                               ]
+                         
+                         :neg [[] 9 34]})
 
 (declare-overload add)
 
@@ -274,3 +274,42 @@
   (is (= [:imag 20]
          (add [:imag 3]
               [:imag 17]))))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Test predefined arg specs
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(declare-overload plus)
+
+(def-overload plus []
+  0)
+
+(def-overload plus [any-arg x]
+  x)
+
+(def-overload plus [any-arg a
+                    any-arg b]
+  (+ a b))
+
+(def-overload plus [string-arg a
+                    string-arg b]
+  (str a b))
+
+(def-overload plus [coll-arg a
+                    coll-arg b]
+  (concat a b))
+
+(def-overload plus [map-arg a
+                    map-arg b]
+  (merge a b))
+
+(deftest predef-arg-test
+  (is (= 0 (plus)))
+  (is (= 7 (plus 3 4)))
+  (is (= [:a :b 4] (plus [:a :b] [4])))
+  (is (= {:a 3 :b 4} (plus {:a 3} {:b 4})))
+  (is (= "kycklinglever" (plus "kyckling" "lever"))))

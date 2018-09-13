@@ -5,7 +5,8 @@
             [clojure.core :as c]
             [bluebell.utils.pareto :as pareto]
             [bluebell.utils.core :as utils]
-            [clojure.set :as cljset]))
+            [clojure.set :as cljset])
+  (:refer-clojure :exclude [and or not]))
 
 (declare filter-positive)
 (declare check-valid)
@@ -21,8 +22,8 @@
 (spec/def ::pred fn?)
 (spec/def ::key any?)
 (spec/def ::desc string?)
-(spec/def ::spec #(or (spec/spec? %)
-                      (keyword? %)))
+(spec/def ::spec #(c/or (spec/spec? %)
+                        (keyword? %)))
 (spec/def ::valid? boolean?)
 
 (spec/def ::arg-spec (spec/keys :req-un [::pred
@@ -54,6 +55,12 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;; Warning: Make sure that the arg specs don't differentiate
+;;; between vectors and seqs, because internally, we store the
+;;; samples in a set, meaning that vectors and seqs will be
+;;; collapsed to a single element, which is possibly a seq.
+;;; In short, use sequential? and avoid
+;;; vector? or seq? to test args.
 
 (defn- decorate-key-and-pred-from-spec [input-arg-spec]
   (if-let [s (:spec input-arg-spec)]
@@ -179,8 +186,8 @@
   (if (= (count a) (count b))
     (let [cmps (:arg-spec-comparisons state)
           pairs (set (map (comp (partial get cmps) vector) a b))]
-      (and (contains? pairs :subset)
-           (not (contains? pairs :superset))))
+      (c/and (contains? pairs :subset)
+             (c/not (contains? pairs :superset))))
     false))
 
 (defn- compute-overload-dominates? [state]
@@ -251,7 +258,7 @@
       :default (first e))))
 
 (defn- resolve-overload [state args]
-  {:pre [(not (:dirty? state))]}
+  {:pre [(c/not (:dirty? state))]}
   (let [arity (count args)
         overloads (:overloads state)]
     (if-let [m (get overloads arity)]
@@ -285,11 +292,14 @@
 (defn make-overload-fn [sym]
   (let [state-atom (atom (init-overload-state sym))]
     (fn [& args]
-      (or (perform-special-op state-atom args)
-          (perform-evaluation state-atom args)))))
+      (c/or (perform-special-op state-atom args)
+            (perform-evaluation state-atom args)))))
 
 (defn- reset-state [state]
   (init-overload-state (:name state)))
+
+(def common-samples #{[] {} #{} "asdf" nil 9 :a 'a
+                      (constantly true)})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -297,8 +307,13 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;;;------- Arg spec -------
+(defn pred [pred-fn]
+  {:pre [(fn? pred-fn)]}
+  {:pred pred-fn
+   :pos (filter pred-fn common-samples)
+   :neg (filter (complement pred-fn) common-samples)})
+
 (defn normalize-arg-spec [input-arg-spec]
   {:pre [(spec/valid? ::input-arg-spec input-arg-spec)]
    :post [(spec/valid? ::arg-spec %)]}
@@ -373,4 +388,29 @@
             arg-spec)))
   arg-spec)
 
+
+;;;------- Arg spec transformations -------
+
+
 ;;;------- Common arg specs -------
+(def-arg-spec any-arg (pred (constantly true)))
+
+(def-arg-spec number-arg (pred number?))
+
+(def-arg-spec sequential-arg (pred sequential?))
+
+(def-arg-spec set-arg (pred set?))
+
+(def-arg-spec keyword-arg (pred keyword?))
+
+(def-arg-spec string-arg (pred string?))
+
+(def-arg-spec nil-arg (pred nil?))
+
+(def-arg-spec coll-arg (pred coll?))
+
+(def-arg-spec map-arg (pred map?))
+
+(def-arg-spec empty-arg (pred (fn [x] (c/and (coll? x)
+                                             (empty? x)))))
+
