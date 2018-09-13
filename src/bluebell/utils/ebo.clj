@@ -141,7 +141,7 @@
                                 (filter-positive v samples)))])
                          arg-specs))))))
 
-(defn cart-prod [a b]
+(defn- cart-prod [a b]
   (transduce
    (comp (map (fn [a] (mapv (fn [b] [a b]) b)))
          cat)
@@ -149,7 +149,7 @@
    []
    a))
 
-(defn compare-sets [a b]
+(defn- compare-sets [a b]
   (cond
     (= a b) :equal
     (cljset/subset? a b) :subset
