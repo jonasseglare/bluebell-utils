@@ -139,44 +139,41 @@
 
 
 ;;;------- The arg types -------
-(def-arg-spec any-arg {:pred (constantly true)
+(def-arg-spec any-arg0 {:pred (constantly true)
                        :pos [nil false true {} []]
                        :neg []})
 
-(def-arg-spec number-arg {:pred number?
+(def-arg-spec number-arg0 {:pred number?
                           :pos [1]
                           :neg []})
 
-(def-arg-spec neg-number-arg {:pred (fn [x]
+(def-arg-spec neg-number-arg0 {:pred (fn [x]
                                       (and (number? x)
                                            (< x 0)))
                               :pos [-3 -4 -1]
                               :neg [3 4 :a 0]})
 
-(def-arg-spec vector-arg {:pred vector?
+(def-arg-spec vector-arg0 {:pred vector?
                           :pos [[]]})
 
 
-(def-arg-spec complex-arg {:spec ::complex-arg
+(def-arg-spec complex-arg0 {:spec ::complex-arg
                            :pos [[:complex 3.4 7.0]]})
 
 
 ;;;------- The overloads -------
 (declare-overload abs)
 
-(def-overload abs [any-arg x]
+(def-overload abs [any-arg0 x]
   [:undefined-abs x])
 
-(def-overload abs [number-arg x]
+(def-overload abs [number-arg0 x]
   (Math/abs x))
 
-(def-overload abs [neg-number-arg x]
-  (- x))
-
-(def-overload abs [vector-arg x]
+(def-overload abs [vector-arg0 x]
   (mapv abs x))
 
-(def-overload abs [complex-arg [_ re im]]
+(def-overload abs [complex-arg0 [_ re im]]
   (Math/sqrt (+ (* re re)
                 (* im im))))
 
@@ -201,23 +198,59 @@
 ;;;  Generic add
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;------- More specs -------
+
+(def-arg-spec imag-arg0 {:pred (fn [x] (and (vector? x)
+                                           (= :imag (first x))))
+                        :pos [
+                              
+                              [:imag 3]
+                              
+                              [:imag :a]
+
+                              ]
+                        
+                        :neg [[] 9 34]})
+
 (declare-overload add)
 
-(def-overload add [number-arg a
-                   number-arg b]
+(def-overload add [number-arg0 a
+                   number-arg0 b]
   (+ a b))
 
-(def-overload add [complex-arg [_ a-re a-im]
-                   complex-arg [_ b-re b-im]]
+(def-overload add [complex-arg0 [_ a-re a-im]
+                   complex-arg0 [_ b-re b-im]]
   [:complex (add a-re b-re) (add a-im b-im)])
 
-(def-overload add [vector-arg v
-                   any-arg x]
+(def-overload add [complex-arg0 [_ re im]
+                   imag-arg0 [_ x]]
+  [:complex re (add im x)])
+
+(def-overload add [imag-arg0 [_ x]
+                   imag-arg0 [_ y]]
+  [:imag (add x y)])
+
+(def-overload add [complex-arg0 [_ re im]
+                   any-arg0 b]
+  [:complex (add re b) im])
+
+(def-overload add [any-arg0 b
+                   complex-arg0 [_ re im]]
+  [:complex (add re b) im])
+
+(def-overload add [vector-arg0 v
+                   any-arg0 x]
   (mapv (partial add x) v))
 
-(def-overload add [vector-arg a
-                   vector-arg b]
+(def-overload add [vector-arg0 a
+                   vector-arg0 b]
   (mapv add a b))
+
+(def-overload add [any-arg0 a
+                   vector-arg0 b]
+  (add b a))
 
 (deftest generic-add-test
   (is (= 7 (add 3 4)))
@@ -225,4 +258,19 @@
          (add [:complex 10 5]
               [:complex 20 15])))
   (is (= (add [1 2 3] 10)
-         [11 12 13])))
+         [11 12 13]))
+  (is (= (add [1 2 3] [100 0 1000])
+         [101 2 1003]))
+  (is (= (add 10 [1 2 3])
+         [11 12 13]))
+  (is (= [:complex 1001 3]
+         (add [:complex 1 3]
+              1000)))
+  (is (= [:complex 1001 3]
+         (add 1000 [:complex 1 3])))
+  (is (= [:complex 3 20]
+         (add [:complex 3 1]
+              [:imag 19])))
+  (is (= [:imag 20]
+         (add [:imag 3]
+              [:imag 17]))))

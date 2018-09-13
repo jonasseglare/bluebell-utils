@@ -264,7 +264,7 @@
   (let [[arg-spec-keys f] (resolve-overload state args)]
     (apply f args)))
 
-(defn perform-special-op [state-atom args]
+(defn- perform-special-op [state-atom args]
   (let [f (first args)]
     (case f
       ::add-overload (do (swap! state-atom
@@ -272,9 +272,10 @@
                                 (second args))
                          true)
       ::get-state (deref state-atom)
+      ::get-state-atom state-atom
       false)))
 
-(defn perform-evaluation [state-atom args]
+(defn- perform-evaluation [state-atom args]
   (let [state (deref state-atom)
         state (if (:dirty? state)
                 (swap! state-atom rebuild-all)
@@ -286,6 +287,9 @@
     (fn [& args]
       (or (perform-special-op state-atom args)
           (perform-evaluation state-atom args)))))
+
+(defn- reset-state [state]
+  (init-overload-state (:name state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -321,6 +325,10 @@
     :post k [(coll? k)]]
    (filter (:pred arg-spec) samples)))
 
+(defn matches-arg-spec? [arg-spec x]
+  (utils/check-io
+   [:pre [::arg-spec arg-spec]]
+   ((:pred arg-spec) x)))
 
 ;;;------- Overload -------
 (defmacro declare-overload [sym]
@@ -351,6 +359,10 @@
       :overloads
       keys
       set))
+
+(defn reset-overloads! [overload-fn]
+  {:pre [(fn? overload-fn)]}
+  (swap! (overload-fn ::get-state-atom) reset-state))
 
 ;;;------- Misc -------
 (defn check-valid [arg-spec]
