@@ -4,7 +4,8 @@
             [clojure.test :refer :all]
             [bluebell.utils.specutils :as specutils]
             [clojure.spec.alpha :as spec]
-            [clojure.set :as cljset]))
+            [clojure.set :as cljset]
+            [bluebell.utils.render-repl :refer [render]]))
 
 (spec/def ::mjao (partial = [:mjao 119]))
 
@@ -376,3 +377,37 @@
   (is (matches-arg-spec? imp [nil 4]))
   (is (matches-arg-spec? imp [nil :a]))
   (is (not (matches-arg-spec? imp [3 :a]))))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Produce code for the repl example
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; https://emacs.stackexchange.com/questions/36112/is-it-possible-on-cider-to-eval-on-a-repl-and-print-as-a-comment-every-evaluatio
+
+(comment
+  
+  (def-arg-spec numeric-argument {:pred number?
+                                  :pos [1 2 3 -4 3/4]
+                                  :neg [nil {} #{} []]})
+  
+  
+  (def-arg-spec seq-argument {:pred sequential?
+                              :pos [[] [:a :b] '(3 4)]
+                              :neg [#{} {}]})
+  
+  (def-arg-spec complex-argument {:pred (fn [x]
+                                          (and (sequential? x)
+                                               (= :complex (first x))))
+                                  :pos [[:complex 3 4]]
+                                  :neg [[] :a :b]})
+
+
+  ;; C-u C-x C-e
+  
+
+
+  )
