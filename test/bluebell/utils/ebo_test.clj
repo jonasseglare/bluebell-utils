@@ -32,7 +32,7 @@
                                :pos [[:mjao 119]]
                                :neg [9 :a {} {:a 3} [:mjao 119]]})]
     (is (not (:valid? k)))
-    (is (thrown? Exception (check-valid k)))
+    (is (thrown? Exception (check-valid-arg-spec k)))
     (is (= k (normalize-arg-spec k)))))
 
 (def-arg-spec mummi {:pred number?

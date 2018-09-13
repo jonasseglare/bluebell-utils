@@ -8,7 +8,7 @@
             [clojure.set :as cljset]))
 
 (declare filter-positive)
-(declare check-valid)
+(declare check-valid-arg-spec)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -316,12 +316,12 @@
 
 
 (defn normalize-and-check-arg-spec [x]
-  (check-valid (normalize-arg-spec x)))
+  (check-valid-arg-spec (normalize-arg-spec x)))
 
 (defmacro def-arg-spec [sym value]
   {:pre [(symbol? sym)]}
   `(def ~sym
-     (check-valid
+     (check-valid-arg-spec
       (normalize-arg-spec
        (merge {:key [::def-arg-spec
                      ~(keyword (str *ns*) (name sym))]}
@@ -404,7 +404,7 @@
   (swap! (overload-fn ::get-state-atom) reset-state))
 
 ;;;------- Misc -------
-(defn check-valid [arg-spec]
+(defn check-valid-arg-spec [arg-spec]
   {:pre [(spec/valid? ::arg-spec arg-spec)]}
   (when (not (:valid? arg-spec))
     (throw (ex-info
