@@ -307,12 +307,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;------- Arg spec -------
-(defn pred [pred-fn]
-  {:pre [(fn? pred-fn)]}
-  {:pred pred-fn
-   :pos (filter pred-fn common-samples)
-   :neg (filter (complement pred-fn) common-samples)})
-
 (defn normalize-arg-spec [input-arg-spec]
   {:pre [(spec/valid? ::input-arg-spec input-arg-spec)]
    :post [(spec/valid? ::arg-spec %)]}
@@ -322,8 +316,8 @@
       validate-on-samples))
 
 
-(def normalize-and-check-arg-spec (comp check-valid
-                                        normalize-arg-spec))
+(defn normalize-and-check-arg-spec [x]
+  (check-valid (normalize-arg-spec x)))
 
 (defmacro def-arg-spec [sym value]
   {:pre [(symbol? sym)]}
@@ -336,21 +330,31 @@
 
 (defn provide-samples [arg-spec samples]
   (utils/check-io
-   [:pre [::arg-spec arg-spec]
-    :post out [::arg-spec out]]
-   (normalize-and-check-arg-spec
-    (let [pred (:pred arg-spec)]
-      (-> arg-spec
-          (update :pos
-                  (fn [pos]
-                    (into
-                     (set pos)
-                     (filter pred samples))))
-          (update :neg
-                  (fn [neg]
-                    (into
-                     (set neg)
-                     (filter (complement pred) samples)))))))))
+   [:pre [(map? arg-spec)
+          (contains? arg-spec :pred)]]
+   (let [pred (:pred arg-spec)]
+     (-> arg-spec
+         (update :pos
+                 (fn [pos]
+                   (into
+                    (set pos)
+                    (filter pred samples))))
+         (update :neg
+                 (fn [neg]
+                   (into
+                    (set neg)
+                    (filter (complement pred) samples))))))))
+
+(defn arg-spec-samples [arg-spec]
+  (reduce into [(:pos arg-spec)
+                (:neg arg-spec)]))
+
+(defn pred [pred-fn]
+  "Easy construction of an arg-spec. This should only be used for very common values, because it just uses a default set of sample values"
+  {:pre [(fn? pred-fn)]}
+  (provide-samples
+   {:pred pred-fn}
+   common-samples))
 
 (def arg-spec? (specutils/pred ::arg-spec))
 
@@ -407,6 +411,9 @@
     (throw (ex-info
             (str "Invalid arg-spec '" (:desc arg-spec) "'")
             arg-spec)))
+  (if (empty? (:pos arg-spec))
+    (println "Warning: No posiive samples for "
+             (:key arg-spec)))
   arg-spec)
 
 

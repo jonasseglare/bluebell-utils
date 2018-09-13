@@ -334,3 +334,22 @@
 (deftest not-op-test
   (is (= 9 (sqr 3)))
   (is (= [:cannot-square "a"] (sqr "a"))))
+
+(def-arg-spec zero-arg {:pred zero?
+                        :pos [0]
+                        :neg [1 2 3]})
+
+(def denom-arg (ops/and number-arg
+                        (ops/not zero-arg)))
+
+(def number-or-keyword-arg (ops/or
+                            number-arg
+                            keyword-arg))
+
+(deftest and-or-test
+  (is (matches-arg-spec? denom-arg 3))
+  (is (not (matches-arg-spec? denom-arg 0)))
+  (is (not (matches-arg-spec? denom-arg :a)))
+  (is (matches-arg-spec? number-or-keyword-arg :a))
+  (is (matches-arg-spec? number-or-keyword-arg 9))
+  (is (not (matches-arg-spec? number-or-keyword-arg []))))
