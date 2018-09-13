@@ -92,14 +92,22 @@
           s (#'ebo/rebuild-arg-spec-comparisons (#'ebo/unmark-dirty s))
           cmps (:arg-spec-comparisons s)
           s2 (#'ebo/rebuild-all s)]
-      (is (= s s2))
       (is (= (get-in s [:arg-specs (:key vec-arg) :samples])
              #{[] [:b] [:a] [:a 3 4]}))
+      (is (contains? s2 :overload-dominates?))
+      (is (map? (:overload-dominates? s2)))
       (is (= 4 (count cmps)))
       (is (every?  #{:subset :superset :equal :disjoint}
                    (vals cmps)))
-      (clojure.pprint/pprint
-       (#'ebo/compute-overload-dominates? s)))))
+      (let [[arg-specs f] (#'ebo/resolve-overload
+                           s2 [[1 2 3]])]
+        (is (= arg-specs [(:key vec-arg)]))
+        (is (= [-3 -4] (f [3 4]))))
+      (let [[arg-specs f] (#'ebo/resolve-overload
+                           s2 [[:a 3]])]
+        (is (= arg-specs [(:key a-vec-arg)]))
+        (is (= [:a -119] (f [:a 119]))))
+      (is (thrown? Exception (#'ebo/resolve-overload s2 [{}]))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

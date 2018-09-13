@@ -3,10 +3,12 @@
   (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.specutils :as specutils]
             [clojure.core :as c]
+            [bluebell.utils.pareto :as pareto]
             [bluebell.utils.core :as utils]
             [clojure.set :as cljset]))
 
 (declare filter-positive)
+(declare check-valid)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -77,7 +79,7 @@
   (utils/check-io
    [:pre [(symbol? overload-sym)]]
    
-   {:symbol overload-sym
+   {:name overload-sym
     :dirty? true
     :samples #{}
     :arg-specs {}
@@ -139,9 +141,9 @@
 
 (defn compare-sets [a b]
   (cond
+    (= a b) :equal
     (cljset/subset? a b) :subset
     (cljset/superset? a b) :superset
-    (= a b) :equal
     :default :disjoint))
 
 (defn- rebuild-arg-spec-comparisons [state]
@@ -171,7 +173,12 @@
    (:overloads state)))
 
 (defn- compare-arg-lists [state a b]
-  true)
+  (if (= (count a) (count b))
+    (let [cmps (:arg-spec-comparisons state)
+          pairs (set (map (comp (partial get cmps) vector) a b))]
+      (and (contains? pairs :subset)
+           (not (contains? pairs :superset))))
+    false))
 
 (defn- compute-overload-dominates? [state]
   (let [arg-lists (get-all-overload-arg-lists state)]
@@ -196,14 +203,67 @@
   (-> state
       rebuild-arg-spec-samples
       rebuild-arg-spec-comparisons
+      rebuild-overload-dominates?
       unmark-dirty))
 
+(defn- dominates? [lookup-table
+                   [a-args a-fn]
+                   [b-args b-fn]]
+  {:pre [(fn? a-fn)
+         (fn? b-fn)]}
+  (let [value (get lookup-table [a-args b-args])]
+    (assert (boolean? value))
+    value))
+
+(defn- matches? [arg-specs arg-list args]
+  {:pre [(= (count arg-list) (count args))]}
+  (some identity
+        (map (fn [arg-spec-key arg]
+               (let [arg-spec (get arg-specs arg-spec-key)]
+                 ((:pred arg-spec) arg))) arg-list args)))
+
+(defn- list-pareto-elements [state overloads args]
+  (let [arg-specs (:arg-specs state)]
+    (pareto/elements
+     (transduce
+      (filter (fn [[arg-list f]] (matches?
+                                  arg-specs
+                                  arg-list
+                                  args)))
+      (completing pareto/insert)
+      (pareto/frontier (partial dominates?
+                                (:overload-dominates? state)))
+      overloads))))
+
+
+(defn- resolve-overload-for-arity [state overloads args]
+  (let [e (list-pareto-elements state overloads args)]
+    (cond
+      (= 0 (count e)) (throw (ex-info "No overload found"
+                                      {:name (:name state)
+                                       :arity (count args)}))
+      (< 1 (count e)) (throw (ex-info "Ambiguous overload"
+                                      {:name (:name state)
+                                       :candidates e}))
+      :default (first e))))
+
+(defn- resolve-overload [state args]
+  (let [arity (count args)
+        overloads (:overloads state)]
+    (if-let [m (get overloads arity)]
+      (resolve-overload-for-arity state m args)
+      (throw (ex-info "No overload for this arity"
+                      {:symbol (:name state)
+                       :arity arity})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Interface
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;------- Arg spec -------
 (defn normalize-arg-spec [input-arg-spec]
   {:pre [(spec/valid? ::input-arg-spec input-arg-spec)]
    :post [(spec/valid? ::arg-spec %)]}
@@ -211,14 +271,6 @@
       decorate-key-and-pred-from-spec
       decorate-desc
       validate-on-samples))
-
-(defn check-valid [arg-spec]
-  {:pre [(spec/valid? ::arg-spec arg-spec)]}
-  (when (c/not (:valid? arg-spec))
-    (throw (ex-info
-            (str "Invalid arg-spec '" (:desc arg-spec) "'")
-            arg-spec)))
-  arg-spec)
 
 (defmacro def-arg-spec [sym value]
   {:pre [(symbol? sym)]}
@@ -242,5 +294,15 @@
 ;;;------- Overload -------
 
 
+
+
+;;;------- Misc -------
+(defn check-valid [arg-spec]
+  {:pre [(spec/valid? ::arg-spec arg-spec)]}
+  (when (c/not (:valid? arg-spec))
+    (throw (ex-info
+            (str "Invalid arg-spec '" (:desc arg-spec) "'")
+            arg-spec)))
+  arg-spec)
 
 ;;;------- Common arg specs -------
