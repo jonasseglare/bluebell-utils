@@ -386,7 +386,7 @@
 (defmacro def-overload [sym arg-list & body]
   {:pre [(symbol? sym)]}
   (let [p (spec/conform ::def-overload-arg-list arg-list)]
-    (if (= p ::speinvalid)
+    (if (= p ::spec/invalid)
       (throw (ex-info
               "Bad def-overload arg list"
               {}))
