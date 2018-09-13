@@ -499,13 +499,14 @@
 
 (spec/def ::checks (spec/spec (spec/* ::input-check)))
 
-(spec/def ::check-fn-io-args (spec/cat
-                              :flag (spec/? any?)
-                              :input-checks ::checks
-                              :output-prefix #{:out}
-                              :output-symbol symbol?
-                              :output-checks ::checks
-                              :body (spec/* any?)))
+(spec/def ::check-io-args (spec/cat
+                           :flag (spec/? any?)
+                           :input-checks ::checks
+                           :out (spec/?
+                                 (spec/cat :prefix #{:out}
+                                           :symbol symbol?
+                                           :checks ::checks))
+                           :body (spec/* any?)))
 
 (defn- generate-check [[check-type check-data]]
   (case check-type
@@ -524,15 +525,15 @@
 (defn- generate-checking-code [checks]
   (map generate-check checks))
 
-(defmacro check-fn-io
+(defmacro check-io
   "Alternative to pre post conditions"
   [& args]
   (let [parsed (spec/conform ::check-fn-io-args args)]
     (when (= parsed ::spec/invalid)
-      (spec/explain ::check-fn-io-args args)
+      (spec/explain ::check-io-args args)
       (throw (ex-info "Failed to parse args to check-fn-io"
                       {:args args})))
-    (let [{:keys [input-checks output-symbol
+    (let [{:keys [input-checks out
                   output-checks body]} parsed
           flag (if (contains? parsed :flag)
                  (:flag parsed)

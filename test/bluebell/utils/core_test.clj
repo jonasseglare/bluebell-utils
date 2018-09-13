@@ -141,6 +141,6 @@
     (is (nil? (eval code))))
   (is (= 17
          (let [a 14]
-           (check-fn-io [(number? a)]
-                        :out k [(number? k)]
-                        (+ a 3))))))
+           (check-io [(number? a)]
+                     :out k [(number? k)]
+                     (+ a 3))))))
