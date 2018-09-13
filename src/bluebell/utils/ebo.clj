@@ -321,6 +321,10 @@
       decorate-desc
       validate-on-samples))
 
+
+(def normalize-and-check-arg-spec (comp check-valid
+                                        normalize-arg-spec))
+
 (defmacro def-arg-spec [sym value]
   {:pre [(symbol? sym)]}
   `(def ~sym
@@ -329,6 +333,24 @@
        (merge {:key [::def-arg-spec
                      ~(keyword (str *ns*) (name sym))]}
               ~value)))))
+
+(defn provide-samples [arg-spec samples]
+  (utils/check-io
+   [:pre [::arg-spec arg-spec]
+    :post out [::arg-spec out]]
+   (normalize-and-check-arg-spec
+    (let [pred (:pred arg-spec)]
+      (-> arg-spec
+          (update :pos
+                  (fn [pos]
+                    (into
+                     (set pos)
+                     (filter pred samples))))
+          (update :neg
+                  (fn [neg]
+                    (into
+                     (set neg)
+                     (filter (complement pred) samples)))))))))
 
 (def arg-spec? (specutils/pred ::arg-spec))
 
@@ -386,9 +408,6 @@
             (str "Invalid arg-spec '" (:desc arg-spec) "'")
             arg-spec)))
   arg-spec)
-
-
-;;;------- Arg spec transformations -------
 
 
 ;;;------- Common arg specs -------

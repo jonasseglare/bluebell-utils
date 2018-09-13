@@ -1,5 +1,6 @@
 (ns bluebell.utils.ebo-test
   (:require [bluebell.utils.ebo :refer :all :as ebo]
+            [bluebell.utils.ebo.ops :as ops]
             [clojure.test :refer :all]
             [bluebell.utils.specutils :as specutils]
             [clojure.spec.alpha :as spec]
@@ -313,3 +314,23 @@
   (is (= [:a :b 4] (plus [:a :b] [4])))
   (is (= {:a 3 :b 4} (plus {:a 3} {:b 4})))
   (is (= "kycklinglever" (plus "kyckling" "lever"))))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Ops test
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(declare-overload sqr)
+
+(def-overload sqr [any-arg x]
+  (* x x))
+
+(def-overload sqr [(ops/not number-arg) x]
+  [:cannot-square x])
+
+(deftest not-op-test
+  (is (= 9 (sqr 3)))
+  (is (= [:cannot-square "a"] (sqr "a"))))
