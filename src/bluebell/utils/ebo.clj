@@ -85,13 +85,14 @@
   (merge {:desc (str (:key arg-spec))} arg-spec))
 
 
-(defn- init-overload-state [overload-sym]
+(defn- init-overload-state [overload-sym init-samples]
   (utils/check-io
    [:pre [(symbol? overload-sym)]]
    
    {:name overload-sym
+    :init-samples init-samples
     :dirty? true
-    :samples #{}
+    :samples init-samples
     :arg-specs {}
     :overloads {}}))
 
@@ -288,16 +289,21 @@
                 state)]
     (evaluate-overload state args)))
 
-(defn make-overload-fn [sym]
-  (let [state-atom (atom (init-overload-state sym))]
-    (fn [& args]
-      (or (perform-special-op state-atom args)
-            (perform-evaluation state-atom args)))))
+(def common-samples #{[] {} #{} "asdf" nil 9 :a 'a identity})
+
+(defn make-overload-fn
+  ([sym] (make-overload-fn sym common-samples))
+  ([sym initial-samples]
+   (let [state-atom (atom (init-overload-state
+                           sym
+                           initial-samples))]
+     (fn [& args]
+       (or (perform-special-op state-atom args)
+           (perform-evaluation state-atom args))))))
 
 (defn- reset-state [state]
-  (init-overload-state (:name state)))
-
-(def common-samples #{[] {} #{} "asdf" nil 9 :a 'a identity})
+  (init-overload-state (:name state)
+                       (:init-samples state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -370,8 +376,12 @@
    ((:pred arg-spec) x)))
 
 ;;;------- Overload -------
-(defmacro declare-overload [sym]
-  `(defonce ~sym (make-overload-fn (quote ~sym))))
+(defmacro declare-overload
+  ([sym initial-samples]
+   `(defonce ~sym (make-overload-fn (quote ~sym)
+                                    ~initial-samples)))
+  ([sym]
+   `(defonce ~sym (make-overload-fn (quote ~sym)))))
 
 (defmacro def-overload [sym arg-list & body]
   {:pre [(symbol? sym)]}

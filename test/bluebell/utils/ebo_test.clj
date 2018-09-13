@@ -83,21 +83,21 @@
   (- x))
 
 (deftest overload-state-test
-  (let [s (#'ebo/init-overload-state 'kattskit)
+  (let [s (#'ebo/init-overload-state 'kattskit #{})
         s (#'ebo/add-arg-spec s mummi)]
     (is (cljset/subset? #{3/4 :a :b} (set (:samples s))))
     (is (:dirty? s))
     (is (:key mummi))
     (is (= (:arg-specs s)
            {(:key mummi) mummi})))
-  (let [s (#'ebo/init-overload-state 'negate)
+  (let [s (#'ebo/init-overload-state 'negate #{})
         s (#'ebo/add-overload s {:arg-specs [mummi]
                                  :fn (fn [x] (- x))})]
     (is (= 1 (count (:arg-specs s))))
     (is (= 1 (count (:overloads s))))
     (is (= [(:key mummi)] (-> s :overloads (get 1) keys first)))
     (is (fn? (-> s :overloads (get 1) vals first))))
-  (let [s (#'ebo/init-overload-state 'negate)
+  (let [s (#'ebo/init-overload-state 'negate #{})
         s (#'ebo/add-overload s {:arg-specs [vec-arg]
                                  :fn negate-vec})
         s (#'ebo/add-overload s {:arg-specs [a-vec-arg]
