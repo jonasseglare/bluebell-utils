@@ -123,17 +123,46 @@
 (def validate-b false)
 
 (deftest check-fn-io-test
+  (is (spec/valid? ::utils/check-io-args [[]]))
+  (is (spec/valid? ::utils/check-io-args [[:in []]]))
+  (is (spec/valid? ::utils/check-io-args '[[:in [(number? a)]]]))
+  (is (spec/valid? ::utils/check-io-args '[[:in [(number? a)]
+                                            :out k []]]))
+  (is (spec/valid? ::utils/check-io-args '[[:in [(number? a)]
+                                            :out k [(number? k)]]]))
+
+  (is (spec/valid? ::utils/check-io-args '[[:in [(number? a)]
+                                            :out k [(number? k)]]
+                                           :some-body-goes-here]))
+  (is (spec/valid? ::utils/check-io-args '[[kattskit
+                                            :in [(number? a)]
+                                            :out k [(number? k)]]
+                                           :some-body-goes-here]))
+  
   (is (spec/valid?
-       ::utils/check-fn-io-args
-       '[[(number? b)]
-         :out x
-         [(number? x)]]))
+       ::utils/check-io-args
+       '[
+         
+         [
+          :in
+          [(number? b)]
+          :out x
+          [(number? x)]
+
+
+          ]
+
+
+         ]))
   (is (spec/valid?
-       ::utils/check-fn-io-args
-       '[k
-         [(number? b)]
-         :out x
-         [(number? x)]
+       ::utils/check-io-args
+       '[[k
+          :in
+          [(number? b)]
+          :out x
+          [(number? x)]
+          ]
+         
          :mjao 119]))
   (let [code (#'utils/generate-check [:s-expr '(number? :a)])]
     (is (thrown? Exception (eval code))))
@@ -141,6 +170,10 @@
     (is (nil? (eval code))))
   (is (= 17
          (let [a 14]
-           (check-io [(number? a)]
-                     :out k [(number? k)]
-                     (+ a 3))))))
+           (check-io [:in [(number? a)]
+                      :out k [(number? k)]]
+                     (+ a 3)))))
+  (is (thrown? Exception  (let [a :a]
+                            (check-io [:in [(number? a)]
+                                       :out k [(number? k)]]
+                                      (+ a 3))))))

@@ -497,15 +497,21 @@
                             :spec (spec/cat :spec keyword?
                                             :expr any?)))
 
-(spec/def ::checks (spec/spec (spec/* ::input-check)))
+(spec/def ::checks (spec/spec (spec/* ::check)))
 
 (spec/def ::check-io-args (spec/cat
-                           :flag (spec/? any?)
-                           :input-checks ::checks
-                           :out (spec/?
-                                 (spec/cat :prefix #{:out}
-                                           :symbol symbol?
-                                           :checks ::checks))
+                           :group
+                           (spec/spec
+                            (spec/cat
+                                    
+                             :flag (spec/? any?)
+                             :in (spec/?
+                                  (spec/cat :prefix #{:in}
+                                            :checks ::checks))
+                             :out (spec/?
+                                   (spec/cat :prefix #{:out}
+                                             :symbol symbol?
+                                             :checks ::checks))))
                            :body (spec/* any?)))
 
 (defn- generate-check [[check-type check-data]]
@@ -528,19 +534,20 @@
 (defmacro check-io
   "Alternative to pre post conditions"
   [& args]
-  (let [parsed (spec/conform ::check-fn-io-args args)]
+  (let [parsed (spec/conform ::check-io-args args)]
     (when (= parsed ::spec/invalid)
       (spec/explain ::check-io-args args)
       (throw (ex-info "Failed to parse args to check-fn-io"
                       {:args args})))
-    (let [{:keys [input-checks out
-                  output-checks body]} parsed
+    (let [{:keys [in out body]} parsed
           flag (if (contains? parsed :flag)
                  (:flag parsed)
-                 true)]
+                 true)
+          out-sym (or (:symbol out) (gensym "result"))]
       (if (eval flag)
         `(do
-           ~@(generate-checking-code input-checks)
-           (let [result# (do ~@body)]
-             result#))
+           ~@(generate-checking-code (:checks in))
+           (let [~out-sym (do ~@body)]
+             ~@(generate-checking-code (:checks out))
+             ~out-sym))
         `(do ~@body)))))
