@@ -1,8 +1,9 @@
 (ns bluebell.utils.core-test
   (:require [clojure.test :refer :all]
             [clojure.spec.test.alpha :as stest]
+            [clojure.spec.alpha :as spec]
             [bluebell.utils.traverse :as traverse]
-            [bluebell.utils.core :refer :all]))
+            [bluebell.utils.core :refer :all :as utils]))
 
 (stest/instrument)
 
@@ -109,3 +110,37 @@
   (is (= (indent-nested {:prefix "\n" :step "  "}
                         ["a" "b" ["c" [{:prefix "\n--->"} "kattskit" ["bra va?"]]]])
          "\na\nb\n  c\n--->kattskit\n--->  bra va?")))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Function IO validation
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def validate-a true)
+(def validate-b false)
+
+(deftest check-fn-io-test
+  (is (spec/valid?
+       ::utils/check-fn-io-args
+       '[[(number? b)]
+         :out x
+         [(number? x)]]))
+  (is (spec/valid?
+       ::utils/check-fn-io-args
+       '[k
+         [(number? b)]
+         :out x
+         [(number? x)]
+         :mjao 119]))
+  (let [code (#'utils/generate-check [:s-expr '(number? :a)])]
+    (is (thrown? Exception (eval code))))
+  (let [code (#'utils/generate-check [:s-expr '(number? 9)])]
+    (is (nil? (eval code))))
+  (is (= 17
+         (let [a 14]
+           (check-fn-io [(number? a)]
+                        :out k [(number? k)]
+                        (+ a 3))))))

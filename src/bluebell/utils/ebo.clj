@@ -85,5 +85,9 @@
                      ~(keyword (str *ns*) (name sym))]}
               ~value)))))
 
+(def arg-spec? (specutils/pred ::arg-spec))
+
+
+
 
 ;;;------- Common arg specs -------

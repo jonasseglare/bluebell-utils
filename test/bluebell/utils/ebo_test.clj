@@ -36,3 +36,9 @@
                      :desc "Any number"
                      :pos [9 3 1 -3 3/4]
                      :neg []})
+
+(deftest mummi-test
+  (is (:valid? mummi))
+  (is (arg-spec? mummi))
+  (is (= (-> mummi :key)
+         [::ebo/def-arg-spec ::mummi])))

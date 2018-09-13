@@ -485,3 +485,61 @@
   (reduce into [] [(subvec v 0 index)
                    extra
                    (subvec v index)]))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Function IO validation
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(spec/def ::check (spec/alt :s-expr seq?
+                            :spec (spec/cat :spec keyword?
+                                            :expr any?)))
+
+(spec/def ::checks (spec/spec (spec/* ::input-check)))
+
+(spec/def ::check-fn-io-args (spec/cat
+                              :flag (spec/? any?)
+                              :input-checks ::checks
+                              :output-prefix #{:out}
+                              :output-symbol symbol?
+                              :output-checks ::checks
+                              :body (spec/* any?)))
+
+(defn- generate-check [[check-type check-data]]
+  (case check-type
+    :s-expr `(if (not ~check-data)
+               (throw (ex-info "Check failed"
+                               {:expr (quote ~check-data)})))
+    :spec `(if (not (spec/valid? ~(:spec check-data)
+                                 ~(:expr check-data)))
+             (throw (ex-info "Spec check failed"
+                             {:expr (quote ~check-data)
+                              :explanation
+                              (spec/explain-data
+                               ~(:spec check-data)
+                               ~(:expr check-data))})))))
+
+(defn- generate-checking-code [checks]
+  (map generate-check checks))
+
+(defmacro check-fn-io
+  "Alternative to pre post conditions"
+  [& args]
+  (let [parsed (spec/conform ::check-fn-io-args args)]
+    (when (= parsed ::spec/invalid)
+      (spec/explain ::check-fn-io-args args)
+      (throw (ex-info "Failed to parse args to check-fn-io"
+                      {:args args})))
+    (let [{:keys [input-checks output-symbol
+                  output-checks body]} parsed
+          flag (if (contains? parsed :flag)
+                 (:flag parsed)
+                 true)]
+      (if (eval flag)
+        `(do
+           ~@(generate-checking-code input-checks)
+           (let [result# (do ~@body)]
+             result#))
+        `(do ~@body)))))
