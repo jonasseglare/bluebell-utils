@@ -304,6 +304,10 @@
                     coll-arg b]
   (concat a b))
 
+(def-overload plus [coll-arg a
+                    any-arg b]
+  (conj a b))
+
 (def-overload plus [map-arg a
                     map-arg b]
   (merge a b))
@@ -311,6 +315,7 @@
 (deftest predef-arg-test
   (is (= 0 (plus)))
   (is (= 7 (plus 3 4)))
+  (is (= [:a :b :c] (plus [:a :b] :c)))
   (is (= [:a :b 4] (plus [:a :b] [4])))
   (is (= {:a 3 :b 4} (plus {:a 3} {:b 4})))
   (is (= "kycklinglever" (plus "kyckling" "lever"))))
@@ -353,3 +358,21 @@
   (is (matches-arg-spec? number-or-keyword-arg :a))
   (is (matches-arg-spec? number-or-keyword-arg 9))
   (is (not (matches-arg-spec? number-or-keyword-arg []))))
+
+(def-arg-spec second-is-number {:pred (fn [x] (and (vector? x)
+                                                   (number? (second x))))
+                                :pos [[nil 1] [:a 3]]
+                                :neg [[nil :a]]})
+
+(def-arg-spec first-is-number {:pred (fn [x] (and (vector? x)
+                                                   (number? (first x))))
+                                :pos [[1] [3 :a]]
+                               :neg [[nil :a]]})
+
+(def imp (ops/implies first-is-number second-is-number))
+
+(deftest implies-test
+  (is (matches-arg-spec? imp [3 4]))
+  (is (matches-arg-spec? imp [nil 4]))
+  (is (matches-arg-spec? imp [nil :a]))
+  (is (not (matches-arg-spec? imp [3 :a]))))

@@ -297,8 +297,7 @@
 (defn- reset-state [state]
   (init-overload-state (:name state)))
 
-(def common-samples #{[] {} #{} "asdf" nil 9 :a 'a
-                      (constantly true)})
+(def common-samples #{[] {} #{} "asdf" nil 9 :a 'a identity})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
