@@ -505,28 +505,25 @@
                             (spec/cat
                                     
                              :flag (spec/? any?)
-                             :in (spec/?
-                                  (spec/cat :prefix #{:in}
+                             :pre (spec/?
+                                  (spec/cat :prefix #{:pre}
                                             :checks ::checks))
-                             :out (spec/?
-                                   (spec/cat :prefix #{:out}
+                             :post (spec/?
+                                   (spec/cat :prefix #{:post}
                                              :symbol symbol?
                                              :checks ::checks))))
                            :body (spec/* any?)))
 
 (defn- generate-check [[check-type check-data]]
   (case check-type
-    :s-expr `(if (not ~check-data)
-               (throw (ex-info "Check failed"
-                               {:expr (quote ~check-data)})))
-    :spec `(if (not (spec/valid? ~(:spec check-data)
-                                 ~(:expr check-data)))
-             (throw (ex-info "Spec check failed"
-                             {:expr (quote ~check-data)
-                              :explanation
-                              (spec/explain-data
-                               ~(:spec check-data)
-                               ~(:expr check-data))})))))
+    :s-expr `(assert ~check-data)
+    :spec `(assert (spec/valid? ~(:spec check-data)
+                                ~(:expr check-data))
+                   {:expr (quote ~check-data)
+                    :explanation
+                    (spec/explain-data
+                     ~(:spec check-data)
+                     ~(:expr check-data))})))
 
 (defn- generate-checking-code [checks]
   (map generate-check checks))
@@ -539,10 +536,12 @@
       (spec/explain ::check-io-args args)
       (throw (ex-info "Failed to parse args to check-fn-io"
                       {:args args})))
-    (let [{:keys [in out body]} parsed
-          flag (if (contains? parsed :flag)
-                 (:flag parsed)
+    (let [{:keys [group body]} parsed
+          flag (if (contains? group :flag)
+                 (:flag group)
                  true)
+          in (:pre group)
+          out (:post group)
           out-sym (or (:symbol out) (gensym "result"))]
       (if (eval flag)
         `(do
