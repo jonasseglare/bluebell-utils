@@ -133,12 +133,16 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (spec/def ::complex-arg (spec/cat :prefix #{:complex}
-                                  :real number?
-                                  :imag number?))
+                                  :real any?
+                                  :imag any?))
 
 
 
 ;;;------- The arg types -------
+(def-arg-spec any-arg {:pred (constantly true)
+                       :pos [nil false true {} []]
+                       :neg []})
+
 (def-arg-spec number-arg {:pred number?
                           :pos [1]
                           :neg []})
@@ -157,9 +161,11 @@
                            :pos [[:complex 3.4 7.0]]})
 
 
-
 ;;;------- The overloads -------
 (declare-overload abs)
+
+(def-overload abs [any-arg x]
+  [:undefined-abs x])
 
 (def-overload abs [number-arg x]
   (Math/abs x))
@@ -180,4 +186,43 @@
   (is (= 3 (abs 3)))
   (is (= [3 4] (abs [3 -4])))
   (is (= [3 [[[4]]]] (abs [3 [[[-4]]]])))
-  (is (= [3 [[[5.0]]]] (abs [3 [[[[:complex 3 4]]]]]))))
+  (is (= [3 [[[5.0]]]] (abs [3 [[[[:complex 3 4]]]]])))
+  (is (= [3 4 [:undefined-abs :a]]
+         (abs [-3 4 :a]))))
+
+(deftest meta-abs-test
+  (is (set? (samples abs)))
+  (is (= #{1} (arities abs))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Generic add
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(declare-overload add)
+
+(def-overload add [number-arg a
+                   number-arg b]
+  (+ a b))
+
+(def-overload add [complex-arg [_ a-re a-im]
+                   complex-arg [_ b-re b-im]]
+  [:complex (add a-re b-re) (add a-im b-im)])
+
+(def-overload add [vector-arg v
+                   any-arg x]
+  (mapv (partial add x) v))
+
+(def-overload add [vector-arg a
+                   vector-arg b]
+  (mapv add a b))
+
+(deftest generic-add-test
+  (is (= 7 (add 3 4)))
+  (is (= [:complex 30 20]
+         (add [:complex 10 5]
+              [:complex 20 15])))
+  (is (= (add [1 2 3] 10)
+         [11 12 13])))

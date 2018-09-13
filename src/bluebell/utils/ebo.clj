@@ -220,10 +220,10 @@
 
 (defn- matches? [arg-specs arg-list args]
   {:pre [(= (count arg-list) (count args))]}
-  (some identity
-        (map (fn [arg-spec-key arg]
-               (let [arg-spec (get arg-specs arg-spec-key)]
-                 ((:pred arg-spec) arg))) arg-list args)))
+  (every? identity
+          (map (fn [arg-spec-key arg]
+                 (let [arg-spec (get arg-specs arg-spec-key)]
+                   ((:pred arg-spec) arg))) arg-list args)))
 
 (defn- list-pareto-elements [state overloads args]
   (let [arg-specs (:arg-specs state)]
@@ -271,6 +271,7 @@
                                 add-overload
                                 (second args))
                          true)
+      ::get-state (deref state-atom)
       false)))
 
 (defn perform-evaluation [state-atom args]
@@ -323,7 +324,7 @@
 
 ;;;------- Overload -------
 (defmacro declare-overload [sym]
-  `(def ~sym (make-overload-fn (quote ~sym))))
+  `(defonce ~sym (make-overload-fn (quote ~sym))))
 
 (defmacro def-overload [sym arg-list & body]
   {:pre [(symbol? sym)]}
@@ -337,6 +338,19 @@
          :fn (fn [~@(mapv :binding p)]
                ~@body)}))))
 
+;; Extra helper functions
+
+(defn samples [overload-fn]
+  {:pre [(fn? overload-fn)]}
+  (:samples (overload-fn ::get-state)))
+
+(defn arities [overload-fn]
+  {:pre [(fn? overload-fn)]}
+  (-> ::get-state
+      overload-fn
+      :overloads
+      keys
+      set))
 
 ;;;------- Misc -------
 (defn check-valid [arg-spec]
