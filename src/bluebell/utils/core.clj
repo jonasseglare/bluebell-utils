@@ -519,11 +519,13 @@
     :s-expr `(assert ~check-data)
     :spec `(assert (spec/valid? ~(:spec check-data)
                                 ~(:expr check-data))
-                   {:expr (quote ~check-data)
-                    :explanation
-                    (spec/explain-data
-                     ~(:spec check-data)
-                     ~(:expr check-data))})))
+                   (do
+                     (println
+                      (str "In '" (quote ~check-data) "':"
+                           (spec/explain-str
+                            ~(:spec check-data)
+                            ~(:expr check-data))))
+                     (quote ~check-data)))))
 
 (defn- generate-checking-code [checks]
   (map generate-check checks))

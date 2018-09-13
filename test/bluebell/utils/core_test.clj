@@ -183,6 +183,7 @@
                                       :kattskit))))
   (is (= :a (check-io [:post k []] :a)))
   (is (= :a (check-io [true] :a)))
+  (is (= :a (check-io [] :a)))
   (is (= :a (check-io [:post k [(keyword? k)]] :a)))
   (is (thrown? Throwable (check-io [:post k [(keyword? k)]] 119)))
   (is (= 119 (check-io [validate-b?
