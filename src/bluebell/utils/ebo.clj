@@ -345,8 +345,8 @@
                     (filter (complement pred) samples))))))))
 
 (defn arg-spec-samples [arg-spec]
-  (reduce into [(:pos arg-spec)
-                (:neg arg-spec)]))
+  (reduce into [] [(:pos arg-spec)
+                   (:neg arg-spec)]))
 
 (defn pred [pred-fn]
   "Easy construction of an arg-spec. This should only be used for very common values, because it just uses a default set of sample values"
