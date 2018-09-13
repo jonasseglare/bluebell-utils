@@ -44,6 +44,10 @@
 (spec/def ::fn fn?)
 (spec/def ::overload (spec/keys :req-un [::arg-specs ::fn]))
 
+(spec/def ::def-overload-arg-list (spec/*
+                                   (spec/cat :arg-spec any?
+                                             :binding any?)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Impl
@@ -147,7 +151,6 @@
     :default :disjoint))
 
 (defn- rebuild-arg-spec-comparisons [state]
-  (assert (false? (:dirty? state)))
   (let [arg-specs (:arg-specs state)]
     (assert (map? arg-specs))
     (assoc
@@ -248,6 +251,7 @@
       :default (first e))))
 
 (defn- resolve-overload [state args]
+  {:pre [(not (:dirty? state))]}
   (let [arity (count args)
         overloads (:overloads state)]
     (if-let [m (get overloads arity)]
@@ -255,6 +259,32 @@
       (throw (ex-info "No overload for this arity"
                       {:symbol (:name state)
                        :arity arity})))))
+
+(defn- evaluate-overload [state args]
+  (let [[arg-spec-keys f] (resolve-overload state args)]
+    (apply f args)))
+
+(defn perform-special-op [state-atom args]
+  (let [f (first args)]
+    (case f
+      ::add-overload (do (swap! state-atom
+                                add-overload
+                                (second args))
+                         true)
+      false)))
+
+(defn perform-evaluation [state-atom args]
+  (let [state (deref state-atom)
+        state (if (:dirty? state)
+                (swap! state-atom rebuild-all)
+                state)]
+    (evaluate-overload state args)))
+
+(defn make-overload-fn [sym]
+  (let [state-atom (atom (init-overload-state sym))]
+    (fn [& args]
+      (or (perform-special-op state-atom args)
+          (perform-evaluation state-atom args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -292,8 +322,20 @@
 
 
 ;;;------- Overload -------
+(defmacro declare-overload [sym]
+  `(def ~sym (make-overload-fn (quote ~sym))))
 
-
+(defmacro def-overload [sym arg-list & body]
+  {:pre [(symbol? sym)]}
+  (let [p (spec/conform ::def-overload-arg-list arg-list)]
+    (if (= p ::spec/invalid)
+      (throw (ex-info
+              "Bad def-overload arg list"
+              {}))
+      `(~sym ::add-overload
+        {:arg-specs ~(mapv :arg-spec p)
+         :fn (fn [~@(mapv :binding p)]
+               ~@body)}))))
 
 
 ;;;------- Misc -------

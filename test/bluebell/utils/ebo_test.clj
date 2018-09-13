@@ -52,6 +52,10 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-arg-spec num-arg {:pred number?
+                       :pos [3 4 3.4]
+                       :neg [:a]})
+
 (def-arg-spec vec-arg {:pred vector?
                        :pos [ [] ]
                        :neg [ :a ]})
@@ -64,6 +68,17 @@
 (defn negate-vec [v] (mapv - v))
 (defn negate-a-vec  [[a & rf]]
   (into [a] (mapv - rf)))
+
+(declare-overload my-negate)
+
+(def-overload my-negate [vec-arg x]
+  (negate-vec x))
+
+(def-overload my-negate [a-vec-arg x]
+  (negate-a-vec x))
+
+(def-overload my-negate [num-arg x]
+  (- x))
 
 (deftest overload-state-test
   (let [s (#'ebo/init-overload-state 'kattskit)
@@ -107,7 +122,9 @@
                            s2 [[:a 3]])]
         (is (= arg-specs [(:key a-vec-arg)]))
         (is (= [:a -119] (f [:a 119]))))
-      (is (thrown? Exception (#'ebo/resolve-overload s2 [{}]))))))
+      (is (thrown? Exception (#'ebo/resolve-overload s2 [{}])))
+      (is (= [-3 -4]
+             (#'ebo/evaluate-overload s2 [[3 4]]))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,19 +132,52 @@
 ;;;  Complex example
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(spec/def ::complex-arg (spec/cat :prefix #{:complex}
+                                  :real number?
+                                  :imag number?))
+
+
+
+;;;------- The arg types -------
 (def-arg-spec number-arg {:pred number?
                           :pos [1]
                           :neg []})
+
+(def-arg-spec neg-number-arg {:pred (fn [x]
+                                      (and (number? x)
+                                           (< x 0)))
+                              :pos [-3 -4 -1]
+                              :neg [3 4 :a 0]})
 
 (def-arg-spec vector-arg {:pred vector?
                           :pos [[]]})
 
 
-(spec/def ::complex-arg (spec/cat :prefix #{:complex}
-                                  :real number?
-                                  :imag number?))
-
 (def-arg-spec complex-arg {:spec ::complex-arg
                            :pos [[:complex 3.4 7.0]]})
 
 
+
+;;;------- The overloads -------
+(declare-overload abs)
+
+(def-overload abs [number-arg x]
+  (Math/abs x))
+
+(def-overload abs [neg-number-arg x]
+  (- x))
+
+(def-overload abs [vector-arg x]
+  (mapv abs x))
+
+(def-overload abs [complex-arg [_ re im]]
+  (Math/sqrt (+ (* re re)
+                (* im im))))
+
+;;;------- Tests -------
+(deftest my-abs-test
+  (is (= 3 (abs -3)))
+  (is (= 3 (abs 3)))
+  (is (= [3 4] (abs [3 -4])))
+  (is (= [3 [[[4]]]] (abs [3 [[[-4]]]])))
+  (is (= [3 [[[5.0]]]] (abs [3 [[[[:complex 3 4]]]]]))))
