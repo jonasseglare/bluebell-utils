@@ -5,8 +5,7 @@
             [clojure.core :as c]
             [bluebell.utils.pareto :as pareto]
             [bluebell.utils.core :as utils]
-            [clojure.set :as cljset])
-  (:refer-clojure :exclude [and or not]))
+            [clojure.set :as cljset]))
 
 (declare filter-positive)
 (declare check-valid)
@@ -22,7 +21,7 @@
 (spec/def ::pred fn?)
 (spec/def ::key any?)
 (spec/def ::desc string?)
-(spec/def ::spec #(c/or (spec/spec? %)
+(spec/def ::spec #(or (spec/spec? %)
                         (keyword? %)))
 (spec/def ::valid? boolean?)
 
@@ -73,7 +72,7 @@
         pos-failures (filter (complement pred)
                              (:pos arg-spec))
         neg-failures (filter pred (:neg arg-spec))]
-    (if (c/and (empty? pos-failures)
+    (if (and (empty? pos-failures)
                (empty? neg-failures))
       (assoc arg-spec :valid? true)
       (merge arg-spec
@@ -186,8 +185,8 @@
   (if (= (count a) (count b))
     (let [cmps (:arg-spec-comparisons state)
           pairs (set (map (comp (partial get cmps) vector) a b))]
-      (c/and (contains? pairs :subset)
-             (c/not (contains? pairs :superset))))
+      (and (contains? pairs :subset)
+             (not (contains? pairs :superset))))
     false))
 
 (defn- compute-overload-dominates? [state]
@@ -258,7 +257,7 @@
       :default (first e))))
 
 (defn- resolve-overload [state args]
-  {:pre [(c/not (:dirty? state))]}
+  {:pre [(not (:dirty? state))]}
   (let [arity (count args)
         overloads (:overloads state)]
     (if-let [m (get overloads arity)]
@@ -292,7 +291,7 @@
 (defn make-overload-fn [sym]
   (let [state-atom (atom (init-overload-state sym))]
     (fn [& args]
-      (c/or (perform-special-op state-atom args)
+      (or (perform-special-op state-atom args)
             (perform-evaluation state-atom args)))))
 
 (defn- reset-state [state]
@@ -352,7 +351,7 @@
 (defmacro def-overload [sym arg-list & body]
   {:pre [(symbol? sym)]}
   (let [p (spec/conform ::def-overload-arg-list arg-list)]
-    (if (= p ::spec/invalid)
+    (if (= p ::speinvalid)
       (throw (ex-info
               "Bad def-overload arg list"
               {}))
@@ -382,7 +381,7 @@
 ;;;------- Misc -------
 (defn check-valid [arg-spec]
   {:pre [(spec/valid? ::arg-spec arg-spec)]}
-  (when (c/not (:valid? arg-spec))
+  (when (not (:valid? arg-spec))
     (throw (ex-info
             (str "Invalid arg-spec '" (:desc arg-spec) "'")
             arg-spec)))
@@ -411,6 +410,6 @@
 
 (def-arg-spec map-arg (pred map?))
 
-(def-arg-spec empty-arg (pred (fn [x] (c/and (coll? x)
+(def-arg-spec empty-arg (pred (fn [x] (and (coll? x)
                                              (empty? x)))))
 
