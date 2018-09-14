@@ -162,11 +162,11 @@
 
 (def-dispatch add [complex-arg [_ a b]
                    any-arg x]
-  [_ (add a x) b])
+  [:complex (add a x) b])
 
 (def-dispatch add [any-arg x
                    complex-arg [_ a b]]
-  [_ (add a x) b])
+  [:complex (add a x) b])
 
 (def-dispatch add [seq-arg x
                    complex-arg y]

@@ -9,14 +9,14 @@
 (defn sqr [x] (* x x))
 
 (defmethod abs :complex [x]
-  (Math/abs (+ (sqr (:real x))
-               (sqr (:imag x)))))
+  (Math/sqrt (+ (sqr (:real x))
+                (sqr (:imag x)))))
 
-(abs {:type :number :value -119})
+(abs {:type :real :value -119})
 ;; => 119
 
 (abs {:type :complex :real 3 :imag -4})
-;; => 25
+;; => 5.0
 
 ;(abs 3)
 
