@@ -115,8 +115,14 @@
 (def some-sample-values [ :a 3 4 [:a :b] [1] [] [:complex 3 4] [:complex 5 12] [:complex 0 1] :a])
 
 (filter vector? some-sample-values)
+;; => ([:a :b] [1] [] [:complex 3 4] [:complex 5 12] [:complex 0 1])
 
 (filter complex? some-sample-values)
+;; => ([:complex 3 4] [:complex 5 12] [:complex 0 1])
+
+(clojure.set/subset? (set (filter complex? some-sample-values))
+                     (set (filter vector? some-sample-values)))
+;; => true
 
 
 
