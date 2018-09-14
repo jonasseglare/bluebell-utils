@@ -281,7 +281,8 @@
     (cond
       (= 0 (count e)) (throw (ex-info "No overload found"
                                       {:name (:name state)
-                                       :arity (count args)}))
+                                       :arity (dec (count args))
+                                       :args (butlast args)}))
       (< 1 (count e)) (throw (ex-info
                               (render-ambiguous-overload-message
                                (:name state) e)
@@ -296,7 +297,7 @@
       (resolve-overload-for-arity state m args)
       (throw (ex-info "No overload for this arity"
                       {:symbol (:name state)
-                       :arity arity})))))
+                       :arity (dec arity)})))))
 
 (defn- extend-args-with-joint [args0]
   (let [args (vec args0)]
