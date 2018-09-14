@@ -8,6 +8,7 @@
             [clojure.set :as cljset]))
 
 (declare filter-positive)
+(declare any-arg)
 (declare check-valid-arg-spec)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,12 +125,16 @@
 (defn- add-arg-specs [state arg-specs]
   (reduce add-arg-spec state arg-specs))
 
+(defn- extend-arg-specs-with-joint [overload]
+  (conj (vec (:arg-specs overload))
+        (or (:joint overload)
+            any-arg)))
+
 (defn- add-overload [state overload]
   (utils/check-io
    [:pre [(map? state)
           ::overload overload]]
-
-   (let [arg-specs (:arg-specs overload)]
+   (let [arg-specs (extend-arg-specs-with-joint overload)]
      (-> state
          mark-dirty
          (add-arg-specs arg-specs)
@@ -275,8 +280,13 @@
                       {:symbol (:name state)
                        :arity arity})))))
 
+(defn- extend-args-with-joint [args0]
+  (let [args (vec args0)]
+    (conj args args)))
+
 (defn- evaluate-overload [state args]
-  (let [[arg-spec-keys overload] (resolve-overload state args)]
+  (let [[arg-spec-keys overload] (resolve-overload
+                                  state (extend-args-with-joint args))]
     (apply (:fn overload) args)))
 
 (defn- perform-special-op [state-atom args]
@@ -417,11 +427,12 @@
 
 (defn arities [overload-fn]
   {:pre [(fn? overload-fn)]}
-  (-> ::get-state
-      overload-fn
-      :overloads
-      keys
-      set))
+  (->> ::get-state
+       overload-fn
+       :overloads
+       keys
+       (map dec)
+       set))
 
 (defn reset-overloads! [overload-fn]
   {:pre [(fn? overload-fn)]}
@@ -438,3 +449,6 @@
     (println "Warning: No posiive samples for "
              (:key arg-spec)))
   arg-spec)
+
+(def-arg-spec any-arg (pred any?))
+
