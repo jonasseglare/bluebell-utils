@@ -107,7 +107,7 @@
     :arg-specs {}
     :overloads {}}))
 
-(defn state-arg-specs [state]
+(defn- state-arg-specs [state]
   (-> state
       :arg-specs
       vals
