@@ -67,6 +67,16 @@
 (abs [:complex -3 -4])
 ;; => 5.0
 
+
+(abs [-3 -4 -5])
+;; => [3 4 5]
+
+(print-arg-spec-comparison (samples abs)
+                           [complex-arg
+                            seq-arg])
+
+
+
 (abs [[:complex 12 5]
       3
       [[[[[-3 [:complex 2 -4]]]]]]
@@ -116,4 +126,55 @@
 
 
 
+(def-arg-spec anything {:pred (constantly true)
+                        :pos [1 2 3 :a {} nil]
+                        :neg []})
+
+(declare-dispatch add)
+
+(def-dispatch add [number-arg a
+                   number-arg b]
+  (+ a b))
+
+(add 3 4)
+;; => 7
+
+(def-dispatch add [seq-arg a
+                   any-arg b]
+  (mapv (partial add b) a))
+
+(add [1 2 3] 4)
+;; => [5 6 7]
+
+(def-dispatch add [seq-arg a
+                   seq-arg b]
+  (mapv add a b))
+
+(add [1 2 3] [10 20 30])
+;; => [11 22 33]
+
+(def-dispatch add [complex-arg [_ a b]
+                   complex-arg [_ x y]]
+  [:complex (add a x) (add b y)])
+
+(add [:complex 3 4] [:complex 30 40])
+;; => [:complex 33 44]
+
+(def-dispatch add [complex-arg [_ a b]
+                   any-arg x]
+  [_ (add a x) b])
+
+(def-dispatch add [any-arg x
+                   complex-arg [_ a b]]
+  [_ (add a x) b])
+
+(def-dispatch add [seq-arg x
+                   complex-arg y]
+  (mapv (partial add y) x))
+
+(add [:complex 3 4] 110)
+;; => [:complex 113 4]
+
+(add [1 2 3 4] [:complex 3 4])
+;; => [[:complex 4 4] [:complex 5 4] [:complex 6 4] [:complex 7 4]]
 
