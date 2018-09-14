@@ -42,16 +42,18 @@
 
 (spec/def ::arg-specs (spec/coll-of ::arg-spec))
 (spec/def ::fn fn?)
-(spec/def ::overload (spec/keys :req-un [::arg-specs ::fn]))
+(spec/def ::joint ::arg-spec)
+(spec/def ::overload (spec/keys :req-un [::arg-specs ::fn]
+                                :opt-un [::joint]))
 
 (spec/def ::arg-binding (spec/cat :arg-spec any?
                                   :binding any?))
 
-(spec/def ::joint (spec/cat :prefix #{:joint}
-                            :arg-spec any?))
+(spec/def ::joint-binding (spec/cat :prefix #{:joint}
+                                    :arg-spec any?))
 
 (spec/def ::def-dispatch-arg-list
-  (spec/* (spec/alt :joint ::joint
+  (spec/* (spec/alt :joint ::joint-binding
                     :arg-binding ::arg-binding)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +135,7 @@
          (add-arg-specs arg-specs)
          (assoc-in [:overloads (count arg-specs)
                     (mapv :key arg-specs)]
-                   (:fn overload))))))
+                   overload)))))
 
 (defn- rebuild-arg-spec-samples [state]
   (let [samples (:samples state)]
@@ -225,8 +227,8 @@
 (defn- dominates? [lookup-table
                    [a-args a-fn]
                    [b-args b-fn]]
-  {:pre [(fn? a-fn)
-         (fn? b-fn)]}
+  {:pre [(spec/valid? ::overload a-fn)
+         (spec/valid? ::overload b-fn)]}
   (let [value (get lookup-table [a-args b-args])]
     (assert (boolean? value))
     value))
@@ -274,8 +276,8 @@
                        :arity arity})))))
 
 (defn- evaluate-overload [state args]
-  (let [[arg-spec-keys f] (resolve-overload state args)]
-    (apply f args)))
+  (let [[arg-spec-keys overload] (resolve-overload state args)]
+    (apply (:fn overload) args)))
 
 (defn- perform-special-op [state-atom args]
   (let [f (first args)]
@@ -399,9 +401,13 @@
               "Bad def-dispatch arg list"
               {}))
       `(~sym ::add-overload
-        {:arg-specs ~(mapv :arg-spec function-args)
-         :fn (fn [~@(mapv :binding function-args)]
-               ~@body)}))))
+        (merge
+         {:arg-specs ~(mapv :arg-spec function-args)
+          :fn (fn [~@(mapv :binding function-args)]
+                ~@body)}
+         ~(if-let [j (-> all-parsed-args :joint first :arg-spec)]
+            {:joint j}
+            {}))))))
 
 ;; Extra helper functions
 

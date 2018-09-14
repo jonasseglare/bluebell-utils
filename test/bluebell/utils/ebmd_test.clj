@@ -97,7 +97,7 @@
     (is (= 1 (count (:arg-specs s))))
     (is (= 1 (count (:overloads s))))
     (is (= [(:key mummi)] (-> s :overloads (get 1) keys first)))
-    (is (fn? (-> s :overloads (get 1) vals first))))
+    (is (fn? (-> s :overloads (get 1) vals first :fn))))
   (let [s (#'ebmd/init-overload-state 'negate #{})
         s (#'ebmd/add-overload s {:arg-specs [vec-arg]
                                  :fn negate-vec})
@@ -117,12 +117,14 @@
       (is (= 4 (count cmps)))
       (is (every?  #{:subset :superset :equal :disjoint}
                    (vals cmps)))
-      (let [[arg-specs f] (#'ebmd/resolve-overload
-                           s2 [[1 2 3]])]
+      (let [[arg-specs ov] (#'ebmd/resolve-overload
+                            s2 [[1 2 3]])
+            f (:fn ov)]
         (is (= arg-specs [(:key vec-arg)]))
         (is (= [-3 -4] (f [3 4]))))
-      (let [[arg-specs f] (#'ebmd/resolve-overload
-                           s2 [[:a 3]])]
+      (let [[arg-specs ov] (#'ebmd/resolve-overload
+                            s2 [[:a 3]])
+            f (:fn ov)]
         (is (= arg-specs [(:key a-vec-arg)]))
         (is (= [:a -119] (f [:a 119]))))
       (is (thrown? Exception (#'ebmd/resolve-overload s2 [{}])))
@@ -381,33 +383,31 @@
 
 
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
-;;;  Produce code for the repl example
+;;;  Joint arguments
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; https://emacs.stackexchange.com/questions/36112/is-it-possible-on-cider-to-eval-on-a-repl-and-print-as-a-comment-every-evaluatio
 
-(comment
-  
-  (def-arg-spec numeric-argument {:pred number?
-                                  :pos [1 2 3 -4 3/4]
-                                  :neg [nil {} #{} []]})
-  
-  
-  (def-arg-spec seq-argument {:pred sequential?
-                              :pos [[] [:a :b] '(3 4)]
-                              :neg [#{} {}]})
-  
-  (def-arg-spec complex-argument {:pred (fn [x]
-                                          (and (sequential? x)
-                                               (= :complex (first x))))
-                                  :pos [[:complex 3 4]]
-                                  :neg [[] :a :b]})
+(declare-dispatch make-span)
+
+(def-dispatch make-span [type/number a
+                         type/number b]
+  [a b])
 
 
-  ;; C-u C-x C-e
-  
+(def-arg-spec reversed {:pred (fn [x]
+                                (and (vector? x)
+                                     (let [[a b] x]
+                                       (and (number? a)
+                                            (number? b)
+                                            (< b a)))))
+                        :pos [[3 2] [9 7]]
+                        :neg [[0 1] [0 0]]})
 
+(def-dispatch make-span [type/number a
+                         type/number b
 
-  )
+                         :joint reversed]
+  (make-span b a))
