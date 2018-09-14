@@ -5,10 +5,6 @@
 
 ;; First some arg-specs
 
-(def-arg-spec anything {:pred (constantly true)
-                        :pos [1 2 :a "asdf" {} #{:a} [] nil]
-                        :neg []})
-
 (def-arg-spec number-arg {:pred number?
                           :pos [3 4 -34 -30.4]
                           :neg [:a "asdf"]})
