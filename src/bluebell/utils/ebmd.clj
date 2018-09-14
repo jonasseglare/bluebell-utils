@@ -44,9 +44,15 @@
 (spec/def ::fn fn?)
 (spec/def ::overload (spec/keys :req-un [::arg-specs ::fn]))
 
-(spec/def ::def-dispatch-arg-list (spec/*
-                                   (spec/cat :arg-spec any?
-                                             :binding any?)))
+(spec/def ::arg-binding (spec/cat :arg-spec any?
+                                  :binding any?))
+
+(spec/def ::joint (spec/cat :prefix #{:joint}
+                            :arg-spec any?))
+
+(spec/def ::def-dispatch-arg-list
+  (spec/* (spec/alt :joint ::joint
+                    :arg-binding ::arg-binding)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -385,14 +391,16 @@
 
 (defmacro def-dispatch [sym arg-list & body]
   {:pre [(symbol? sym)]}
-  (let [p (spec/conform ::def-dispatch-arg-list arg-list)]
+  (let [p (spec/conform ::def-dispatch-arg-list arg-list)
+        all-parsed-args (utils/categorize-tuples p)
+        function-args (:arg-binding all-parsed-args)]
     (if (= p ::spec/invalid)
       (throw (ex-info
               "Bad def-dispatch arg list"
               {}))
       `(~sym ::add-overload
-        {:arg-specs ~(mapv :arg-spec p)
-         :fn (fn [~@(mapv :binding p)]
+        {:arg-specs ~(mapv :arg-spec function-args)
+         :fn (fn [~@(mapv :binding function-args)]
                ~@body)}))))
 
 ;; Extra helper functions

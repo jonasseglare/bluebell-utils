@@ -153,10 +153,19 @@
 (defmacro macro-eval [code]
   (eval code))
 
-(defn conj-map [dst key x]
+(defn conj-map
+  "Conjoins an item into a vector at key in the map dst"
+  [dst key x]
   (if (contains? dst key)
     (update-in dst [key] #(conj % x))
     (assoc dst key [x])))
+
+(defn categorize-tuples [tuples]
+  (reduce
+   (fn [dst [k v]]
+     (conj-map dst k v))
+   {}
+   tuples))
 
 
 ;;;;;;; Main
