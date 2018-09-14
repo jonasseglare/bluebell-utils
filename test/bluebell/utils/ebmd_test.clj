@@ -1,6 +1,7 @@
 (ns bluebell.utils.ebmd-test
   (:require [bluebell.utils.ebmd :refer :all :as ebmd]
             [bluebell.utils.ebmd.ops :as ops]
+            [bluebell.utils.ebmd.type :as type]
             [clojure.test :refer :all]
             [bluebell.utils.specutils :as specutils]
             [clojure.spec.alpha :as spec]
@@ -71,15 +72,15 @@
 (defn negate-a-vec  [[a & rf]]
   (into [a] (mapv - rf)))
 
-(declare-overload my-negate)
+(declare-dispatch my-negate)
 
-(def-overload my-negate [vec-arg x]
+(def-dispatch my-negate [vec-arg x]
   (negate-vec x))
 
-(def-overload my-negate [a-vec-arg x]
+(def-dispatch my-negate [a-vec-arg x]
   (negate-a-vec x))
 
-(def-overload my-negate [num-arg x]
+(def-dispatch my-negate [num-arg x]
   (- x))
 
 (deftest overload-state-test
@@ -164,18 +165,18 @@
 
 
 ;;;------- The overloads -------
-(declare-overload abs)
+(declare-dispatch abs)
 
-(def-overload abs [any-arg0 x]
+(def-dispatch abs [any-arg0 x]
   [:undefined-abs x])
 
-(def-overload abs [number-arg0 x]
+(def-dispatch abs [number-arg0 x]
   (Math/abs x))
 
-(def-overload abs [vector-arg0 x]
+(def-dispatch abs [vector-arg0 x]
   (mapv abs x))
 
-(def-overload abs [complex-arg0 [_ re im]]
+(def-dispatch abs [complex-arg0 [_ re im]]
   (Math/sqrt (+ (* re re)
                 (* im im))))
 
@@ -216,41 +217,41 @@
                          
                          :neg [[] 9 34]})
 
-(declare-overload add)
+(declare-dispatch add)
 
-(def-overload add [number-arg0 a
+(def-dispatch add [number-arg0 a
                    number-arg0 b]
   (+ a b))
 
-(def-overload add [complex-arg0 [_ a-re a-im]
+(def-dispatch add [complex-arg0 [_ a-re a-im]
                    complex-arg0 [_ b-re b-im]]
   [:complex (add a-re b-re) (add a-im b-im)])
 
-(def-overload add [complex-arg0 [_ re im]
+(def-dispatch add [complex-arg0 [_ re im]
                    imag-arg0 [_ x]]
   [:complex re (add im x)])
 
-(def-overload add [imag-arg0 [_ x]
+(def-dispatch add [imag-arg0 [_ x]
                    imag-arg0 [_ y]]
   [:imag (add x y)])
 
-(def-overload add [complex-arg0 [_ re im]
+(def-dispatch add [complex-arg0 [_ re im]
                    any-arg0 b]
   [:complex (add re b) im])
 
-(def-overload add [any-arg0 b
+(def-dispatch add [any-arg0 b
                    complex-arg0 [_ re im]]
   [:complex (add re b) im])
 
-(def-overload add [vector-arg0 v
+(def-dispatch add [vector-arg0 v
                    any-arg0 x]
   (mapv (partial add x) v))
 
-(def-overload add [vector-arg0 a
+(def-dispatch add [vector-arg0 a
                    vector-arg0 b]
   (mapv add a b))
 
-(def-overload add [any-arg0 a
+(def-dispatch add [any-arg0 a
                    vector-arg0 b]
   (add b a))
 
@@ -285,32 +286,32 @@
 ;;;  Test predefined arg specs
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-overload plus)
+(declare-dispatch plus)
 
-(def-overload plus []
+(def-dispatch plus []
   0)
 
-(def-overload plus [any-arg x]
+(def-dispatch plus [type/any x]
   x)
 
-(def-overload plus [any-arg a
-                    any-arg b]
+(def-dispatch plus [type/any a
+                    type/any b]
   (+ a b))
 
-(def-overload plus [string-arg a
-                    string-arg b]
+(def-dispatch plus [type/string a
+                    type/string b]
   (str a b))
 
-(def-overload plus [coll-arg a
-                    coll-arg b]
+(def-dispatch plus [type/coll a
+                    type/coll b]
   (concat a b))
 
-(def-overload plus [coll-arg a
-                    any-arg b]
+(def-dispatch plus [type/coll a
+                    type/any b]
   (conj a b))
 
-(def-overload plus [map-arg a
-                    map-arg b]
+(def-dispatch plus [type/map a
+                    type/map b]
   (merge a b))
 
 (deftest predef-arg-test
@@ -329,12 +330,12 @@
 ;;;  Ops test
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-overload sqr)
+(declare-dispatch sqr)
 
-(def-overload sqr [any-arg x]
+(def-dispatch sqr [type/any x]
   (* x x))
 
-(def-overload sqr [(ops/not number-arg) x]
+(def-dispatch sqr [(ops/not type/number) x]
   [:cannot-square x])
 
 (deftest not-op-test
@@ -345,12 +346,11 @@
                         :pos [0]
                         :neg [1 2 3]})
 
-(def denom-arg (ops/and number-arg
+(def denom-arg (ops/and type/number
                         (ops/not zero-arg)))
 
-(def number-or-keyword-arg (ops/or
-                            number-arg
-                            keyword-arg))
+(def number-or-keyword-arg (ops/or type/number
+                                   type/keyword))
 
 (deftest and-or-test
   (is (matches-arg-spec? denom-arg 3))

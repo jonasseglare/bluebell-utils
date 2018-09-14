@@ -44,7 +44,7 @@
 (spec/def ::fn fn?)
 (spec/def ::overload (spec/keys :req-un [::arg-specs ::fn]))
 
-(spec/def ::def-overload-arg-list (spec/*
+(spec/def ::def-dispatch-arg-list (spec/*
                                    (spec/cat :arg-spec any?
                                              :binding any?)))
 
@@ -376,19 +376,19 @@
    ((:pred arg-spec) x)))
 
 ;;;------- Overload -------
-(defmacro declare-overload
+(defmacro declare-dispatch
   ([sym initial-samples]
    `(defonce ~sym (make-overload-fn (quote ~sym)
                                     ~initial-samples)))
   ([sym]
    `(defonce ~sym (make-overload-fn (quote ~sym)))))
 
-(defmacro def-overload [sym arg-list & body]
+(defmacro def-dispatch [sym arg-list & body]
   {:pre [(symbol? sym)]}
-  (let [p (spec/conform ::def-overload-arg-list arg-list)]
+  (let [p (spec/conform ::def-dispatch-arg-list arg-list)]
     (if (= p ::spec/invalid)
       (throw (ex-info
-              "Bad def-overload arg list"
+              "Bad def-dispatch arg list"
               {}))
       `(~sym ::add-overload
         {:arg-specs ~(mapv :arg-spec p)
@@ -424,28 +424,3 @@
     (println "Warning: No posiive samples for "
              (:key arg-spec)))
   arg-spec)
-
-
-;;;------- Common arg types -------
-
-(def-arg-spec any-arg (pred (constantly true)))
-
-(def-arg-spec number-arg (pred number?))
-
-(def-arg-spec sequential-arg (pred sequential?))
-
-(def-arg-spec set-arg (pred set?))
-
-(def-arg-spec keyword-arg (pred keyword?))
-
-(def-arg-spec string-arg (pred string?))
-
-(def-arg-spec nil-arg (pred nil?))
-
-(def-arg-spec coll-arg (pred coll?))
-
-(def-arg-spec map-arg (pred map?))
-
-(def-arg-spec empty-arg (pred (fn [x] (and (coll? x)
-                                             (empty? x)))))
-
