@@ -1,4 +1,4 @@
-(ns bluebell.utils.ebo
+(ns bluebell.utils.ebmd
   "Example-based overloading"
   (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.specutils :as specutils]

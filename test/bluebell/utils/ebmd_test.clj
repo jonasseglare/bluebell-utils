@@ -1,6 +1,6 @@
-(ns bluebell.utils.ebo-test
-  (:require [bluebell.utils.ebo :refer :all :as ebo]
-            [bluebell.utils.ebo.ops :as ops]
+(ns bluebell.utils.ebmd-test
+  (:require [bluebell.utils.ebmd :refer :all :as ebmd]
+            [bluebell.utils.ebmd.ops :as ops]
             [clojure.test :refer :all]
             [bluebell.utils.specutils :as specutils]
             [clojure.spec.alpha :as spec]
@@ -11,12 +11,12 @@
 
 (deftest spec-test
   (is (spec/valid?
-       ::ebo/arg-spec
+       ::ebmd/arg-spec
        (normalize-arg-spec {:pred number?
                             :key :number
                             :pos [] :neg[]})))
 
-  (let [k (#'ebo/decorate-key-and-pred-from-spec {:spec ::mjao})]
+  (let [k (#'ebmd/decorate-key-and-pred-from-spec {:spec ::mjao})]
     (is (contains? k :key))
     (is (contains? k :pred))
     (is ((:pred k) [:mjao 119]))
@@ -44,7 +44,7 @@
 (deftest mummi-test
   (is (:valid? mummi))
   (is (= (-> mummi :key)
-         [::ebo/def-arg-spec ::mummi]))
+         [::ebmd/def-arg-spec ::mummi]))
   (is (= [1 2 3 4] (filter-positive mummi [1 2 3 :a :b 4]))))
 
 
@@ -83,32 +83,32 @@
   (- x))
 
 (deftest overload-state-test
-  (let [s (#'ebo/init-overload-state 'kattskit #{})
-        s (#'ebo/add-arg-spec s mummi)]
+  (let [s (#'ebmd/init-overload-state 'kattskit #{})
+        s (#'ebmd/add-arg-spec s mummi)]
     (is (cljset/subset? #{3/4 :a :b} (set (:samples s))))
     (is (:dirty? s))
     (is (:key mummi))
     (is (= (:arg-specs s)
            {(:key mummi) mummi})))
-  (let [s (#'ebo/init-overload-state 'negate #{})
-        s (#'ebo/add-overload s {:arg-specs [mummi]
+  (let [s (#'ebmd/init-overload-state 'negate #{})
+        s (#'ebmd/add-overload s {:arg-specs [mummi]
                                  :fn (fn [x] (- x))})]
     (is (= 1 (count (:arg-specs s))))
     (is (= 1 (count (:overloads s))))
     (is (= [(:key mummi)] (-> s :overloads (get 1) keys first)))
     (is (fn? (-> s :overloads (get 1) vals first))))
-  (let [s (#'ebo/init-overload-state 'negate #{})
-        s (#'ebo/add-overload s {:arg-specs [vec-arg]
+  (let [s (#'ebmd/init-overload-state 'negate #{})
+        s (#'ebmd/add-overload s {:arg-specs [vec-arg]
                                  :fn negate-vec})
-        s (#'ebo/add-overload s {:arg-specs [a-vec-arg]
+        s (#'ebmd/add-overload s {:arg-specs [a-vec-arg]
                                  :fn negate-a-vec})]
     (is (= 2 (-> s :overloads (get 1) count)))
     (is (= #{[] :a [:b] [:a] [:a 3 4]}
            (set (:samples s))))
-    (let [s (#'ebo/rebuild-arg-spec-samples s)
-          s (#'ebo/rebuild-arg-spec-comparisons (#'ebo/unmark-dirty s))
+    (let [s (#'ebmd/rebuild-arg-spec-samples s)
+          s (#'ebmd/rebuild-arg-spec-comparisons (#'ebmd/unmark-dirty s))
           cmps (:arg-spec-comparisons s)
-          s2 (#'ebo/rebuild-all s)]
+          s2 (#'ebmd/rebuild-all s)]
       (is (= (get-in s [:arg-specs (:key vec-arg) :samples])
              #{[] [:b] [:a] [:a 3 4]}))
       (is (contains? s2 :overload-dominates?))
@@ -116,17 +116,17 @@
       (is (= 4 (count cmps)))
       (is (every?  #{:subset :superset :equal :disjoint}
                    (vals cmps)))
-      (let [[arg-specs f] (#'ebo/resolve-overload
+      (let [[arg-specs f] (#'ebmd/resolve-overload
                            s2 [[1 2 3]])]
         (is (= arg-specs [(:key vec-arg)]))
         (is (= [-3 -4] (f [3 4]))))
-      (let [[arg-specs f] (#'ebo/resolve-overload
+      (let [[arg-specs f] (#'ebmd/resolve-overload
                            s2 [[:a 3]])]
         (is (= arg-specs [(:key a-vec-arg)]))
         (is (= [:a -119] (f [:a 119]))))
-      (is (thrown? Exception (#'ebo/resolve-overload s2 [{}])))
+      (is (thrown? Exception (#'ebmd/resolve-overload s2 [{}])))
       (is (= [-3 -4]
-             (#'ebo/evaluate-overload s2 [[3 4]]))))))
+             (#'ebmd/evaluate-overload s2 [[3 4]]))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
