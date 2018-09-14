@@ -426,7 +426,8 @@
   arg-spec)
 
 
-;;;------- Common arg specs -------
+;;;------- Common arg types -------
+
 (def-arg-spec any-arg (pred (constantly true)))
 
 (def-arg-spec number-arg (pred number?))

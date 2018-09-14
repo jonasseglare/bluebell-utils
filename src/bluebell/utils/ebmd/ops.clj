@@ -1,5 +1,5 @@
-(ns bluebell.utils.ebo.ops
-  (:require [bluebell.utils.ebo :as ebo]
+(ns bluebell.utils.ebmd.ops
+  (:require [bluebell.utils.ebmd :as ebo]
             [bluebell.utils.core :as utils])
   (:refer-clojure :exclude [and or not]))
 
