@@ -55,3 +55,11 @@
               (accumulator-validator output-accumulator)))]
     (fn [context accumulator & body]
       (e context accumulator body))))
+
+(defn modifying-context [eval-body f body]
+  {:pre [(fn? eval-body)
+         (fn? f)]}
+  (fn [context acc]
+    (eval-body (f context)
+               acc
+               body)))

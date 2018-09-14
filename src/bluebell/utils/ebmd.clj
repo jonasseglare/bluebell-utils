@@ -5,11 +5,13 @@
             [clojure.core :as c]
             [bluebell.utils.pareto :as pareto]
             [bluebell.utils.core :as utils]
-            [clojure.set :as cljset]))
+            [clojure.set :as cljset]
+            [bluebell.utils.render-text :as render-text]))
 
 (declare filter-positive)
 (declare any-arg)
 (declare check-valid-arg-spec)
+(declare render-overload-text)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -104,6 +106,12 @@
     :samples init-samples
     :arg-specs {}
     :overloads {}}))
+
+(defn state-arg-specs [state]
+  (-> state
+      :arg-specs
+      vals
+      set))
 
 (defn- mark-dirty [x]
   (assoc x :dirty? true))
@@ -258,6 +266,15 @@
                                 (:overload-dominates? state)))
       overloads))))
 
+(defn- render-candidate [c]
+  (render-overload-text c))
+
+(defn- render-ambiguous-overload-message [name candidates]
+  (render-text/evaluate
+   (render-text/add-line "Ambiguous overload for '" name "'")
+   (render-text/break 1)
+   (for [c candidates]
+     (render-candidate c))))
 
 (defn- resolve-overload-for-arity [state overloads args]
   (let [e (list-pareto-elements state overloads args)]
@@ -265,9 +282,10 @@
       (= 0 (count e)) (throw (ex-info "No overload found"
                                       {:name (:name state)
                                        :arity (count args)}))
-      (< 1 (count e)) (throw (ex-info "Ambiguous overload"
-                                      {:name (:name state)
-                                       :candidates e}))
+      (< 1 (count e)) (throw (ex-info
+                              (render-ambiguous-overload-message
+                               (:name state) e)
+                              {}))
       :default (first e))))
 
 (defn- resolve-overload [state args]
@@ -322,6 +340,48 @@
 (defn- reset-state [state]
   (init-overload-state (:name state)
                        (:init-samples state)))
+
+(defn- render-overload-text [[signature overload]]
+  [(render-text/add-line "Overload:")
+   (render-text/indent
+    (render-text/pprint (vec (butlast signature)))
+    (let [l (last signature)]
+      (if (= l (:key any-arg))
+        []
+        [(render-text/add-line "Joint:")
+         (render-text/pprint l)])))])
+
+(defn- render-arity-text [[full-arity overloads]]
+  [(render-text/add-line "Arity " (dec full-arity))
+   (render-text/indent
+    (render-text/add-line "Number of overloads " (count overloads))
+    (render-text/break 1)
+    (mapv
+     render-overload-text
+     overloads))])
+
+(defn- render-comparison-columns [arg-specs]
+  [(render-text/add-line "")
+   (if (empty? arg-specs)
+     (render-text/add-line "Samples")
+     (let [arg-spec (first arg-specs)]
+       [(render-text/add-line (str (:key arg-spec)))
+        (render-text/with-indent-step
+          "| "
+          (render-text/indent
+           (render-comparison-columns (rest arg-specs))))]))])
+
+(defn- render-comparison-arrows [n]
+  (render-text/add-line
+   (take n (repeat "v "))))
+
+(defn- render-sample-evaluation [sample arg-specs]
+  (let [evals (map (fn [arg-spec]
+                     (if ((:pred arg-spec) sample)
+                       "1 "
+                       ". "))
+                   arg-specs)]
+    (render-text/add-line evals (str sample))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -434,9 +494,58 @@
        (map dec)
        set))
 
-(defn reset-overloads! [overload-fn]
+(defn dispatch-state [dispatched-fn]
+  {:pre [(fn? dispatched-fn)]}
+  (dispatched-fn ::get-state))
+
+(defn reset-dispatch! [overload-fn]
   {:pre [(fn? overload-fn)]}
   (swap! (overload-fn ::get-state-atom) reset-state))
+
+(defn print-dispatch-str [dispatch-fn]
+  {:pre [(fn? dispatch-fn)]}
+  (let [state (dispatch-state dispatch-fn)]
+    (render-text/evaluate
+     (render-text/add-line "Name: " (:name state))
+     (render-text/break 1)
+     (render-text/add-line "Samples:")
+     (render-text/indent
+      (render-text/pprint (:samples state)))
+     (render-text/break 1)
+     (render-text/add-line "Arg specs:")
+     (render-text/indent
+      (render-text/pprint (-> state
+                              :arg-specs
+                              keys)))
+     (render-text/break 1)
+     (render-text/add-line "Overloads")
+     (render-text/indent
+      (mapv
+       render-arity-text
+       (:overloads state))))))
+
+(def print-dispatch (comp println print-dispatch-str))
+
+(defn print-arg-spec-comparison-str [samples arg-specs]
+  (utils/check-io
+   [:pre [::arg-specs arg-specs]]
+   (render-text/evaluate
+    (render-comparison-columns arg-specs)
+    (render-comparison-arrows (inc (count arg-specs)))
+    (for [sample samples]
+      (render-sample-evaluation sample arg-specs)))))
+
+(def print-arg-spec-comparison (comp
+                                println
+                                print-arg-spec-comparison-str))
+
+(defn print-dispatch-arg-spec-comparison
+  [dispatch]
+  {:pre [(fn? dispatch)]}
+  (print-arg-spec-comparison
+   (samples dispatch)
+   (-> (dispatch-state dispatch)
+       state-arg-specs)))
 
 ;;;------- Misc -------
 (defn check-valid-arg-spec [arg-spec]

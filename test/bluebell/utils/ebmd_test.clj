@@ -280,6 +280,16 @@
          (add [:imag 3]
               [:imag 17]))))
 
+(comment
+  
+  (print-arg-spec-comparison 
+   (samples add)
+   [number-arg0
+    complex-arg0
+    vector-arg0])
+  
+  )
+
 
 
 
@@ -419,3 +429,24 @@
          [3 4]))
   (is (= (make-span 9 3)
          [3 9])))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Ambiguity
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(declare-dispatch amb)
+
+(def-dispatch amb [type/any a
+                   type/number b]
+  [:b b])
+
+(def-dispatch amb [type/number a
+                   type/any b]
+  [:a b])
+
+(deftest check-it-is-ambiguous
+  (is (thrown? Exception (amb 3 4))))
+

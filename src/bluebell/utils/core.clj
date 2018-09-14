@@ -5,7 +5,28 @@
             [bluebell.utils.debug :as debug]
             [bluebell.specs.indent :as indent-spec]
             [clojure.spec.test.alpha :as stest]))
-            
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Implementation
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- flatten-sub [dst src]
+  (cond
+    (coll? src) (reduce flatten-sub dst src)
+    :default (conj dst src)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Interface
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defn flatten [& x]
+  (flatten-sub [] x))
 
 (defn flatten-map-hierarchy [mh]
   (reduce
