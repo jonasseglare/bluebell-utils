@@ -72,15 +72,15 @@
 (defn negate-a-vec  [[a & rf]]
   (into [a] (mapv - rf)))
 
-(declare-dispatch my-negate)
+(declare-poly my-negate)
 
-(def-dispatch my-negate [vec-arg x]
+(def-poly my-negate [vec-arg x]
   (negate-vec x))
 
-(def-dispatch my-negate [a-vec-arg x]
+(def-poly my-negate [a-vec-arg x]
   (negate-a-vec x))
 
-(def-dispatch my-negate [num-arg x]
+(def-poly my-negate [num-arg x]
   (- x))
 
 (deftest overload-state-test
@@ -167,18 +167,18 @@
 
 
 ;;;------- The overloads -------
-(declare-dispatch abs)
+(declare-poly abs)
 
-(def-dispatch abs [any-arg0 x]
+(def-poly abs [any-arg0 x]
   [:undefined-abs x])
 
-(def-dispatch abs [number-arg0 x]
+(def-poly abs [number-arg0 x]
   (Math/abs x))
 
-(def-dispatch abs [vector-arg0 x]
+(def-poly abs [vector-arg0 x]
   (mapv abs x))
 
-(def-dispatch abs [complex-arg0 [_ re im]]
+(def-poly abs [complex-arg0 [_ re im]]
   (Math/sqrt (+ (* re re)
                 (* im im))))
 
@@ -219,41 +219,41 @@
                          
                          :neg [[] 9 34]})
 
-(declare-dispatch add)
+(declare-poly add)
 
-(def-dispatch add [number-arg0 a
+(def-poly add [number-arg0 a
                    number-arg0 b]
   (+ a b))
 
-(def-dispatch add [complex-arg0 [_ a-re a-im]
+(def-poly add [complex-arg0 [_ a-re a-im]
                    complex-arg0 [_ b-re b-im]]
   [:complex (add a-re b-re) (add a-im b-im)])
 
-(def-dispatch add [complex-arg0 [_ re im]
+(def-poly add [complex-arg0 [_ re im]
                    imag-arg0 [_ x]]
   [:complex re (add im x)])
 
-(def-dispatch add [imag-arg0 [_ x]
+(def-poly add [imag-arg0 [_ x]
                    imag-arg0 [_ y]]
   [:imag (add x y)])
 
-(def-dispatch add [complex-arg0 [_ re im]
+(def-poly add [complex-arg0 [_ re im]
                    any-arg0 b]
   [:complex (add re b) im])
 
-(def-dispatch add [any-arg0 b
+(def-poly add [any-arg0 b
                    complex-arg0 [_ re im]]
   [:complex (add re b) im])
 
-(def-dispatch add [vector-arg0 v
+(def-poly add [vector-arg0 v
                    any-arg0 x]
   (mapv (partial add x) v))
 
-(def-dispatch add [vector-arg0 a
+(def-poly add [vector-arg0 a
                    vector-arg0 b]
   (mapv add a b))
 
-(def-dispatch add [any-arg0 a
+(def-poly add [any-arg0 a
                    vector-arg0 b]
   (add b a))
 
@@ -298,31 +298,31 @@
 ;;;  Test predefined arg specs
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-dispatch plus)
+(declare-poly plus)
 
-(def-dispatch plus []
+(def-poly plus []
   0)
 
-(def-dispatch plus [type/any x]
+(def-poly plus [type/any x]
   x)
 
-(def-dispatch plus [type/any a
+(def-poly plus [type/any a
                     type/any b]
   (+ a b))
 
-(def-dispatch plus [type/string a
+(def-poly plus [type/string a
                     type/string b]
   (str a b))
 
-(def-dispatch plus [type/coll a
+(def-poly plus [type/coll a
                     type/coll b]
   (concat a b))
 
-(def-dispatch plus [type/coll a
+(def-poly plus [type/coll a
                     type/any b]
   (conj a b))
 
-(def-dispatch plus [type/map a
+(def-poly plus [type/map a
                     type/map b]
   (merge a b))
 
@@ -342,12 +342,12 @@
 ;;;  Ops test
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-dispatch sqr)
+(declare-poly sqr)
 
-(def-dispatch sqr [type/any x]
+(def-poly sqr [type/any x]
   (* x x))
 
-(def-dispatch sqr [(ops/not type/number) x]
+(def-poly sqr [(ops/not type/number) x]
   [:cannot-square x])
 
 (deftest not-op-test
@@ -400,9 +400,9 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(declare-dispatch make-span)
+(declare-poly make-span)
 
-(def-dispatch make-span [type/number a
+(def-poly make-span [type/number a
                          type/number b]
   [a b])
 
@@ -416,7 +416,7 @@
                         :pos [[3 2] [9 7]]
                         :neg [[0 1] [0 0]]})
 
-(def-dispatch make-span [type/number a
+(def-poly make-span [type/number a
                          type/number b
 
                          ;; Special case when the arguments are not ordered.
@@ -437,13 +437,13 @@
 ;;;  Ambiguity
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-dispatch amb)
+(declare-poly amb)
 
-(def-dispatch amb [type/any a
+(def-poly amb [type/any a
                    type/number b]
   [:b b])
 
-(def-dispatch amb [type/number a
+(def-poly amb [type/number a
                    type/any b]
   [:a b])
 
