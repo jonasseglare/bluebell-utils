@@ -55,7 +55,7 @@
 (spec/def ::joint-binding (spec/cat :prefix #{:joint}
                                     :arg-spec any?))
 
-(spec/def ::def-dispatch-arg-list
+(spec/def ::def-poly-arg-list
   (spec/* (spec/alt :joint ::joint-binding
                     :arg-binding ::arg-binding)))
 
@@ -455,21 +455,21 @@
    ((:pred arg-spec) x)))
 
 ;;;------- Overload -------
-(defmacro declare-dispatch
+(defmacro declare-poly
   ([sym initial-samples]
    `(defonce ~sym (make-overload-fn (quote ~sym)
                                     ~initial-samples)))
   ([sym]
    `(defonce ~sym (make-overload-fn (quote ~sym)))))
 
-(defmacro def-dispatch [sym arg-list & body]
+(defmacro def-poly [sym arg-list & body]
   {:pre [(symbol? sym)]}
-  (let [p (spec/conform ::def-dispatch-arg-list arg-list)
+  (let [p (spec/conform ::def-poly-arg-list arg-list)
         all-parsed-args (utils/categorize-tuples p)
         function-args (:arg-binding all-parsed-args)]
     (if (= p ::spec/invalid)
       (throw (ex-info
-              "Bad def-dispatch arg list"
+              "Bad def-poly arg list"
               {}))
       `(~sym ::add-overload
         (merge
@@ -495,17 +495,17 @@
        (map dec)
        set))
 
-(defn dispatch-state [dispatched-fn]
-  {:pre [(fn? dispatched-fn)]}
-  (dispatched-fn ::get-state))
+(defn poly-state [polyed-fn]
+  {:pre [(fn? polyed-fn)]}
+  (polyed-fn ::get-state))
 
-(defn reset-dispatch! [overload-fn]
+(defn reset-poly! [overload-fn]
   {:pre [(fn? overload-fn)]}
   (swap! (overload-fn ::get-state-atom) reset-state))
 
-(defn print-dispatch-str [dispatch-fn]
-  {:pre [(fn? dispatch-fn)]}
-  (let [state (dispatch-state dispatch-fn)]
+(defn print-poly-str [poly-fn]
+  {:pre [(fn? poly-fn)]}
+  (let [state (poly-state poly-fn)]
     (render-text/evaluate
      (render-text/add-line "Name: " (:name state))
      (render-text/break 1)
@@ -525,7 +525,7 @@
        render-arity-text
        (:overloads state))))))
 
-(def print-dispatch (comp println print-dispatch-str))
+(def print-poly (comp println print-poly-str))
 
 (defn print-arg-spec-comparison-str [samples arg-specs]
   (utils/check-io
@@ -540,12 +540,12 @@
                                 println
                                 print-arg-spec-comparison-str))
 
-(defn print-dispatch-arg-spec-comparison
-  [dispatch]
-  {:pre [(fn? dispatch)]}
+(defn print-poly-arg-spec-comparison
+  [poly]
+  {:pre [(fn? poly)]}
   (print-arg-spec-comparison
-   (samples dispatch)
-   (-> (dispatch-state dispatch)
+   (samples poly)
+   (-> (poly-state poly)
        state-arg-specs)))
 
 ;;;------- Misc -------

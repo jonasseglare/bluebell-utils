@@ -19,17 +19,17 @@
                        :neg [:a {} #{:a} 2]})
 
 ;; Let's declare a polymorphic add function
-(declare-dispatch add)
+(declare-poly add)
 
 ;; Typically, when no arguments are provided, we may want to start adding to 0:
-(def-dispatch add [] 0)
+(def-poly add [] 0)
 
 (add)
 ;; => 0
 
 ;; If we provide just a single argument, no matter what it is, we probably want to return it
 
-(def-dispatch add [anything x]
+(def-poly add [anything x]
   x)
 
 (add 9)
@@ -42,7 +42,7 @@
 ;; => [[[{:mu 119}]]]
 
 ;; Lets define it so that we can add numbers, too:
-(def-dispatch add [number-arg a
+(def-poly add [number-arg a
                    number-arg b]
   (+ a b))
 
@@ -53,7 +53,7 @@
 ;; => 130
 
 ;; If we get a pair of sequences, we probably want to add them element-wise
-(def-dispatch add [seq-arg a
+(def-poly add [seq-arg a
                    seq-arg b]
   (mapv add a b))
 
@@ -73,12 +73,12 @@
 ;; => Exception: No overload found
 
 ;; So let's define that too...
-(def-dispatch add [anything x
+(def-poly add [anything x
                    seq-arg y]
   (mapv (partial add x) y))
 
 ;; ... for both argument orders.
-(def-dispatch add [seq-arg x
+(def-poly add [seq-arg x
                    anything y]
   (mapv (partial add y) x))
 
@@ -128,7 +128,7 @@
 ;; => [0.3 :m]
 
 ;; Let's define general additon of lengths
-(def-dispatch add [length-arg a
+(def-poly add [length-arg a
                    length-arg b]
   (let [[amount-a _] (to-si a)
         [amount-b _] (to-si b)]
@@ -158,7 +158,7 @@
                                    [[3.0 :m] [4.0 :cm]]
                                    ]})
 
-(def-dispatch add [length-arg a
+(def-poly add [length-arg a
                    length-arg b
 
                    :joint same-unit-arg]

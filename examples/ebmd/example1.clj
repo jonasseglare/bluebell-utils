@@ -15,11 +15,11 @@
 
 ;; Declare the abs function
 
-(declare-dispatch abs)
+(declare-poly abs)
 
 ;; And the implementation for numbers
 
-(def-dispatch abs [number-arg x]
+(def-poly abs [number-arg x]
   (Math/abs x))
 
 (abs 119.0)
@@ -33,7 +33,7 @@
 
 ;; For sequential things, we do an elementwise abs:
 
-(def-dispatch abs [seq-arg x]
+(def-poly abs [seq-arg x]
   (mapv abs x))
 
 (abs [1 2 -4 -30])
@@ -57,7 +57,7 @@
                                  {}
                                  ]})
 
-(def-dispatch abs [complex-arg [_ real imag]]
+(def-poly abs [complex-arg [_ real imag]]
   (Math/sqrt (+ (* real real)
                 (* imag imag))))
 
@@ -96,7 +96,7 @@
                                 [4.0 :meters]]
                           :neg [[] [:a]]})
 
-(def-dispatch abs [length-arg [amount unit]]
+(def-poly abs [length-arg [amount unit]]
   [(abs amount) unit])
 
 (abs [-3 :meters])
@@ -130,45 +130,45 @@
                         :pos [1 2 3 :a {} nil]
                         :neg []})
 
-(declare-dispatch add)
+(declare-poly add)
 
-(def-dispatch add [number-arg a
+(def-poly add [number-arg a
                    number-arg b]
   (+ a b))
 
 (add 3 4)
 ;; => 7
 
-(def-dispatch add [seq-arg a
+(def-poly add [seq-arg a
                    any-arg b]
   (mapv (partial add b) a))
 
 (add [1 2 3] 4)
 ;; => [5 6 7]
 
-(def-dispatch add [seq-arg a
+(def-poly add [seq-arg a
                    seq-arg b]
   (mapv add a b))
 
 (add [1 2 3] [10 20 30])
 ;; => [11 22 33]
 
-(def-dispatch add [complex-arg [_ a b]
+(def-poly add [complex-arg [_ a b]
                    complex-arg [_ x y]]
   [:complex (add a x) (add b y)])
 
 (add [:complex 3 4] [:complex 30 40])
 ;; => [:complex 33 44]
 
-(def-dispatch add [complex-arg [_ a b]
+(def-poly add [complex-arg [_ a b]
                    any-arg x]
   [:complex (add a x) b])
 
-(def-dispatch add [any-arg x
+(def-poly add [any-arg x
                    complex-arg [_ a b]]
   [:complex (add a x) b])
 
-(def-dispatch add [seq-arg x
+(def-poly add [seq-arg x
                    complex-arg y]
   (mapv (partial add y) x))
 
