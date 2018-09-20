@@ -1,5 +1,5 @@
 (ns examples.ebmd.example1
-  (:require [bluebell.utils.ebmd :refer :all]))
+  (:require [bluebell.utils.wip.ebmd :refer :all]))
 
 ;; We want to construct a generic 'abs' function
 
