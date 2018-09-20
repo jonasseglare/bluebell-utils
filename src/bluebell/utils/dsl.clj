@@ -2,11 +2,11 @@
   (:require [clojure.spec.alpha :as spec]
             [bluebell.utils.wip.specutils :as specutils]))
 
-(defn iterable? [x]
+(defn- iterable? [x]
   (or (sequential? x)
       (nil? x)))
 
-(defn spec? [x]
+(defn- spec? [x]
   (or (fn? x) (spec/spec? x) (keyword? x)))
 
 
@@ -17,11 +17,11 @@
 
 (def settings? (specutils/pred ::settings))
 
-(defn get-import-fn [settings]
+(defn- get-import-fn [settings]
   {:post [()]}
   (or (:import-fn settings) identity))
 
-(defn get-validator-for-spec [maybe-sp]
+(defn- get-validator-for-spec [maybe-sp]
   (if maybe-sp
     (partial specutils/validate maybe-sp)
     identity))

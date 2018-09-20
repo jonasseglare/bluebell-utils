@@ -1,12 +1,12 @@
 (ns bluebell.utils.dsl-test
-  (:require [bluebell.utils.dsl :refer :all]
+  (:require [bluebell.utils.dsl :refer :all :as dsl]
             [clojure.spec.alpha :as spec]
             [clojure.test :refer :all]))
 
 (deftest settings-test
-  (is (= 3 ((get-import-fn {}) 3)))
-  (is (= 3 ((get-accumulator-validator {}) 3)))
-  (is (= 3 ((get-context-validator {}) 3)))
+  (is (= 3 ((#'dsl/get-import-fn {}) 3)))
+  (is (= 3 ((#'dsl/get-accumulator-validator {}) 3)))
+  (is (= 3 ((#'dsl/get-context-validator {}) 3)))
   (is (thrown? Exception ((get-accumulator-validator {:accumulator-spec number?}) :a)))
   (is (= 3 ((get-accumulator-validator {:accumulator-spec number?}) 3)))
   (is (= 3 ((get-context-validator {:context-spec number?}) 3)))
