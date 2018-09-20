@@ -3,7 +3,7 @@
             [clojure.spec.alpha :as spec]
             [clojure.pprint :as pprint]
             [bluebell.utils.wip.debug :as debug]
-            [bluebell.specs.indent :as indent-spec]
+            [bluebell.utils.wip.specs.indent :as indent-spec]
             [clojure.spec.test.alpha :as stest]
             )
   (:refer-clojure :exclude [flatten]))
