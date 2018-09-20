@@ -1,4 +1,5 @@
 (ns bluebell.utils.wip.party.coll
+  (:refer-clojure :exclude [update])
   (:require [bluebell.utils.wip.party :refer :all]
             [bluebell.utils.wip.core :as utils]))
 

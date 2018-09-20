@@ -3,7 +3,8 @@
             [clojure.spec.test.alpha :as stest]
             [clojure.spec.alpha :as spec]
             [bluebell.utils.wip.traverse :as traverse]
-            [bluebell.utils.wip.core :refer :all :as utils]))
+            [bluebell.utils.wip.core :refer :all :as utils])
+  (:refer-clojure :exclude [flatten]))
 
 (stest/instrument)
 
