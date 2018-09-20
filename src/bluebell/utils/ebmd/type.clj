@@ -25,6 +25,8 @@
 
 (def-arg-spec map (pred map?))
 
+(def-arg-spec symbol (pred symbol?))
+
 (def-arg-spec empty (pred (fn [x] (and (coll? x)
                                        (empty? x)))))
 
