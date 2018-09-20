@@ -1,4 +1,4 @@
-(ns bluebell.tag.core)
+(ns bluebell.utils.wip.tag.core)
 
 (defn tagged?
   ([tag] 

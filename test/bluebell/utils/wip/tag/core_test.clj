@@ -1,6 +1,6 @@
-(ns bluebell.tag.core-test
+(ns bluebell.utils.wip.tag.core-test
   (:require [clojure.test :refer :all]
-            [bluebell.tag.core :refer :all] :reload-all))
+            [bluebell.utils.wip.tag.core :refer :all] :reload-all))
 
 (deftest tags
   (is (tagged? :success [:success 3]))
