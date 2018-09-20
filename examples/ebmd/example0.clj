@@ -1,5 +1,5 @@
 (ns examples.ebmd.example0
-  (:require [bluebell.utils.wip.ebmd :refer :all]))
+  (:require [bluebell.utils.ebmd :refer :all]))
 
 ;; Let's start with some arguments
 
