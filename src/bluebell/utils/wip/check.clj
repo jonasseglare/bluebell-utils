@@ -8,8 +8,30 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def prefices #{:when :pre :post})
+
+(def prefix? (partial contains? prefices))
+
+(def not-prefix? (complement prefix?))
+
+(spec/def ::flag (spec/cat
+                  :prefix #{:when}
+                  :value any?))
+
+(spec/def ::post
+  (spec/cat :prefix #{:post}
+            :symbol any?
+            :checks ::checks))
+
+(spec/def ::compact-post
+  (spec/cat :prefix #{:post}
+            :spec any?))
+
+(spec/def ::any-post (spec/alt :post ::post
+                               :compact-post ::compact-post))
+
 (spec/def ::check (spec/alt :s-expr seq?
-                            :spec (spec/cat :spec (complement seq?)
+                            :spec (spec/cat :spec keyword?
                                             :expr any?)))
 
 (spec/def ::checks (spec/spec (spec/* ::check)))
@@ -19,14 +41,11 @@
                            (spec/spec
                             (spec/cat
                                     
-                             :flag (spec/? any?)
+                             :flag (spec/? ::flag)
                              :pre (spec/?
                                   (spec/cat :prefix #{:pre}
                                             :checks ::checks))
-                             :post (spec/?
-                                   (spec/cat :prefix #{:post}
-                                             :symbol symbol?
-                                             :checks ::checks))))
+                             :post (spec/? ::post)))
                            :body (spec/* any?)))
 
 (defn- generate-check [[check-type check-data]]
@@ -46,6 +65,40 @@
   (map generate-check checks))
 
 
+(spec/def ::defn-arg (spec/cat :spec not-prefix?
+                               :binding any?))
+
+(spec/def ::defn-arg-list (spec/spec
+                           (spec/cat :flag (spec/? ::flag)
+                                     :args (spec/* ::defn-arg)
+                                     :post (spec/? ::post))))
+
+(spec/def ::single-defn (spec/cat :arg-list ::defn-arg-list
+                                  :body (spec/* any?)))
+
+
+
+(spec/def ::defn-rest (spec/alt :single ::single-defn
+                                ;:multi ::multi-defn
+                                ))
+
+(spec/def ::checked-defn-args (spec/cat :function-name symbol?
+                                        :doc (spec/? string?)
+                                        :rest ::defn-rest))
+
+(defn- generate-input-check [{:keys [spec binding]}]
+  (let [g (gensym)]
+    `(let [~g ~binding]
+       (when (not (spec/valid? ~spec ~g))
+         (spec/explain ~spec ~g)
+         (throw
+          (ex-info
+           ~(str "Input spec failed for '" binding "'")
+           {:spec ~spec
+            :binding (quote ~binding)}))))))
+
+(defn- generate-input-checks [args]
+  (mapv generate-input-check args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -63,7 +116,7 @@
                       {:args args})))
     (let [{:keys [group body]} parsed
           flag (if (contains? group :flag)
-                 (:flag group)
+                 (-> group :flag :value)
                  true)
           in (:pre group)
           out (:post group)
@@ -75,3 +128,31 @@
              ~@(generate-checking-code (:checks out))
              ~out-sym))
         `(do ~@body)))))
+
+(defmacro checked-defn [& args]
+  (let [parsed (spec/conform ::checked-defn-args args)]
+    (when (= parsed ::spec/invalid)
+      (spec/explain ::checked-defn-args args)
+      (throw (ex-info "Failed to parse args to checked-defn"
+                      {:args args})))
+    (let [{:keys [function-name doc rest]} parsed
+          _ (assert (= :single (first rest)))
+          single (second rest)
+          {:keys [arg-list body]} single
+          {:keys [args flag post]} arg-list
+          should-check? (or (nil? flag)
+                            (eval (:value flag)))
+          post-sym (or (:symbol post) (gensym "checked-defn"))
+
+          inner (if should-check?
+                  `(do
+                     ~@(generate-input-checks args)
+                     (let [~post-sym (do ~@body)]
+                       ~@(generate-checking-code (:checks post))
+                       ~post-sym))
+                  `(do ~@body))]
+      (println "should check?" should-check?)
+      `(defn ~function-name
+         ~@(if doc [doc] [])
+         ~(mapv :binding args)
+         ~inner))))
