@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spec/def ::check (spec/alt :s-expr seq?
-                            :spec (spec/cat :spec keyword?
+                            :spec (spec/cat :spec (complement seq?)
                                             :expr any?)))
 
 (spec/def ::checks (spec/spec (spec/* ::check)))
