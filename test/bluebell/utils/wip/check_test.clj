@@ -53,9 +53,12 @@
           ]
          
          :mjao 119]))
-  (let [code (#'check/generate-check [:s-expr '(number? :a)])]
+  (let [code (#'check/generate-check "Check in unittest"
+                                     [:s-expr '(number? :a)])]
     (is (thrown? Throwable (eval code))))
-  (let [code (#'check/generate-check [:s-expr '(number? 9)])]
+  (let [code (#'check/generate-check
+              "Check in unit-test"
+              [:s-expr '(number? 9)])]
     (is (nil? (eval code))))
   (is (= 17
          (let [a 14]
@@ -115,3 +118,26 @@
 
 (deftest kattskit2-test
   (is (= 7 (kattskit2 3 4))))
+
+(def check-debug true)
+
+(checked-defn returns-number [:when check-debug
+
+                              number? x
+
+                              :post number?]
+              x)
+
+(deftest ret-num-test
+  (is (= 119.0 (returns-number (* 7 17.0)))))
+
+(checked-defn my-identity [_ x]
+              x)
+
+(checked-defn my-identity2 [nil x]
+              x)
+
+(deftest my-id-test
+  (is (= 3 (my-identity 3)))
+  (is (= :a (my-identity :a)))
+  (is (= :a (my-identity2 :a))))
