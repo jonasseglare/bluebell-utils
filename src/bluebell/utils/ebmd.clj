@@ -5,6 +5,7 @@
             [clojure.core :as c]
             [bluebell.utils.wip.pareto :as pareto]
             [bluebell.utils.wip.core :as utils]
+            [bluebell.utils.wip.check :refer [check-io]]
             [clojure.set :as cljset]
             [bluebell.utils.render-text :as render-text]))
 
@@ -97,7 +98,7 @@
 
 
 (defn- init-overload-state [overload-sym init-samples]
-  (utils/check-io
+  (check-io
    [:pre [(symbol? overload-sym)]]
    
    {:name overload-sym
@@ -120,7 +121,7 @@
   (assoc x :dirty? false))
 
 (defn- add-arg-spec [state arg-spec]
-  (utils/check-io
+  (check-io
    [:pre [(map? state)
           ::arg-spec arg-spec]]
    
@@ -139,7 +140,7 @@
             any-arg)))
 
 (defn- add-overload [state overload]
-  (utils/check-io
+  (check-io
    [:pre [(map? state)
           ::overload overload]]
    (let [arg-specs (extend-arg-specs-with-joint overload)]
@@ -413,7 +414,7 @@
               ~value)))))
 
 (defn provide-samples [arg-spec samples]
-  (utils/check-io
+  (check-io
    [:pre [(map? arg-spec)
           (contains? arg-spec :pred)]]
    (let [pred (:pred arg-spec)]
@@ -443,14 +444,14 @@
 (def arg-spec? (specutils/pred ::arg-spec))
 
 (defn filter-positive [arg-spec samples]
-  (utils/check-io
+  (check-io
    [:pre [::arg-spec arg-spec
           (coll? samples)]
     :post k [(coll? k)]]
    (filter (:pred arg-spec) samples)))
 
 (defn matches-arg-spec? [arg-spec x]
-  (utils/check-io
+  (check-io
    [:pre [::arg-spec arg-spec]]
    ((:pred arg-spec) x)))
 
@@ -528,7 +529,7 @@
 (def print-poly (comp println print-poly-str))
 
 (defn print-arg-spec-comparison-str [samples arg-specs]
-  (utils/check-io
+  (check-io
    [:pre [::arg-specs arg-specs]]
    (render-text/evaluate
     (render-comparison-columns arg-specs)

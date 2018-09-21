@@ -1,11 +1,12 @@
 (ns bluebell.utils.ebmd.ops
   (:require [bluebell.utils.ebmd :as ebo]
+            [bluebell.utils.wip.check :refer [check-io]]
             [bluebell.utils.wip.core :as utils])
   (:refer-clojure :exclude [and or not]))
 
 
 (defn- transform-arg-spec [tag pred-maker arg-specs]
-  (utils/check-io
+  (check-io
    [:pre [(fn? pred-maker)]
     :post out [::ebo/arg-spec out]]
 
