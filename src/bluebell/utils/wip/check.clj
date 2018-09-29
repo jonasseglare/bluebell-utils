@@ -93,12 +93,14 @@
     (let [g (gensym)]
       `(let [~g ~binding]
          (when (not (spec/valid? ~spec ~g))
-           (spec/explain ~spec ~g)
-           (throw
-            (ex-info
-             ~(str "Input spec failed for '" binding "'")
-             {:spec ~spec
-              :binding (quote ~binding)})))))))
+           (let [expl# (spec/explain-str ~spec ~g)]
+             (println "Input spec failed:" expl#)
+             (throw
+              (ex-info
+               (str ~(str "Input spec failed for '" binding "': ")
+                    expl#)
+               {:spec ~spec
+                :binding (quote ~binding)}))))))))
 
 (defn- generate-input-checks [args]
   (mapv generate-input-check args))

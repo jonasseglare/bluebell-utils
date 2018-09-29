@@ -90,5 +90,7 @@
   (:output (eval-dsl empty-context
                      empty-accumulator input)))
 
+(def disp (comp println evaluate))
+
 ;; Example 1: (println (evaluate ["begin" (indent "Mjao;") "end"]))
 ;; Example 2: 

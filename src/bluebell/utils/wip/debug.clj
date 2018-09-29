@@ -160,3 +160,11 @@
   `(-> (quote ~expr)
        macroexpand
        pprint-code))
+
+
+(defmacro exception-hook [expr effect]
+  `(try
+     ~expr
+     (catch Throwable e#
+       ~effect
+       (throw e#))))
