@@ -33,6 +33,10 @@
             [label (- t offset)])
           data)))
 
+(defn total-time [src]
+  (- (-> src last second)
+     (-> src first second)))
+
 (defn disp [src]
   {:pre [(vector? src)]}
   (doseq [[label t] (offset-normalize src)]

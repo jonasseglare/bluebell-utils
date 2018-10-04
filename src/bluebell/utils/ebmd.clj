@@ -481,6 +481,11 @@
             {:joint j}
             {}))))))
 
+(defmacro declare-def-poly [symbol & args]
+  `(do
+     (declare-poly ~symbol)
+     (def-poly ~symbol ~@args)))
+
 ;; Extra helper functions
 
 (defn samples [overload-fn]
