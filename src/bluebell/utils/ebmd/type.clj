@@ -3,7 +3,8 @@
                                          pred any-arg]])
   (:refer-clojure :exclude [any number
                             sequential set keyword
-                            string coll map empty]))
+                            string coll map empty
+                            symbol]))
 
 ;;;------- Common arg types -------
 
