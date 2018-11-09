@@ -10,9 +10,9 @@
    [:pre [(fn? pred-maker)]
     :post out [::ebo/arg-spec out]]
 
-   (let [arg-specs (map ebo/normalize-and-check-arg-spec
+   (let [arg-specs (map ebo/import-and-check-arg-spec
                         arg-specs)]
-     (ebo/normalize-and-check-arg-spec
+     (ebo/import-and-check-arg-spec
       (ebo/provide-samples
        {:key (into [tag] (map ebo/arg-spec-key arg-specs))
         :pred (pred-maker (map ebo/arg-spec-pred arg-specs))}

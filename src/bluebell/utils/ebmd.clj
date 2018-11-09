@@ -515,7 +515,7 @@
 
 
 
-(defn normalize-and-check-arg-spec [x]
+(defn import-and-check-arg-spec [x]
   (if (key? x)
     x
     (check-valid-arg-spec (import-arg-spec x))))
