@@ -178,10 +178,9 @@
   (check-io
    [:pre [(map? state)
           ::general-arg-spec arg-spec]]
-   (let [arg-spec (resolve-arg-spec arg-spec)]
-     (-> state
-         mark-dirty
-         (update :arg-specs conj [(arg-spec-key arg-spec) nil])))))
+   (-> state
+       mark-dirty
+       (update :arg-specs conj [(arg-spec-key arg-spec) nil]))))
 
 (defn- add-arg-specs [state arg-specs]
   (reduce add-arg-spec state arg-specs))
