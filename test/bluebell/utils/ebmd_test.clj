@@ -13,7 +13,7 @@
 (deftest spec-test
   (is (spec/valid?
        ::ebmd/arg-spec
-       (normalize-arg-spec {:pred number?
+       (import-arg-spec {:pred number?
                             :key :number
                             :pos [] :neg[]})))
 
@@ -22,20 +22,20 @@
     (is (contains? k :pred))
     (is ((:pred k) [:mjao 119]))
     (is (not ((:pred k) [:mjao 118]))))
-  (let [k (normalize-arg-spec {:spec ::mjao
+  (let [k (import-arg-spec {:spec ::mjao
                                :pos [[:mjao 119]]
                                :neg [9 :a {} {:a 3}]})]
     (is (:valid? k)))
-  (let [k (normalize-arg-spec {:spec ::mjao
+  (let [k (import-arg-spec {:spec ::mjao
                                :pos [[:mjao 119] 4]
                                :neg [9 :a {} {:a 3}]})]
     (is (not (:valid? k))))
-  (let [k (normalize-arg-spec {:spec ::mjao
+  (let [k (import-arg-spec {:spec ::mjao
                                :pos [[:mjao 119]]
                                :neg [9 :a {} {:a 3} [:mjao 119]]})]
     (is (not (:valid? k)))
     (is (thrown? Exception (check-valid-arg-spec k)))
-    (is (= k (normalize-arg-spec k)))))
+    (is (= k (import-arg-spec k)))))
 
 (def-arg-spec mummi {:pred number?
                      :desc "Any number"

@@ -11,6 +11,7 @@
 
 (declare filter-positive)
 (declare any-arg)
+(declare arg-spec?)
 (declare check-valid-arg-spec)
 (declare render-overload-text)
 
@@ -20,14 +21,18 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(spec/def ::key (spec/or :complex (spec/cat :prefix keyword?
+                                            :data (spec/* any?))
+                         :simple keyword?))
+
 (spec/def ::pos coll?)
 (spec/def ::neg coll?)
 (spec/def ::pred fn?)
-(spec/def ::key any?)
 (spec/def ::desc string?)
 (spec/def ::spec #(or (spec/spec? %)
                         (keyword? %)))
 (spec/def ::valid? boolean?)
+
 
 (spec/def ::arg-spec (spec/keys :req-un [::pred
                                          ::pos
@@ -65,6 +70,26 @@
 ;;;  Impl
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def key? (partial spec/valid? ::key))
+
+(defonce arg-spec-registry (atom {}))
+
+(defn register-arg-spec [arg-spec]
+  {:pre []}
+  (swap! arg-spec-registry
+         assoc
+         (:key arg-spec)
+         arg-spec)
+  arg-spec)
+
+(defn to-arg-spec [x]
+  (if (arg-spec? x)
+    x
+    (if-let [ag (get (deref arg-spec-registry) x)]
+      ag
+      (throw (ex-info "No arg-spec with key"
+                      {:key x})))))
 
 ;;; Warning: Make sure that the arg specs don't differentiate
 ;;; between vectors and seqs, because internally, we store the
@@ -392,23 +417,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;------- Arg spec -------
-(defn normalize-arg-spec [input-arg-spec]
+
+(defn disp-arg-spec [x]
+  x)
+
+(defn import-arg-spec [input-arg-spec]
   {:pre [(spec/valid? ::input-arg-spec input-arg-spec)]
    :post [(spec/valid? ::arg-spec %)]}
   (-> (merge {:pos [] :neg []} input-arg-spec)
       decorate-key-and-pred-from-spec
       decorate-desc
-      validate-on-samples))
+      validate-on-samples
+      register-arg-spec))
+
 
 
 (defn normalize-and-check-arg-spec [x]
-  (check-valid-arg-spec (normalize-arg-spec x)))
+  (check-valid-arg-spec (import-arg-spec x)))
 
 (defmacro def-arg-spec [sym value]
   {:pre [(symbol? sym)]}
   `(def ~sym
      (check-valid-arg-spec
-      (normalize-arg-spec
+      (import-arg-spec
        (merge {:key [::def-arg-spec
                      ~(keyword (str *ns*) (name sym))]}
               ~value)))))
