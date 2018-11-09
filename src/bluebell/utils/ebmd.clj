@@ -14,6 +14,9 @@
 (declare arg-spec?)
 (declare check-valid-arg-spec)
 (declare render-overload-text)
+(declare re-resolve-arg-spec)
+(declare arg-spec-key)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -40,8 +43,10 @@
                                          ::key
                                          ::valid?
                                          ::desc]
-                                
                                 :opt-un [::spec]))
+
+(spec/def ::general-arg-spec (spec/or :key ::key
+                                      :arg-spec ::arg-spec))
 
 (spec/def ::input-arg-spec
   (spec/keys :opt-un [::pred ::pos ::neg
@@ -49,9 +54,9 @@
 
 
 
-(spec/def ::arg-specs (spec/coll-of ::arg-spec))
+(spec/def ::arg-specs (spec/coll-of ::general-arg-spec))
 (spec/def ::fn fn?)
-(spec/def ::joint ::arg-spec)
+(spec/def ::joint ::general-arg-spec)
 (spec/def ::overload (spec/keys :req-un [::arg-specs ::fn]
                                 :opt-un [::joint]))
 
@@ -73,23 +78,44 @@
 
 (def key? (partial spec/valid? ::key))
 
-(defonce arg-spec-registry (atom {}))
+(def init-reg {::reg-counter 0})
 
-(defn register-arg-spec [arg-spec]
-  {:pre []}
-  (swap! arg-spec-registry
-         assoc
-         (:key arg-spec)
-         arg-spec)
-  arg-spec)
+(defonce arg-spec-registry (atom init-reg))
 
-(defn to-arg-spec [x]
-  (if (arg-spec? x)
-    x
-    (if-let [ag (get (deref arg-spec-registry) x)]
-      ag
-      (throw (ex-info "No arg-spec with key"
-                      {:key x})))))
+(defn reset-registry! []
+  (reset! arg-spec-registry init-reg))
+
+;; (reset-registry!)
+
+
+(defn register-arg-spec
+  ([k arg-spec]
+   {:pre [(spec/valid? ::key k)
+          (spec/valid? ::general-arg-spec arg-spec)]}
+   (swap! arg-spec-registry
+          (fn [reg]
+            (-> reg
+                (assoc k arg-spec)
+                (update ::reg-counter inc))))
+   arg-spec)
+  ([arg-spec]
+   {:pre [(spec/valid? ::arg-spec arg-spec)]}
+   (register-arg-spec (:key arg-spec) arg-spec)))
+
+(defn get-reg-counter []
+  (-> arg-spec-registry
+      deref
+      ::reg-counter))
+
+(defn resolve-arg-spec [init]
+  (loop [x init]
+    (if (arg-spec? x)
+      x
+      (if-let [ag (get (deref arg-spec-registry) x)]
+        (recur ag)
+        (throw (ex-info "No arg-spec with key"
+                        {:key x
+                         :init init}))))))
 
 ;;; Warning: Make sure that the arg specs don't differentiate
 ;;; between vectors and seqs, because internally, we store the
@@ -136,6 +162,9 @@
 (defn- state-arg-specs [state]
   (-> state
       :arg-specs
+
+      ;; TODO: This is now a set!
+      
       vals
       set))
 
@@ -148,13 +177,11 @@
 (defn- add-arg-spec [state arg-spec]
   (check-io
    [:pre [(map? state)
-          ::arg-spec arg-spec]]
-   
-   (-> state
-       mark-dirty
-       (update :samples (partial reduce into) [(:pos arg-spec)
-                                               (:neg arg-spec)])
-       (assoc-in [:arg-specs (:key arg-spec)] arg-spec))))
+          ::general-arg-spec arg-spec]]
+   (let [arg-spec (resolve-arg-spec arg-spec)]
+     (-> state
+         mark-dirty
+         (update :arg-specs conj [(arg-spec-key arg-spec) nil])))))
 
 (defn- add-arg-specs [state arg-specs]
   (reduce add-arg-spec state arg-specs))
@@ -173,21 +200,28 @@
          mark-dirty
          (add-arg-specs arg-specs)
          (assoc-in [:overloads (count arg-specs)
-                    (mapv :key arg-specs)]
+                    (mapv arg-spec-key arg-specs)]
                    overload)))))
 
 (defn- rebuild-arg-spec-samples [state]
   (let [samples (:samples state)]
+    (assert (set? samples))
     (update state
             :arg-specs
             (fn [arg-specs]
-              (into {}
-                    (map (fn [[k v]]
-                           [k (assoc
-                               v :samples
-                               (set
-                                (filter-positive v samples)))])
-                         arg-specs))))))
+              (transduce
+               (map (fn [[k arg-spec]]
+                           {:pre [(key? k)]}
+                           (let [arg-spec (resolve-arg-spec k)
+                                 sample-set (set
+                                             (filter-positive
+                                              arg-spec samples))]
+                             [k (assoc
+                                 arg-spec :samples
+                                 sample-set)])))
+               conj
+               {}
+               arg-specs)))))
 
 (defn- cart-prod [a b]
   (transduce
@@ -256,11 +290,54 @@
    :overload-dominates?
    (compute-overload-dominates? state)))
 
+
+(defn- resolve-all-arg-specs [state]
+  (update state :arg-specs
+          (fn [arg-specs]
+            (transduce
+             (map (fn [[k v]]
+                    (if (not (spec/valid? ::key k))
+                      (throw (ex-info "BAD arg spec key "
+                                      {:key k
+                                       :state state})))
+                    ;{:pre [(spec/valid? ::key k)]}
+                    [k (resolve-arg-spec k)]))
+             conj
+             {}
+             arg-specs))))
+
+(defn accumulate-all-samples [state]
+  (let [samples (transduce
+                 (comp (map (fn [[k v]]
+                              [(:pos v) (:neg v)]))
+                       cat
+                       cat)
+                 conj
+                 #{}
+                 (:arg-specs state))]
+    (assoc state
+           :samples
+           samples)))
+
+(defn save-counter-value [state]
+  (assoc state :registry-counter (get-reg-counter)))
+
+(defn check-reg-counter [state]
+  (if (not= (:registry-counter state)
+            (get-reg-counter))
+    (println
+     "Warning: Registry counter changed while updating state"))
+  state)
+
 (defn- rebuild-all [state]
   (-> state
+      save-counter-value
+      resolve-all-arg-specs
+      accumulate-all-samples
       rebuild-arg-spec-samples
       rebuild-arg-spec-comparisons
       rebuild-overload-dominates?
+      check-reg-counter
       unmark-dirty))
 
 (defn- dominates? [lookup-table
@@ -337,17 +414,23 @@
 (defn- perform-special-op [state-atom args]
   (let [f (first args)]
     (case f
-      ::add-overload (do (swap! state-atom
-                                add-overload
-                                (second args))
-                         true)
+      ::add-overload (do
+                       (swap! state-atom
+                              add-overload
+                              (second args))
+                       true)
       ::get-state (deref state-atom)
       ::get-state-atom state-atom
       false)))
 
+(defn dirty? [state]
+  (or (:dirty? state)
+      (not= (get-reg-counter)
+            (:registry-counter state))))
+
 (defn- perform-evaluation [state-atom args]
   (let [state (deref state-atom)
-        state (if (:dirty? state)
+        state (if (dirty? state)
                 (swap! state-atom rebuild-all)
                 state)]
     (evaluate-overload state args)))
@@ -433,16 +516,45 @@
 
 
 (defn normalize-and-check-arg-spec [x]
-  (check-valid-arg-spec (import-arg-spec x)))
+  (if (key? x)
+    x
+    (check-valid-arg-spec (import-arg-spec x))))
 
-(defmacro def-arg-spec [sym value]
-  {:pre [(symbol? sym)]}
-  `(def ~sym
+(defn try-set-key [arg-spec k]
+  (merge {:key k} arg-spec))
+
+(defn import-arg-spec-for-key-and-value [key value]
+  (if (key? value)
+    (register-arg-spec key value)
+    (check-valid-arg-spec
+     (import-arg-spec
+      (merge value {:key key})))))
+
+(defn basic-import-arg-spec [sym value]
+  (if (key? value)
+    value
+    (:key
      (check-valid-arg-spec
       (import-arg-spec
-       (merge {:key [::def-arg-spec
-                     ~(keyword (str *ns*) (name sym))]}
-              ~value)))))
+       (try-set-key
+        value
+        sym))))))
+
+(defmacro def-arg-spec [sym value]
+  (cond
+    (symbol? sym)
+    `(def ~sym
+       (basic-import-arg-spec
+        [::def-arg-spec
+         ~(keyword (str *ns*) (name sym))]
+        ~value))
+
+    (keyword? sym)
+    `(do (import-arg-spec-for-key-and-value ~sym ~value)
+         ~sym)
+    
+    :default (throw (ex-info "Cannot define arg-spec to this value"
+                             {:value sym}))))
 
 (defn provide-samples [arg-spec samples]
   (check-io
@@ -462,8 +574,9 @@
                     (filter (complement pred) samples))))))))
 
 (defn arg-spec-samples [arg-spec]
-  (reduce into [] [(:pos arg-spec)
-                   (:neg arg-spec)]))
+  (let [arg-spec (resolve-arg-spec arg-spec)]
+    (reduce into [] [(:pos arg-spec)
+                     (:neg arg-spec)])))
 
 (defn pred [pred-fn]
   "Easy construction of an arg-spec. This should only be used for very common values, because it just uses a default set of sample values"
@@ -476,15 +589,16 @@
 
 (defn filter-positive [arg-spec samples]
   (check-io
-   [:pre [::arg-spec arg-spec
+   [:pre [::general-arg-spec arg-spec
           (coll? samples)]
     :post k [(coll? k)]]
-   (filter (:pred arg-spec) samples)))
+   (let [arg-spec (resolve-arg-spec arg-spec)]
+     (filter (:pred arg-spec) samples))))
 
 (defn matches-arg-spec? [arg-spec x]
   (check-io
-   [:pre [::arg-spec arg-spec]]
-   ((:pred arg-spec) x)))
+   [:pre [(spec/valid? ::general-arg-spec arg-spec)]]
+   ((:pred (resolve-arg-spec arg-spec)) x)))
 
 ;;;------- Overload -------
 (defmacro declare-poly
@@ -596,6 +710,21 @@
     (println "Warning: No posiive samples for "
              (:key arg-spec)))
   arg-spec)
+
+(defn arg-spec-key [x]
+  {:pre [(spec/valid? ::general-arg-spec x)]
+   :post [(spec/valid? ::key %)]}
+  (if (key? x)
+    x
+    (:key x)))
+
+(defn re-resolve-arg-spec [x]
+  (resolve-arg-spec (arg-spec-key x)))
+
+(defn arg-spec-pred [arg-spec]
+  {:pre [(spec/valid? ::general-arg-spec arg-spec)]}
+  (fn [x]
+    ((:pred (resolve-arg-spec arg-spec)) x)))
 
 (def-arg-spec any-arg (pred any?))
 

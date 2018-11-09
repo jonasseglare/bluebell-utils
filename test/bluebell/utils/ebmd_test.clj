@@ -37,14 +37,24 @@
     (is (thrown? Exception (check-valid-arg-spec k)))
     (is (= k (import-arg-spec k)))))
 
+;; (reset-registry!)
+
 (def-arg-spec mummi {:pred number?
                      :desc "Any number"
                      :pos [9 3 1 -3 3/4]
                      :neg [:a :b]})
 
+(def-arg-spec ::kattskit mummi)
+
+(def-arg-spec ::kattskit-2 ::kattskit)
+
 (deftest mummi-test
-  (is (:valid? mummi))
-  (is (= (-> mummi :key)
+  (is (not (arg-spec? ::kattskit)))
+  (is (arg-spec? (resolve-arg-spec ::kattskit)))
+  (is (= (resolve-arg-spec ::kattskit)
+         (resolve-arg-spec ::kattskit-2))) 
+ (is (:valid? (resolve-arg-spec mummi)))
+  (is (= (-> mummi resolve-arg-spec :key)
          [::ebmd/def-arg-spec ::mummi]))
   (is (= [1 2 3 4] (filter-positive mummi [1 2 3 :a :b 4]))))
 
@@ -86,31 +96,43 @@
 (deftest overload-state-test
   (let [s (#'ebmd/init-overload-state 'kattskit #{})
         s (#'ebmd/add-arg-spec s mummi)]
-    (is (cljset/subset? #{3/4 :a :b} (set (:samples s))))
+    ;(is (cljset/subset? #{3/4 :a :b} (set (:samples s))))
     (is (:dirty? s))
-    (is (:key mummi))
-    (is (= (:arg-specs s)
-           {(:key mummi) mummi})))
+    
+    ;;(is (:key mummi))
+    (is (key? mummi))
+
+    (is (= (keys (:arg-specs s))
+           [(arg-spec-key mummi)])))
   (let [s (#'ebmd/init-overload-state 'negate #{})
         s (#'ebmd/add-overload s {:arg-specs [mummi]
                                  :fn (fn [x] (- x))})]
     (is (= (inc 1) (count (:arg-specs s))))
     (is (= 1 (count (:overloads s))))
-    (is (= [(:key mummi)] (-> s :overloads (get 2) keys first butlast)))
+    (is (= [(arg-spec-key mummi)]
+           (-> s :overloads
+               (get 2)
+               keys
+               first
+               butlast)))
     (is (fn? (-> s :overloads (get 2) vals first :fn))))
   (let [s (#'ebmd/init-overload-state 'negate #{})
         s (#'ebmd/add-overload s {:arg-specs [vec-arg]
                                  :fn negate-vec})
         s (#'ebmd/add-overload s {:arg-specs [a-vec-arg]
-                                 :fn negate-a-vec})]
+                                  :fn negate-a-vec})]
     (is (= 2 (-> s :overloads (get 2) count)))
-    (is (cljset/subset? #{[] :a [:b] [:a] [:a 3 4]}
+
+    ;; No samples if not rebuilt 
+    #_(is (cljset/subset? #{[] :a [:b] [:a] [:a 3 4]}
                         (set (:samples s))))
-    (let [s (#'ebmd/rebuild-arg-spec-samples s)
-          s (#'ebmd/rebuild-arg-spec-comparisons (#'ebmd/unmark-dirty s))
+    
+    (let [s (#'ebmd/rebuild-all s)
           cmps (:arg-spec-comparisons s)
-          s2 (#'ebmd/rebuild-all s)]
-      (is (= (get-in s [:arg-specs (:key vec-arg) :samples])
+          s2 s]
+      (is (= (get-in s [:arg-specs
+                        (arg-spec-key vec-arg)
+                        :samples])
              #{[] [:b] [:a] [:a 3 4]}))
       (is (contains? s2 :overload-dominates?))
       (is (map? (:overload-dominates? s2)))

@@ -14,8 +14,8 @@
                         arg-specs)]
      (ebo/normalize-and-check-arg-spec
       (ebo/provide-samples
-       {:key (into [tag] (map :key arg-specs))
-        :pred (pred-maker (map :pred arg-specs))}
+       {:key (into [tag] (map ebo/arg-spec-key arg-specs))
+        :pred (pred-maker (map ebo/arg-spec-pred arg-specs))}
        (reduce into #{} (map ebo/arg-spec-samples arg-specs)))))))
 
 (defn- make-not-pred [input-preds]
@@ -23,7 +23,11 @@
 
 (defn- make-and-pred [input-preds]
   (fn [x]
-    (every? (fn [p] (p x)) input-preds)))
+    (every?
+     (fn [p]
+       {:pre [(fn? p)]}
+       (p x))
+     input-preds)))
 
 (defn- make-or-pred [input-preds]
   (fn [x]
