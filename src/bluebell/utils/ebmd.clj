@@ -635,7 +635,7 @@
 (defn- promotion-path-sub [visited arg-spec x]
   (cond
     (contains? visited arg-spec) nil
-    (matches-arg-spec? arg-spec x) []
+    (matches-arg-spec? arg-spec x) (transient [])
     :default (let [visited (conj visited arg-spec)
                    chain (trace-arg-spec-chain arg-spec)
                    candidates (transduce
@@ -647,7 +647,7 @@
                                               (when-let
                                                   [p (promotion-path-sub
                                                       visited k x)]
-                                                (conj p kv)))))
+                                                (conj! p kv)))))
                                      (filter identity))
                                (completing shortest-path)
                                nil
@@ -915,7 +915,8 @@
   nil)
 
 (defn promotion-path [arg-spec x]
-  (promotion-path-sub #{} arg-spec x))
+  (if-let [result (promotion-path-sub #{} arg-spec x)]
+    (persistent! result)))
 
 (defn promote-along-path
   ([promotion-path x]
