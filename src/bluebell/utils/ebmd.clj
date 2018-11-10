@@ -202,12 +202,12 @@
 (defn trace-arg-spec-chain [init]
   {:pre [(v? ::general-arg-spec init)]}
   (loop [k (arg-spec-key init)
-         chain []]
+         chain (transient [])]
     (let [v (look-up-reg k)]
       (if (arg-spec? v)
-        (conj chain v)
+        (persistent! (conj! chain v))
         (recur (unwrap-reg-value v)
-               (conj chain v))))))
+               (conj! chain v))))))
 
 (defn lowest-key [init]
   {:pre [(v? ::key init)]}
