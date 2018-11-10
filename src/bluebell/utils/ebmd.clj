@@ -18,6 +18,7 @@
 (declare arg-spec-key)
 (declare promotion-path)
 (declare promote-along-path)
+(declare matches-arg-spec?)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -446,20 +447,11 @@
   {:pre [(= (count arg-list) (count args))]}
   (let [output (map (fn [arg-spec-key arg]
                       {:pre [(spec/valid? ::key arg-spec-key)]}
-                      (let [arg-spec (get arg-specs arg-spec-key)]
-                        (promotion-path arg-spec arg)
-                                        ;((:pred arg-spec) arg)
-                        ))
-                    
+                      (promotion-path arg-spec-key arg))
                     arg-list args)]
     (if (every? identity output)
       output)))
 
-
-(defn- matches? [arg-specs arg-list args]
-  (if (evaluate-promotion-paths arg-specs arg-list args)
-    true
-    false))
 
 (defn- list-pareto-elements [state overloads args]
   (let [arg-specs (:arg-specs state)
@@ -486,7 +478,6 @@
                     conj
                     []
                     overloads)
-        
         lowest-promotion-count (transduce
                                 (map :promotion-count)
                                 min
@@ -633,6 +624,44 @@
                        ". "))
                    arg-specs)]
     (render-text/add-line evals (str sample))))
+
+(defn- shortest-path [dst b]
+  (cond
+    (empty? dst) [b]
+    (= (count (first dst))
+       (count b)) (conj dst b)
+    :default [b]))
+
+(defn- promotion-path-sub [visited arg-spec x]
+  (cond
+    (contains? visited arg-spec) nil
+    (matches-arg-spec? arg-spec x) []
+    :default (let [visited (conj visited arg-spec)
+                   chain (trace-arg-spec-chain arg-spec)
+                   candidates (transduce
+                               (comp (map :promotions)
+                                     (filter identity)
+                                     cat
+                                     (map (fn [kv]
+                                            (let [[k v] kv]
+                                              (when-let
+                                                  [p (promotion-path-sub
+                                                      visited k x)]
+                                                (conj p kv)))))
+                                     (filter identity))
+                               (completing shortest-path)
+                               nil
+                               chain)]
+               (case (count candidates)
+                 0 nil
+                 1 (first candidates)
+                 2 (throw (ex-info
+                           "There are several equally long paths to promote value"
+                           {:value x
+                            :paths (for [c candidates]
+                                     (conj (mapv first c)
+                                           arg-spec))}))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -858,7 +887,7 @@
     x
     (:key x)))
 
-(defn re-resolve-arg-spec [x]
+#_(defn re-resolve-arg-spec [x]
   (resolve-arg-spec (arg-spec-key x)))
 
 (defn arg-spec-pred [arg-spec]
@@ -885,28 +914,11 @@
         (fn [prom]
           (assoc
            (or prom {})
-           src-arg-spec promoter)))))))
+           src-arg-spec promoter))))))
+  nil)
 
 (defn promotion-path [arg-spec x]
-  (if (matches-arg-spec? arg-spec x)
-    []
-    (let [chain (trace-arg-spec-chain arg-spec)
-          
-          first-path
-          (transduce
-           (comp (map :promotions)
-                 (filter identity)
-                 cat
-                 (map (fn [kv]
-                        (let [[k v] kv]
-                          (if-let [p (promotion-path k x)]
-                            (conj p kv)))))
-                 (filter identity)
-                 (take 1))
-           conj
-           []
-           chain)]
-      (first first-path))))
+  (promotion-path-sub #{} arg-spec x))
 
 (defn promote-along-path
   ([promotion-path x]

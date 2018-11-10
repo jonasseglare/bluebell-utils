@@ -484,11 +484,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (register-promotion ::basic-string-prom
                     str
-                    ::number-prom)
+                    ::int-prom)
 
-(register-promotion ::number-prom
+(register-promotion ::string-prom
+                    str
+                    ::float-prom)
+
+(register-promotion ::int-prom
                     (fn [x] (if x 1 0))
                     ::boolean-prom)
+
+(register-promotion ::float-prom
+                    double
+                    ::int-prom)
+
 
 (def-arg-spec ::basic-string-prom {:pred string?
                                    :pos ["aasdf" ""]
@@ -496,9 +505,13 @@
 
 (def-arg-spec ::string-prom ::basic-string-prom)
 
-(def-arg-spec ::number-prom {:pred number?
-                             :pos [9 3.4]
-                             :neg ["asdf"]})
+(def-arg-spec ::float-prom {:pred double?
+                            :pos [3.0 4.3]
+                            :neg [3 4 false "asdf"]})
+
+(def-arg-spec ::int-prom {:pred int?
+                          :pos [9 3]
+                          :neg ["asdf"]})
 
 (def-arg-spec ::boolean-prom {:pred boolean?
                               :pos [true false]
@@ -506,8 +519,9 @@
 
 (deftest promotion-test
   (is (= [] (promotion-path ::string-prom "asdf")))
-  (is (nil? (promotion-path ::string-prom :aasdf)))
+  (is (nil? (promotion-path ::string-prom :aasdf)))  
   (is (= 1 (count (promotion-path ::string-prom 9))))
+  (is (= 1 (count (promotion-path ::string-prom 3.4))))
   (let [path (promotion-path ::string-prom false)]
     (is (= 2 (count path)))
     (is (= "0" (promote-along-path path false)))))
@@ -526,7 +540,51 @@
 
 (deftest auto-promotions
   (is (= "01" (prom-add false 1)))
+  (is (= "3.43.3" (prom-add 3.4 3.3)))
+  (is (= "3.40" (prom-add 3.4 false)))
   (is (= false (prom-add false false)))
   (is (= true (prom-add false true)))
   (is (= "katt0" (prom-add "katt" false)))
   (is (= "kattskit" (prom-add "katt" "skit"))))
+
+
+;;;------- Ambiguity with promotion -------
+
+(def-arg-spec prom-seq {:pred sequential?
+                        :pos [[1 2 3]]
+                        :neg [#{:a}]})
+
+(def-arg-spec prom-set {:pred set?
+                        :pos [#{3 4}]
+                        :neg [{:a 3}]})
+
+(def-arg-spec prom-map {:pred map?
+                        :pos [{:a 4}]
+                        :neg [#{9 3}]})
+
+(def-arg-spec prom-num {:pred number?
+                        :pos [9.9]
+                        :neg [false]})
+
+(register-promotion prom-seq
+                    vec
+                    prom-set)
+
+(register-promotion prom-seq
+                    vec
+                    prom-map)
+
+(register-promotion prom-map
+                    (fn [x] {x x})
+                    prom-num)
+
+(register-promotion prom-set
+                    (fn [x] #{x})
+                    prom-num)
+
+
+(deftest ambiguity-test-promotion
+  (is (thrown? Exception (promotion-path prom-seq 3)))
+  (is (= 1 (count (promotion-path prom-seq #{}))))
+  (is (= 1 (count (promotion-path prom-seq {}))))
+  (is (= 0 (count (promotion-path prom-seq [])))))
