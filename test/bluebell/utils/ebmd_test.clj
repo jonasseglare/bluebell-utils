@@ -49,13 +49,15 @@
 (def-arg-spec ::kattskit-2 ::kattskit)
 
 (deftest mummi-test
+  (is (= (lowest-key ::kattskit)
+         ::mummi))
   (is (not (arg-spec? ::kattskit)))
   (is (arg-spec? (resolve-arg-spec ::kattskit)))
   (is (= (resolve-arg-spec ::kattskit)
          (resolve-arg-spec ::kattskit-2))) 
  (is (:valid? (resolve-arg-spec mummi)))
   (is (= (-> mummi resolve-arg-spec :key)
-         [::ebmd/def-arg-spec ::mummi]))
+         ::mummi))
   (is (= [1 2 3 4] (filter-positive mummi [1 2 3 :a :b 4]))))
 
 
@@ -466,9 +468,65 @@
   [:b b])
 
 (def-poly amb [type/number a
-                   type/any b]
+               type/any b]
   [:a b])
 
 (deftest check-it-is-ambiguous
   (is (thrown? Exception (amb 3 4))))
 
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;  Promotions
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(register-promotion ::basic-string-prom
+                    str
+                    ::number-prom)
+
+(register-promotion ::number-prom
+                    (fn [x] (if x 1 0))
+                    ::boolean-prom)
+
+(def-arg-spec ::basic-string-prom {:pred string?
+                                   :pos ["aasdf" ""]
+                                   :neg [9 3]})
+
+(def-arg-spec ::string-prom ::basic-string-prom)
+
+(def-arg-spec ::number-prom {:pred number?
+                             :pos [9 3.4]
+                             :neg ["asdf"]})
+
+(def-arg-spec ::boolean-prom {:pred boolean?
+                              :pos [true false]
+                              :neg [9 0]})
+
+(deftest promotion-test
+  (is (= [] (promotion-path ::string-prom "asdf")))
+  (is (nil? (promotion-path ::string-prom :aasdf)))
+  (is (= 1 (count (promotion-path ::string-prom 9))))
+  (let [path (promotion-path ::string-prom false)]
+    (is (= 2 (count path)))
+    (is (= "0" (promote-along-path path false)))))
+
+
+(declare-poly prom-add)
+
+(def-poly prom-add [::string-prom a
+                    ::string-prom b]
+  (str a b))
+
+(def-poly prom-add [::boolean-prom a
+                    ::boolean-prom b]
+  (or a b))
+
+
+(deftest auto-promotions
+  (is (= "01" (prom-add false 1)))
+  (is (= false (prom-add false false)))
+  (is (= true (prom-add false true)))
+  (is (= "katt0" (prom-add "katt" false)))
+  (is (= "kattskit" (prom-add "katt" "skit"))))
