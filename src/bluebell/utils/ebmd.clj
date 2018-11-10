@@ -175,15 +175,11 @@
       ::reg-counter))
 
 (defn unwrap-reg-value [x]
-  (let [v (spec/conform ::reg-value x)
-        _ (when (= ::spec/invalid v)
-            (throw (ex-info "Invalid reg-value"
-                            {:reg-value x})))
-        [type parsed] v]
-    (case type
-      :indirect (:ref x)
-      :arg-spec x
-      :empty (throw (ex-info "Empty arg-spec encountered" {})))))
+  {:pre [(v? ::reg-value x)]}
+  (cond
+    (contains? x :pred) x
+    (contains? x :ref) (:ref x)
+    :default (throw (ex-info "Empty arg-spec encountered" {}))))
 
 (defn look-up-reg [k]
   (get (deref arg-spec-registry) k))
