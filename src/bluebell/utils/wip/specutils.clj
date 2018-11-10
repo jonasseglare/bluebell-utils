@@ -20,3 +20,9 @@
 
 (defn pred [speck]
   (fn [x] (spec/valid? speck x)))
+
+(defn debug-validator [active?]
+  {:pre [(boolean? active?)]}
+  (if active?
+    (partial spec/valid?)
+    (constantly true)))

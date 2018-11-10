@@ -20,6 +20,8 @@
 (declare promote-along-path)
 (declare matches-arg-spec?)
 
+(def v? (specutils/debug-validator false))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Specs
@@ -93,6 +95,14 @@
   (spec/* (spec/alt :joint ::joint-binding
                     :arg-binding ::arg-binding)))
 
+(defn transduce-conj! [transducer init-vec src]
+  (persistent!
+   (transduce
+    transducer
+    conj!
+    (transient init-vec)
+    src)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Impl
@@ -116,16 +126,16 @@
     [(not= new-value old-value) new-value]))
 
 (defn wrap-reg-arg-spec [x]
-  {:pre [(spec/valid? ::general-arg-spec x)]}
+  {:pre [(v? ::general-arg-spec x)]}
   (if (key? x)
     {:ref x}
     x))
 
 (defn- arg-spec-updater [to-add]
   (fn [old-value]
-    {:post [(spec/valid? ::reg-value %)]}
+    {:post [(v? ::reg-value %)]}
     (let [to-add (wrap-reg-arg-spec to-add)
-          _ (spec/valid? ::reg-value to-add)
+          _ (v? ::reg-value to-add)
           output (merge (reduce dissoc
                                 (or old-value {})
                                 [:ref :pred])
@@ -133,7 +143,7 @@
       output)))
 
 (defn update-arg-spec-registry [k f]
-  {:pre [(spec/valid? ::key k)
+  {:pre [(v? ::key k)
          (fn? f)]}
   (swap! arg-spec-registry
          (fn [reg]
@@ -141,9 +151,7 @@
                  [updated? new-arg-spec]
                  (update-registered-arg-spec
                   old-arg-spec f)
-                 _ (assert (spec/valid?
-                            ::reg-value
-                            new-arg-spec))
+                 _ (assert (v? ::reg-value new-arg-spec))
                  reg (if updated?
                        (update reg ::reg-counter inc)
                        reg)]
@@ -151,14 +159,14 @@
 
 (defn register-arg-spec
   ([k arg-spec]
-   {:pre [(spec/valid? ::key k)
-          (spec/valid? ::general-arg-spec arg-spec)]
-    :post [(spec/valid? ::general-arg-spec %)]}
+   {:pre [(v? ::key k)
+          (v? ::general-arg-spec arg-spec)]
+    :post [(v? ::general-arg-spec %)]}
    (update-arg-spec-registry
     k (arg-spec-updater arg-spec))
    arg-spec)
   ([arg-spec]
-   {:pre [(spec/valid? ::arg-spec arg-spec)]}
+   {:pre [(v? ::arg-spec arg-spec)]}
    (register-arg-spec (:key arg-spec) arg-spec)))
 
 (defn get-reg-counter []
@@ -184,8 +192,8 @@
   (unwrap-reg-value (look-up-reg k)))
 
 (defn resolve-arg-spec [init]
-  {:pre [(spec/valid? ::general-arg-spec init)]
-   :post [(spec/valid? ::arg-spec %)]}
+  {:pre [(v? ::general-arg-spec init)]
+   :post [(v? ::arg-spec %)]}
   (loop [x init]
     (if (arg-spec? x)
       x
@@ -196,7 +204,7 @@
                          :init init}))))))
 
 (defn trace-arg-spec-chain [init]
-  {:pre [(spec/valid? ::general-arg-spec init)]}
+  {:pre [(v? ::general-arg-spec init)]}
   (loop [k (arg-spec-key init)
          chain []]
     (let [v (look-up-reg k)]
@@ -206,7 +214,7 @@
                (conj chain v))))))
 
 (defn lowest-key [init]
-  {:pre [(spec/valid? ::key init)]}
+  {:pre [(v? ::key init)]}
   (loop [k init]
     (let [deeper (look-up-deeper k)]
       (if (arg-spec? deeper)
@@ -304,25 +312,23 @@
     (update state
             :arg-specs
             (fn [arg-specs]
-              (transduce
+              (transduce-conj!
                (map (fn [[k arg-spec]]
-                           {:pre [(key? k)]}
-                           (let [arg-spec (resolve-arg-spec k)
-                                 sample-set (set
-                                             (filter-positive
-                                              arg-spec samples))]
-                             [k (assoc
-                                 arg-spec :samples
-                                 sample-set)])))
-               conj
+                      {:pre [(key? k)]}
+                      (let [arg-spec (resolve-arg-spec k)
+                            sample-set (set
+                                        (filter-positive
+                                         arg-spec samples))]
+                        [k (assoc
+                            arg-spec :samples
+                            sample-set)])))
                {}
                arg-specs)))))
 
 (defn- cart-prod [a b]
-  (transduce
+  (transduce-conj!
    (comp (map (fn [a] (mapv (fn [b] [a b]) b)))
          cat)
-   conj
    []
    a))
 
@@ -348,13 +354,12 @@
                 (cart-prod arg-specs arg-specs))))))
 
 (defn- get-all-overload-arg-lists [state]
-  (transduce
+  (transduce-conj!
    (comp (map (fn [[arity overloads-per-arity]]
                 {:pre [(number? arity)
                        (map? overloads-per-arity)]}
                 (mapv first overloads-per-arity)))
          cat)
-   conj
    []
    (:overloads state)))
 
@@ -368,14 +373,13 @@
 
 (defn- compute-overload-dominates? [state]
   (let [arg-lists (get-all-overload-arg-lists state)]
-    (transduce
+    (transduce-conj!
      (map (fn [[arg-list-a arg-list-b]]
             [[arg-list-a arg-list-b]
              (compare-arg-lists
               state
               arg-list-a
               arg-list-b)]))
-     conj
      {}
      (cart-prod arg-lists arg-lists))))
 
@@ -389,25 +393,22 @@
 (defn- resolve-all-arg-specs [state]
   (update state :arg-specs
           (fn [arg-specs]
-            (transduce
+            (transduce-conj!
              (map (fn [[k v]]
-                    (if (not (spec/valid? ::key k))
+                    (if (not (v? ::key k))
                       (throw (ex-info "BAD arg spec key "
                                       {:key k
                                        :state state})))
-                    ;{:pre [(spec/valid? ::key k)]}
                     [k (resolve-arg-spec k)]))
-             conj
              {}
              arg-specs))))
 
 (defn accumulate-all-samples [state]
-  (let [samples (transduce
+  (let [samples (transduce-conj!
                  (comp (map (fn [[k v]]
                               [(:pos v) (:neg v)]))
                        cat
                        cat)
-                 conj
                  #{}
                  (:arg-specs state))]
     (assoc state
@@ -446,7 +447,7 @@
 (defn evaluate-promotion-paths [arg-specs arg-list args]
   {:pre [(= (count arg-list) (count args))]}
   (let [output (map (fn [arg-spec-key arg]
-                      {:pre [(spec/valid? ::key arg-spec-key)]}
+                      {:pre [(v? ::key arg-spec-key)]}
                       (promotion-path arg-spec-key arg))
                     arg-list args)]
     (if (every? identity output)
@@ -455,7 +456,7 @@
 
 (defn- list-pareto-elements [state overloads args]
   (let [arg-specs (:arg-specs state)
-        candidates (transduce
+        candidates (transduce-conj!
                     (comp (map (fn [[arg-list f]]
                                  (let [paths (evaluate-promotion-paths
                                               arg-specs
@@ -475,7 +476,6 @@
                                       :promotion-count
                                       promotion-count}))))
                           (filter identity))
-                    conj
                     []
                     overloads)
         lowest-promotion-count (transduce
@@ -766,7 +766,7 @@
 
 (defn matches-arg-spec? [arg-spec x]
   (check-io
-   [:pre [(spec/valid? ::general-arg-spec arg-spec)]]
+   [:pre [(v? ::general-arg-spec arg-spec)]]
    ((:pred (resolve-arg-spec arg-spec)) x)))
 
 ;;;------- Overload -------
@@ -881,17 +881,14 @@
   arg-spec)
 
 (defn arg-spec-key [x]
-  {:pre [(spec/valid? ::general-arg-spec x)]
-   :post [(spec/valid? ::key %)]}
+  {:pre [(v? ::general-arg-spec x)]
+   :post [(v? ::key %)]}
   (if (key? x)
     x
     (:key x)))
 
-#_(defn re-resolve-arg-spec [x]
-  (resolve-arg-spec (arg-spec-key x)))
-
 (defn arg-spec-pred [arg-spec]
-  {:pre [(spec/valid? ::general-arg-spec arg-spec)]}
+  {:pre [(v? ::general-arg-spec arg-spec)]}
   (fn [x]
     ((:pred (resolve-arg-spec arg-spec)) x)))
 
@@ -924,7 +921,7 @@
   ([promotion-path x]
    (promote-along-path promotion-path x true))
   ([promotion-path x check?]
-   {:pre [(spec/valid? ::promotion-path promotion-path)
+   {:pre [(v? ::promotion-path promotion-path)
           (boolean? check?)]}
    (loop [promotion-path promotion-path
           value x]
