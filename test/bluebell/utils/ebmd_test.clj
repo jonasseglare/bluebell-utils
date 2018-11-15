@@ -588,3 +588,46 @@
   (is (= 1 (count (promotion-path prom-seq #{}))))
   (is (= 1 (count (promotion-path prom-seq {}))))
   (is (= 0 (count (promotion-path prom-seq [])))))
+
+
+
+(def number-types [::byte ::short ::int ::long ::float ::double])
+
+(def all-promotions (reduce into []
+                            (for [[from & tos] (take-while (complement empty?)
+                                                           (iterate rest number-types))]
+                              (for [to tos]
+                                [from to]))))
+
+(doseq [[from to] all-promotions]
+  (register-promotion to
+                      (partial vector to)
+                      from))
+
+(defn num-arg-spec [k cl sample]
+  {:pred (fn [x] (or (= cl (class x))
+                     (and (vector? x)
+                          (= k (first x)))))
+   :pos [sample]
+   :neg []})
+
+(def-arg-spec ::double (num-arg-spec ::double Double 3.0))
+(def-arg-spec ::float (num-arg-spec ::float Float (float 3.0)))
+(def-arg-spec ::long (num-arg-spec ::long Long (long 3)))
+(def-arg-spec ::int (num-arg-spec ::int Integer (int 3)))
+(def-arg-spec ::byte (num-arg-spec ::byte Byte (byte 3)))
+(def-arg-spec ::short (num-arg-spec ::short Short (short 3)))
+
+(declare-poly add-0)
+
+(def-poly add-0 [::double a
+                 ::double b]
+  [:add a b])
+
+;; (add-0 3 4)
+
+;; (promotion-path ::double 3)
+
+(deftest promotion-shortest-path-test
+  (is [:add [::double 3] [::double 4]]
+      (add-0 3 4)))

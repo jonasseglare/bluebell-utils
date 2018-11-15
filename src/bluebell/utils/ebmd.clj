@@ -621,42 +621,50 @@
                    arg-specs)]
     (render-text/add-line evals (str sample))))
 
+
+
 (defn- shortest-path [dst b]
-  (cond
-    (empty? dst) [b]
-    (= (count (first dst))
-       (count b)) (conj dst b)
-    :default [b]))
+  (if (empty? dst)
+    [b]
+    (let [dst-n (count (first dst))
+          b-n (count b)]
+      (cond
+        (= dst-n b-n) (conj dst b)
+        (< dst-n b-n) dst
+        :default [b]))))
+
 
 (defn- promotion-path-sub [visited arg-spec x]
   (cond
     (contains? visited arg-spec) nil
     (matches-arg-spec? arg-spec x) (transient [])
-    :default (let [visited (conj visited arg-spec)
-                   chain (trace-arg-spec-chain arg-spec)
-                   candidates (transduce
-                               (comp (map :promotions)
-                                     (filter identity)
-                                     cat
-                                     (map (fn [kv]
-                                            (let [[k v] kv]
-                                              (when-let
-                                                  [p (promotion-path-sub
-                                                      visited k x)]
-                                                (conj! p kv)))))
-                                     (filter identity))
-                               (completing shortest-path)
-                               nil
-                               chain)]
-               (case (count candidates)
-                 0 nil
-                 1 (first candidates)
-                 2 (throw (ex-info
-                           "There are several equally long paths to promote value"
-                           {:value x
-                            :paths (for [c candidates]
-                                     (conj (mapv first c)
-                                           arg-spec))}))))))
+    :default
+    (do
+      (let [visited (conj visited arg-spec)
+            chain (trace-arg-spec-chain arg-spec)
+            candidates (transduce
+                        (comp (map :promotions)
+                              (filter identity)
+                              cat
+                              (map (fn [kv]
+                                     (let [[k v] kv]
+                                       (when-let
+                                           [p (promotion-path-sub
+                                               visited k x)]
+                                         (conj! p kv)))))
+                              (filter identity))
+                        (completing shortest-path)
+                        nil
+                        chain)]
+        (case (count candidates)
+          0 nil
+          1 (first candidates)
+          2 (throw (ex-info
+                    "There are several equally long paths to promote value"
+                    {:value x
+                     :paths (for [c candidates]
+                              (conj (mapv first c)
+                                    arg-spec))})))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
