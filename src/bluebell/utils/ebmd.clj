@@ -42,7 +42,10 @@
 
 (spec/def ::promoter fn?)
 
-(spec/def ::promotions (spec/map-of ::key ::promoter))
+(spec/def ::cost number?)
+(spec/def ::promotion (spec/keys :req-un [::promoter ::cost]))
+
+(spec/def ::promotions (spec/map-of ::key ::promotion))
 
 (spec/def ::arg-spec (spec/keys :req-un [::pred
                                          ::pos
@@ -56,10 +59,7 @@
 (spec/def ::general-arg-spec (spec/or :key ::key
                                       :arg-spec ::arg-spec))
 
-(spec/def ::promotion-path (spec/*
-                            (spec/spec
-                             (spec/cat :key ::key
-                                       :promoter ::promoter))))
+(spec/def ::promotion-path (spec/coll-of ::promotion))
 
 (spec/def ::ref ::key)
 
@@ -624,21 +624,28 @@
 
 
 
+(defn evaluate-path-cost [path]
+  (transduce
+   (map :cost)
+   +
+   0.0
+   path))
+
 (defn- shortest-path [dst b]
   (if (empty? dst)
     [b]
-    (let [dst-n (count (first dst))
-          b-n (count b)]
+    (let [dst-cost (evaluate-path-cost (first dst))
+          b-cost (evaluate-path-cost b)]
       (cond
-        (= dst-n b-n) (conj dst b)
-        (< dst-n b-n) dst
+        (= dst-cost b-cost) (conj dst b)
+        (< dst-cost b-cost) dst
         :default [b]))))
 
 
 (defn- promotion-path-sub [visited arg-spec x]
   (cond
     (contains? visited arg-spec) nil
-    (matches-arg-spec? arg-spec x) (transient [])
+    (matches-arg-spec? arg-spec x) []
     :default
     (do
       (let [visited (conj visited arg-spec)
@@ -648,11 +655,12 @@
                               (filter identity)
                               cat
                               (map (fn [kv]
-                                     (let [[k v] kv]
+                                     (let [[k v] kv
+                                           v (assoc v :key k)]
                                        (when-let
                                            [p (promotion-path-sub
                                                visited k x)]
-                                         (conj! p kv)))))
+                                         (conj p v)))))
                               (filter identity))
                         (completing shortest-path)
                         nil
@@ -664,9 +672,8 @@
                     "There are several equally long paths to promote value"
                     {:value x
                      :paths (for [c candidates]
-                              (let [c (persistent! c)]
-                                (conj (mapv first c)
-                                      arg-spec)))})))))))
+                              (conj (mapv first c)
+                                    arg-spec))})))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -902,27 +909,41 @@
 
 
 ;;;------- Promotion -------
-(defn register-promotion [dst-arg-spec promoter src-arg-spec]
-  {:pre [(spec/valid? ::general-arg-spec dst-arg-spec)
-         (fn? promoter)
-         (spec/valid? ::general-arg-spec src-arg-spec)]}
-  (let [dst-arg-spec (arg-spec-key dst-arg-spec)
-        src-arg-spec (arg-spec-key src-arg-spec)]
-    (update-arg-spec-registry
-     dst-arg-spec
-     (fn [arg-spec]
-       (update
-        arg-spec
-        :promotions
-        (fn [prom]
-          (assoc
-           (or prom {})
-           src-arg-spec promoter))))))
-  nil)
+(def default-promotion-cost 1.0)
+
+(defn register-promotion
+  ([dst-arg-spec
+    promoter
+    src-arg-spec]
+   (register-promotion dst-arg-spec
+                       promoter
+                       src-arg-spec
+                       default-promotion-cost))
+  ([dst-arg-spec
+    promoter
+    src-arg-spec
+    cost]
+   {:pre [(spec/valid? ::general-arg-spec dst-arg-spec)
+          (fn? promoter)
+          (spec/valid? ::general-arg-spec src-arg-spec)]}
+   (let [dst-arg-spec (arg-spec-key dst-arg-spec)
+         src-arg-spec (arg-spec-key src-arg-spec)]
+     (update-arg-spec-registry
+      dst-arg-spec
+      (fn [arg-spec]
+        (update
+         arg-spec
+         :promotions
+         (fn [prom]
+           (assoc
+            (or prom {})
+            src-arg-spec
+            {:promoter promoter
+             :cost cost}))))))
+   nil))
 
 (defn promotion-path [arg-spec x]
-  (if-let [result (promotion-path-sub #{} arg-spec x)]
-    (persistent! result)))
+  (promotion-path-sub #{} arg-spec x))
 
 (defn promote-along-path
   ([promotion-path x]
@@ -934,7 +955,9 @@
           value x]
      (if (empty? promotion-path)
        value
-       (let [[[k promoter] & r] promotion-path
+       (let [[v & r] promotion-path
+             k (:key v)
+             promoter (:promoter v)
              _ (assert (or (not check?)
                            (matches-arg-spec? k value)))
              next-value (promoter value)]
