@@ -579,15 +579,16 @@
   (init-overload-state (:name state)
                        (:init-samples state)))
 
-(defn- render-overload-text [[signature overload]]
-  [(render-text/add-line "Overload:")
-   (render-text/indent
-    (render-text/pprint (vec (butlast signature)))
-    (let [l (last signature)]
-      (if (= l (:key any-arg))
-        []
-        [(render-text/add-line "Joint:")
-         (render-text/pprint l)])))])
+(defn- render-overload-text [input]
+  (let [signature (:arg-list input)]
+    [(render-text/add-line "Overload:")
+     (render-text/indent
+      (render-text/pprint (vec (butlast signature)))
+      (let [l (last signature)]
+        (if (= l (:key any-arg))
+          []
+          [(render-text/add-line "Joint:")
+           (render-text/pprint l)])))]))
 
 (defn- render-arity-text [[full-arity overloads]]
   [(render-text/add-line "Arity " (dec full-arity))
@@ -663,8 +664,9 @@
                     "There are several equally long paths to promote value"
                     {:value x
                      :paths (for [c candidates]
-                              (conj (mapv first c)
-                                    arg-spec))})))))))
+                              (let [c (persistent! c)]
+                                (conj (mapv first c)
+                                      arg-spec)))})))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
