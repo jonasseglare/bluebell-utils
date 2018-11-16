@@ -631,3 +631,14 @@
 (deftest promotion-shortest-path-test
   (is [:add [::double 3] [::double 4]]
       (add-0 3 4)))
+
+
+
+(def-arg-spec ::sp-number {:pred number?
+                           :pos [3 4]
+                           :neg [:a]
+                           :reg-spec? true})
+
+(deftest arg-spec-with-reg-spec
+  (is (spec/valid? ::sp-number 9))
+  (is (not (spec/valid? ::sp-number :a))))

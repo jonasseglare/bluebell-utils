@@ -67,6 +67,8 @@
   (spec/keys :req-un [::ref]
              :opt-un [::promotions]))
 
+(spec/def ::reg-spec? boolean?)
+
 (spec/def ::empty-arg-spec (spec/keys :opt-un [::promotions]))
 
 (spec/def ::reg-value (spec/or :indirect ::indirect-arg-spec
@@ -75,7 +77,8 @@
 
 (spec/def ::input-arg-spec
   (spec/keys :opt-un [::pred ::pos ::neg
-                      ::key ::desc ::spec]))
+                      ::key ::desc ::spec
+                      ::reg-spec?]))
 
 
 
@@ -732,8 +735,10 @@
         ~value))
 
     (keyword? sym)
-    `(do (import-arg-spec-for-key-and-value ~sym ~value)
-         ~sym)
+    `(let [r# (import-arg-spec-for-key-and-value ~sym ~value)]
+       (if (and (map? r#) (:reg-spec? r#))
+         (spec/def ~sym (:pred r#)))
+       ~sym)
     
     :default (throw (ex-info "Cannot define arg-spec to this value"
                              {:value sym}))))
