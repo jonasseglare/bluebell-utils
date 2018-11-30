@@ -464,7 +464,7 @@
 (declare-poly amb)
 
 (def-poly amb [type/any a
-                   type/number b]
+               type/number b]
   [:b b])
 
 (def-poly amb [type/number a
