@@ -21,6 +21,14 @@ public class Impl {
         return _sig;
     }
     
+    public IFn getFn() {
+        return _fn;
+    }
+
+    public void setFn(IFn x) {
+        _fn = x;
+    }
+
     public Impl(Signature sig, IFn fn, PromotionPath[] paths) {
         if (paths.length != sig.getArity()) {
             throw new RuntimeException("Bad length of paths");

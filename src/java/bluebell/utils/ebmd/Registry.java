@@ -10,6 +10,7 @@ import bluebell.utils.ebmd.Promotion;
 import bluebell.utils.ebmd.PolyFn;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
 
@@ -19,8 +20,6 @@ public class Registry {
     private int _rebuiltAt = -1;
     private HashMap<Object, ArgSpecVars> _registry 
         = new HashMap<Object, ArgSpecVars>();
-    /*private HashMap<Object, PolyFn> _polyFns 
-      = new HashMap<Object, PolyFn>();*/
 
     public Registry(Settings s) {
         _settings = s;
@@ -195,7 +194,7 @@ public class Registry {
         return _rebuiltAt;
     }
 
-    /*public void addPolyFn(Object key, PolyFn v) {
-        _polyFns.put(key, v);
-        }*/
+    public Set<Object> getArgSpecKeys() {
+        return _registry.keySet();
+    }
 }

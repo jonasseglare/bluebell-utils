@@ -259,7 +259,7 @@
 
 (deftest basic-poly-fns
   (let [reg (Registry. debug-settings)
-        poly (PolyFn. reg :add)
+        poly (PolyFn. reg nil)
         int-spec (ArgSpec. int? #{(int 3)} #{})
         str-spec (ArgSpec. string? #{"asdfsdf"} #{})
         any-spec (ArgSpec. any? #{true false 9 :asdf "asd"} #{})

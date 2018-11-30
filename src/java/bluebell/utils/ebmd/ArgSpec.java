@@ -58,4 +58,15 @@ public class ArgSpec implements IArgSpec {
         dst.addAll(_neg);
     }
 
+    public IFn getPredicate() {
+        return _pred;
+    }
+
+    public Set<Object> getPositive() {
+        return _pos;
+    }
+
+    public Set<Object> getNegative() {
+        return _neg;
+    }
 }

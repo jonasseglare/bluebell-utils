@@ -27,6 +27,10 @@ public class Signature {
         _hashCode = Arrays.hashCode(_allData);
     }
 
+    public Object[] getArgSpecKeys() {
+        return Arrays.copyOf(_allData, _allData.length-1);
+    }
+
     public int getArity() {
         return _allData.length-1;
     }
@@ -127,5 +131,19 @@ public class Signature {
                 as.accumulateSamples(dst);
             }
         }
+    }
+
+    public String toString() {
+        boolean space = false;
+        String dst = "";
+        for (int i = 0; i < _allData.length-1; i++) {
+            if (space) {
+                dst += " ";
+            }
+            space = true;
+
+            dst += _allData[i].toString();
+        }
+        return dst;
     }
 }
