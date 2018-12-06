@@ -1,6 +1,6 @@
 (ns bluebell.utils.ebmd.java-test
   (:import [bluebell.utils.ebmd Registry ArgSpec
-            IndirectArgSpec EmptyArgSpec
+            IndirectArgSpec
             PromotionPath
             Promotion
             CachedDominates
@@ -47,10 +47,6 @@
     
     (.registerIndirection reg :kattskit :mjao)
 
-    ;(is (instance? EmptyArgSpec (.getOrMakeArgSpecAtKey reg :asdfasdfs)))
-
-    ;(is (instance? IndirectArgSpec (.getOrMakeArgSpecAtKey reg :kattskit)))
-    
     (is (identical? num-spec
                     (.resolve reg :kattskit)))
     (let [res (.resolve reg :mjao)]

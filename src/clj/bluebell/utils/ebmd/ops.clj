@@ -7,16 +7,14 @@
 
 (defn- transform-arg-spec [tag pred-maker arg-specs]
   (check-io
-   [:pre [(fn? pred-maker)]
-    :post out [::ebo/arg-spec out]]
-
-   (let [arg-specs (map ebo/import-and-check-arg-spec
-                        arg-specs)]
-     (ebo/import-and-check-arg-spec
-      (ebo/provide-samples
-       {:key (into [tag] (map ebo/arg-spec-key arg-specs))
-        :pred (pred-maker (map ebo/arg-spec-pred arg-specs))}
-       (reduce into #{} (map ebo/arg-spec-samples arg-specs)))))))
+   [:pre [(fn? pred-maker)]]
+   (let [arg-specs (mapv ebo/import-arg-spec-if-needed arg-specs)]
+     (ebo/import-arg-spec
+      (merge
+       (ebo/pred
+        (pred-maker (map ebo/arg-spec-pred arg-specs))
+        (reduce into #{} (map ebo/arg-spec-samples arg-specs)))
+       {:key (into [tag] arg-specs)})))))
 
 (defn- make-not-pred [input-preds]
   (complement (first input-preds)))

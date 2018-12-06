@@ -1,6 +1,6 @@
 (ns bluebell.utils.ebmd.type
   (:require [bluebell.utils.ebmd :refer [def-arg-spec
-                                         pred any-arg]])
+                                         any-arg pred]])
   (:refer-clojure :exclude [any number
                             sequential set keyword
                             string coll map empty

@@ -5,7 +5,6 @@ import bluebell.utils.ebmd.ArgSpec;
 import bluebell.utils.ebmd.ArgSpecVars;
 import bluebell.utils.ebmd.ArgSpecVarsVisitor;
 import bluebell.utils.ebmd.IndirectArgSpec;
-import bluebell.utils.ebmd.EmptyArgSpec;
 import bluebell.utils.ebmd.Promotion;
 import bluebell.utils.ebmd.PolyFn;
 import bluebell.utils.ReadAndUpdateMachine;

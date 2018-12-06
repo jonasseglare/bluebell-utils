@@ -1,159 +1,72 @@
 (ns bluebell.utils.ebmd-test
-  (:require [bluebell.utils.ebmd :refer :all :as ebmd]
-            [bluebell.utils.ebmd.ops :as ops]
-            [bluebell.utils.ebmd.type :as type]
-            [clojure.test :refer :all]
-            [bluebell.utils.wip.specutils :as specutils]
+  (:import [bluebell.utils.ebmd ArgSpec])
+  (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as spec]
             [clojure.set :as cljset]
-            [bluebell.utils.wip.render-repl :refer [render]]))
+            [bluebell.utils.ebmd.type :as type]
+            [bluebell.utils.ebmd.ops :as ops]
+            [clojure.set :as cljset]
+            [bluebell.utils.ebmd :refer :all]))
 
-(spec/def ::mjao (partial = [:mjao 119]))
+(def-arg-spec ::any {:pred any?
+                     :pos [1 2 3 :a "a"]
+                     :neg []})
 
-(deftest spec-test
-  (is (spec/valid?
-       ::ebmd/arg-spec
-       (import-arg-spec {:pred number?
-                            :key :number
-                            :pos [] :neg[]})))
+(def-arg-spec ::number {:pred number?
+                        :pos [1 3/4 3.4 -4]
+                        :neg [:a {:a 3}]})
 
-  (let [k (#'ebmd/decorate-key-and-pred-from-spec {:spec ::mjao})]
-    (is (contains? k :key))
-    (is (contains? k :pred))
-    (is ((:pred k) [:mjao 119]))
-    (is (not ((:pred k) [:mjao 118]))))
-  (let [k (import-arg-spec {:spec ::mjao
-                               :pos [[:mjao 119]]
-                               :neg [9 :a {} {:a 3}]})]
-    (is (:valid? k)))
-  (let [k (import-arg-spec {:spec ::mjao
-                               :pos [[:mjao 119] 4]
-                               :neg [9 :a {} {:a 3}]})]
-    (is (not (:valid? k))))
-  (let [k (import-arg-spec {:spec ::mjao
-                               :pos [[:mjao 119]]
-                               :neg [9 :a {} {:a 3} [:mjao 119]]})]
-    (is (not (:valid? k)))
-    (is (thrown? Exception (check-valid-arg-spec k)))
-    (is (= k (import-arg-spec k)))))
+(def-arg-spec ::int {:pred int?
+                     :pos [1 2 3]
+                     :neg [13.3 :a []]})
 
-;; (reset-registry!)
+(def-arg-spec ::string {:pred string?
+                        :pos ["a" "asdf" ""]
+                        :neg [3 13.3 :a []]})
 
-(def-arg-spec mummi {:pred number?
-                     :desc "Any number"
-                     :pos [9 3 1 -3 3/4]
-                     :neg [:a :b]})
+(deftest basic-ebmd-test
+  (is (instance? ArgSpec (resolve-arg-spec ::int)))
+  (is (instance? ArgSpec
+                 (resolve-arg-spec
+                  (resolve-arg-spec ::int))))
+  (is (matches-arg-spec? ::int 3))
+  (is (not (matches-arg-spec? ::int :a)))
+  (is (cljset/subset? #{::int} (arg-spec-keys))))
 
-(def-arg-spec ::kattskit mummi)
+(declare-poly add-)
 
-(def-arg-spec ::kattskit-2 ::kattskit)
+(def-poly add- [::number a
+               ::number b]
+  [:sum (+ a b)])
 
-(deftest mummi-test
-  (is (= (lowest-key ::kattskit)
-         ::mummi))
-  (is (not (arg-spec? ::kattskit)))
-  (is (arg-spec? (resolve-arg-spec ::kattskit)))
-  (is (= (resolve-arg-spec ::kattskit)
-         (resolve-arg-spec ::kattskit-2))) 
- (is (:valid? (resolve-arg-spec mummi)))
-  (is (= (-> mummi resolve-arg-spec :key)
-         ::mummi))
-  (is (= [1 2 3 4] (filter-positive mummi [1 2 3 :a :b 4]))))
+(def-poly add- [::int a
+               ::int b]
+  (+ a b))
+
+(def-poly add- [::string a
+               ::string b]
+  (str a b))
+
+(def-poly add- [::any x]
+  x)
+
+(register-promotion ::string str ::int)
+
+(deftest add-test
+  (is (= 7 (add- 3 4)))
+  (is (= [:sum 3.4] (add- 3 0.4)))
+  (is (= "kattsk1t" (add- "katt" "sk1t")))
+  (is (= "kattsk1" (add- "kattsk" 1)))
+  (is (= :katt (add- :katt))))
+
+;; (poly-summary add)
+;; (print-arg-spec-comparison [::int ::number ::string])
+;; (print-arg-spec-comparison (poly-arg-specs add-))
+  
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;;  Overloading
-;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-arg-spec num-arg {:pred number?
-                       :pos [3 4 3.4]
-                       :neg [:a]})
 
-(def-arg-spec vec-arg {:pred sequential?
-                       :pos [ [] ]
-                       :neg [ :a ]})
-
-(def-arg-spec a-vec-arg {:pred #(and (sequential? %)
-                                     (= :a (first %)))
-                         :pos [ [:a 3 4] [:a] ]
-                         :neg [ [] [:b] ]})
-
-(defn negate-vec [v] (mapv - v))
-(defn negate-a-vec  [[a & rf]]
-  (into [a] (mapv - rf)))
-
-(declare-poly my-negate)
-
-(def-poly my-negate [vec-arg x]
-  (negate-vec x))
-
-(def-poly my-negate [a-vec-arg x]
-  (negate-a-vec x))
-
-(def-poly my-negate [num-arg x]
-  (- x))
-
-(deftest overload-state-test
-  (let [s (#'ebmd/init-overload-state 'kattskit #{})
-        s (#'ebmd/add-arg-spec s mummi)]
-    ;(is (cljset/subset? #{3/4 :a :b} (set (:samples s))))
-    (is (:dirty? s))
-    
-    ;;(is (:key mummi))
-    (is (key? mummi))
-
-    (is (= (keys (:arg-specs s))
-           [(arg-spec-key mummi)])))
-  (let [s (#'ebmd/init-overload-state 'negate #{})
-        s (#'ebmd/add-overload s {:arg-specs [mummi]
-                                 :fn (fn [x] (- x))})]
-    (is (= (inc 1) (count (:arg-specs s))))
-    (is (= 1 (count (:overloads s))))
-    (is (= [(arg-spec-key mummi)]
-           (-> s :overloads
-               (get 2)
-               keys
-               first
-               butlast)))
-    (is (fn? (-> s :overloads (get 2) vals first :fn))))
-  (let [s (#'ebmd/init-overload-state 'negate #{})
-        s (#'ebmd/add-overload s {:arg-specs [vec-arg]
-                                 :fn negate-vec})
-        s (#'ebmd/add-overload s {:arg-specs [a-vec-arg]
-                                  :fn negate-a-vec})]
-    (is (= 2 (-> s :overloads (get 2) count)))
-
-    ;; No samples if not rebuilt 
-    #_(is (cljset/subset? #{[] :a [:b] [:a] [:a 3 4]}
-                        (set (:samples s))))
-    
-    (let [s (#'ebmd/rebuild-all s)
-          cmps (:arg-spec-comparisons s)
-          s2 s]
-      (is (= (get-in s [:arg-specs
-                        (arg-spec-key vec-arg)
-                        :samples])
-             #{[] [:b] [:a] [:a 3 4]}))
-      (is (contains? s2 :overload-dominates?))
-      (is (map? (:overload-dominates? s2)))
-      (is (= 9 (count cmps)))
-      (is (every?  #{:subset :superset :equal :disjoint}
-                   (vals cmps)))
-      #_(let [[arg-specs ov] (#'ebmd/resolve-overload
-                            s2 [[1 2 3 [1 2 3]]])
-            f (:fn ov)]
-        (is (= arg-specs [(:key vec-arg)]))
-        (is (= [-3 -4] (f [3 4]))))
-      #_(let [[arg-specs ov] (#'ebmd/resolve-overload
-                            s2 [[:a 3]])
-            f (:fn ov)]
-        (is (= arg-specs [(:key a-vec-arg)]))
-        (is (= [:a -119] (f [:a 119]))))
-      (is (thrown? Exception (#'ebmd/resolve-overload s2 [{}])))
-      (is (= [-3 -4]
-             (#'ebmd/evaluate-overload s2 [[3 4]]))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -183,11 +96,14 @@
                                :neg [3 4 :a 0]})
 
 (def-arg-spec vector-arg0 {:pred sequential?
-                           :pos [[]]})
+                           :pos [[]]
+                           :neg []})
 
 
 (def-arg-spec complex-arg0 {:spec ::complex-arg
-                            :pos [[:complex 3.4 7.0]]})
+                            :pos [[:complex 3.4 7.0]]
+                            :neg []})
+
 
 
 ;;;------- The overloads -------
@@ -206,7 +122,7 @@
   (Math/sqrt (+ (* re re)
                 (* im im))))
 
-;;;------- Tests -------
+
 (deftest my-abs-test
   (is (= 3 (abs -3)))
   (is (= 3 (abs 3)))
@@ -217,10 +133,8 @@
          (abs [-3 4 :a]))))
 
 (deftest meta-abs-test
-  (is (set? (samples abs)))
-  (is (= #{1} (arities abs))))
-
-
+    (is (set? (poly-samples abs)))
+    (is (= #{1} (poly-arities abs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -231,89 +145,78 @@
 
 ;;;------- More specs -------
 
-(def-arg-spec imag-arg0 {:pred (fn [x] (and (sequential? x)
-                                            (= :imag (first x))))
-                         :pos [
-                               
-                               [:imag 3]
-                               
-                               [:imag :a]
+  (def-arg-spec imag-arg0 {:pred (fn [x] (and (sequential? x)
+                                              (= :imag (first x))))
+                           :pos [
+                                 
+                                 [:imag 3]
+                                 
+                                 [:imag :a]
 
-                               ]
-                         
-                         :neg [[] 9 34]})
+                                 ]
+                           
+                           :neg [[] 9 34]})
 
-(declare-poly add)
+  (declare-poly add)
 
-(def-poly add [number-arg0 a
-                   number-arg0 b]
-  (+ a b))
+  (def-poly add [number-arg0 a
+                 number-arg0 b]
+    (+ a b))
 
-(def-poly add [complex-arg0 [_ a-re a-im]
-                   complex-arg0 [_ b-re b-im]]
-  [:complex (add a-re b-re) (add a-im b-im)])
+  (def-poly add [complex-arg0 [_ a-re a-im]
+                 complex-arg0 [_ b-re b-im]]
+    [:complex (add a-re b-re) (add a-im b-im)])
 
-(def-poly add [complex-arg0 [_ re im]
-                   imag-arg0 [_ x]]
-  [:complex re (add im x)])
+  (def-poly add [complex-arg0 [_ re im]
+                 imag-arg0 [_ x]]
+    [:complex re (add im x)])
 
-(def-poly add [imag-arg0 [_ x]
-                   imag-arg0 [_ y]]
-  [:imag (add x y)])
+  (def-poly add [imag-arg0 [_ x]
+                 imag-arg0 [_ y]]
+    [:imag (add x y)])
 
-(def-poly add [complex-arg0 [_ re im]
-                   any-arg0 b]
-  [:complex (add re b) im])
+  (def-poly add [complex-arg0 [_ re im]
+                 any-arg0 b]
+    [:complex (add re b) im])
 
-(def-poly add [any-arg0 b
-                   complex-arg0 [_ re im]]
-  [:complex (add re b) im])
+  (def-poly add [any-arg0 b
+                 complex-arg0 [_ re im]]
+    [:complex (add re b) im])
 
-(def-poly add [vector-arg0 v
-                   any-arg0 x]
-  (mapv (partial add x) v))
+  (def-poly add [vector-arg0 v
+                 any-arg0 x]
+    (mapv (partial add x) v))
 
-(def-poly add [vector-arg0 a
-                   vector-arg0 b]
-  (mapv add a b))
+  (def-poly add [vector-arg0 a
+                 vector-arg0 b]
+    (mapv add a b))
 
-(def-poly add [any-arg0 a
-                   vector-arg0 b]
-  (add b a))
+  (def-poly add [any-arg0 a
+                 vector-arg0 b]
+    (add b a))
 
-(deftest generic-add-test
-  (is (= 7 (add 3 4)))
-  (is (= [:complex 30 20]
-         (add [:complex 10 5]
-              [:complex 20 15])))
-  (is (= (add [1 2 3] 10)
-         [11 12 13]))
-  (is (= (add [1 2 3] [100 0 1000])
-         [101 2 1003]))
-  (is (= (add 10 [1 2 3])
-         [11 12 13]))
-  (is (= [:complex 1001 3]
-         (add [:complex 1 3]
-              1000)))
-  (is (= [:complex 1001 3]
-         (add 1000 [:complex 1 3])))
-  (is (= [:complex 3 20]
-         (add [:complex 3 1]
-              [:imag 19])))
-  (is (= [:imag 20]
-         (add [:imag 3]
-              [:imag 17]))))
-
-(comment
-  
-  (print-arg-spec-comparison 
-   (samples add)
-   [number-arg0
-    complex-arg0
-    vector-arg0])
-  
-  )
-
+  (deftest generic-add-test
+    (is (= 7 (add 3 4)))
+    (is (= [:complex 30 20]
+           (add [:complex 10 5]
+                [:complex 20 15])))
+    (is (= (add [1 2 3] 10)
+           [11 12 13]))
+    (is (= (add [1 2 3] [100 0 1000])
+           [101 2 1003]))
+    (is (= (add 10 [1 2 3])
+           [11 12 13]))
+    (is (= [:complex 1001 3]
+           (add [:complex 1 3]
+                1000)))
+    (is (= [:complex 1001 3]
+           (add 1000 [:complex 1 3])))
+    (is (= [:complex 3 20]
+           (add [:complex 3 1]
+                [:imag 19])))
+    (is (= [:imag 20]
+           (add [:imag 3]
+                [:imag 17]))))
 
 
 
@@ -322,43 +225,41 @@
 ;;;  Test predefined arg specs
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare-poly plus)
+  (declare-poly plus)
 
-(def-poly plus []
-  0)
+  (def-poly plus []
+    0)
 
-(def-poly plus [type/any x]
-  x)
+  (def-poly plus [type/any x]
+    x)
 
-(def-poly plus [type/any a
-                    type/any b]
-  (+ a b))
+  (def-poly plus [type/any a
+                  type/any b]
+    (+ a b))
 
-(def-poly plus [type/string a
-                    type/string b]
-  (str a b))
+  (def-poly plus [type/string a
+                  type/string b]
+    (str a b))
 
-(def-poly plus [type/coll a
-                    type/coll b]
-  (concat a b))
+  (def-poly plus [type/coll a
+                  type/coll b]
+    (concat a b))
 
-(def-poly plus [type/coll a
-                    type/any b]
-  (conj a b))
+  (def-poly plus [type/coll a
+                  type/any b]
+    (conj a b))
 
-(def-poly plus [type/map a
-                    type/map b]
-  (merge a b))
+  (def-poly plus [type/map a
+                  type/map b]
+    (merge a b))
 
-(deftest predef-arg-test
-  (is (= 0 (plus)))
-  (is (= 7 (plus 3 4)))
-  (is (= [:a :b :c] (plus [:a :b] :c)))
-  (is (= [:a :b 4] (plus [:a :b] [4])))
-  (is (= {:a 3 :b 4} (plus {:a 3} {:b 4})))
-  (is (= "kycklinglever" (plus "kyckling" "lever"))))
-
-
+  (deftest predef-arg-test
+    (is (= 0 (plus)))
+    (is (= 7 (plus 3 4)))
+    (is (= [:a :b :c] (plus [:a :b] :c)))
+    (is (= [:a :b 4] (plus [:a :b] [4])))
+    (is (= {:a 3 :b 4} (plus {:a 3} {:b 4})))
+    (is (= "kycklinglever" (plus "kyckling" "lever"))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,9 +279,13 @@
   (is (= 9 (sqr 3)))
   (is (= [:cannot-square "a"] (sqr "a"))))
 
-(def-arg-spec zero-arg {:pred zero?
+(def-arg-spec zero-arg {:pred (fn [x]
+                                (and (number? x)
+                                     (zero? x))) 
                         :pos [0]
                         :neg [1 2 3]})
+
+(def darg (ops/not zero-arg))
 
 (def denom-arg (ops/and type/number
                         (ops/not zero-arg)))
@@ -402,8 +307,8 @@
                                 :neg [[nil :a]]})
 
 (def-arg-spec first-is-number {:pred (fn [x] (and (vector? x)
-                                                   (number? (first x))))
-                                :pos [[1] [3 :a]]
+                                                  (number? (first x))))
+                               :pos [[1] [3 :a]]
                                :neg [[nil :a]]})
 
 (def imp (ops/implies first-is-number second-is-number))
@@ -418,6 +323,7 @@
 
 
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Joint arguments
@@ -427,7 +333,7 @@
 (declare-poly make-span)
 
 (def-poly make-span [type/number a
-                         type/number b]
+                     type/number b]
   [a b])
 
 
@@ -441,10 +347,10 @@
                         :neg [[0 1] [0 0]]})
 
 (def-poly make-span [type/number a
-                         type/number b
+                     type/number b
 
-                         ;; Special case when the arguments are not ordered.
-                         :joint reversed]
+                     ;; Special case when the arguments are not ordered.
+                     :joint reversed]
   (make-span b a))
 
 
@@ -453,8 +359,6 @@
          [3 4]))
   (is (= (make-span 9 3)
          [3 9])))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
@@ -473,8 +377,6 @@
 
 (deftest check-it-is-ambiguous
   (is (thrown? Exception (amb 3 4))))
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -517,16 +419,6 @@
                               :pos [true false]
                               :neg [9 0]})
 
-(deftest promotion-test
-  (is (= [] (promotion-path ::string-prom "asdf")))
-  (is (nil? (promotion-path ::string-prom :aasdf)))  
-  (is (= 1 (count (promotion-path ::string-prom 9))))
-  (is (= 1 (count (promotion-path ::string-prom 3.4))))
-  (let [path (promotion-path ::string-prom false)]
-    (is (= 2 (count path)))
-    (is (= "0" (promote-along-path path false)))))
-
-
 (declare-poly prom-add)
 
 (def-poly prom-add [::string-prom a
@@ -546,6 +438,7 @@
   (is (= true (prom-add false true)))
   (is (= "katt0" (prom-add "katt" false)))
   (is (= "kattskit" (prom-add "katt" "skit"))))
+
 
 
 ;;;------- Ambiguity with promotion -------
@@ -582,20 +475,13 @@
                     (fn [x] #{x})
                     prom-num)
 
-
-(deftest ambiguity-test-promotion
-  (is (thrown? Exception (promotion-path prom-seq 3)))
-  (is (= 1 (count (promotion-path prom-seq #{}))))
-  (is (= 1 (count (promotion-path prom-seq {}))))
-  (is (= 0 (count (promotion-path prom-seq [])))))
-
-
-
-(def number-types [::byte ::short ::int ::long ::float ::double])
+(def number-types [::pref-byte ::pref-short ::pref-int ::pref-long ::pref-float ::pref-double])
 
 (def all-promotions (reduce into []
-                            (for [[from & tos] (take-while (complement empty?)
-                                                           (iterate rest number-types))]
+                            (for [[from & tos]
+                                  (take-while
+                                   (complement empty?)
+                                   (iterate rest number-types))]
                               (for [to tos]
                                 [from to]))))
 
@@ -611,34 +497,33 @@
    :pos [sample]
    :neg []})
 
-(def-arg-spec ::double (num-arg-spec ::double Double 3.0))
-(def-arg-spec ::float (num-arg-spec ::float Float (float 3.0)))
-(def-arg-spec ::long (num-arg-spec ::long Long (long 3)))
-(def-arg-spec ::int (num-arg-spec ::int Integer (int 3)))
-(def-arg-spec ::byte (num-arg-spec ::byte Byte (byte 3)))
-(def-arg-spec ::short (num-arg-spec ::short Short (short 3)))
+(def-arg-spec ::pref-double (num-arg-spec ::pref-double Double 3.0))
+(def-arg-spec ::pref-float (num-arg-spec ::pref-float Float
+                                         (float 3.0)))
+(def-arg-spec ::pref-long (num-arg-spec ::pref-long Long (long 3)))
+(def-arg-spec ::pref-int (num-arg-spec ::pref-int Integer (int 3)))
+(def-arg-spec ::pref-byte (num-arg-spec ::pref-byte Byte (byte 3)))
+(def-arg-spec ::pref-short (num-arg-spec ::pref-short
+                                         Short (short 3)))
 
 (declare-poly add-0)
 
-(def-poly add-0 [::double a
-                 ::double b]
+(def-poly add-0 [::pref-double a
+                 ::pref-double b]
   [:add a b])
 
 ;; (add-0 3 4)
 
-;; (promotion-path ::double 3)
+;; (promotion-path ::pref-double 3)
 
 (deftest promotion-shortest-path-test
-  (is [:add [::double 3] [::double 4]]
+  (is [:add [::pref-double 3] [::pref-double 4]]
       (add-0 3 4)))
 
 
 
-(def-arg-spec ::sp-number {:pred number?
-                           :pos [3 4]
-                           :neg [:a]
-                           :reg-spec? true})
+(def-arg-spec ::pref-sp-number {:pred number?
+                                :pos [3 4]
+                                :neg [:a]
+                                :reg-spec? true})
 
-(deftest arg-spec-with-reg-spec
-  (is (spec/valid? ::sp-number 9))
-  (is (not (spec/valid? ::sp-number :a))))
