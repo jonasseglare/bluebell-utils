@@ -3,22 +3,26 @@ package bluebell.utils;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import bluebell.utils.IStateTransition;
+import bluebell.utils.OldAndNewState;
 
 public class ConcurrentStateMachine<StateType> {
     class TAP {
-        private ArrayBlockingQueue<StateType> _result 
-            = new ArrayBlockingQueue<StateType>(1);
+        private ArrayBlockingQueue<OldAndNewState<StateType>> 
+            _result 
+            = new ArrayBlockingQueue<OldAndNewState<StateType>>(1);
         private IStateTransition<StateType> _transition;
 
         StateType tryNext(StateType current) {
             StateType next = _transition.nextOrNull(current);
             if (next != null) {
-                _result.add(next);
+                _result.add(new OldAndNewState<StateType>(
+                        current, next));
             }
             return next;
         }
 
-        public ArrayBlockingQueue<StateType> getResult() {
+        public ArrayBlockingQueue<OldAndNewState<StateType>> 
+            getResult() {
             return _result;
         }
 
@@ -57,7 +61,8 @@ public class ConcurrentStateMachine<StateType> {
         }
     }
 
-    public synchronized ArrayBlockingQueue<StateType> submit(
+    public synchronized 
+        ArrayBlockingQueue<OldAndNewState<StateType>> submit(
         IStateTransition<StateType> transition) {
 
         TAP tap = new TAP(transition);
@@ -66,10 +71,13 @@ public class ConcurrentStateMachine<StateType> {
         return tap.getResult();
     }
 
-    public StateType perform(
-        IStateTransition<StateType> transition) 
-        throws InterruptedException {
-        return submit(transition).take();
+    public OldAndNewState<StateType> perform(
+        IStateTransition<StateType> transition)  {
+        try {
+            return submit(transition).take();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Failed to perform transition");
+        }
     }
 
     public synchronized StateType getCurrentState() {
