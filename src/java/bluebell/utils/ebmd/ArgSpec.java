@@ -40,6 +40,17 @@ public class ArgSpec implements IArgSpec {
         _pred = pred;
         _pos = pos;
         _neg = neg;
+
+        for (Object x: _pos) {
+            if (!evaluate(x)) {
+                throw new RuntimeException("Predicate " + _pred.toString() + " returned false for positive sample " + x);
+            }
+        }
+        for (Object x: _neg) {
+            if (evaluate(x)) {
+                throw new RuntimeException("Predicate " + _pred.toString() + " returned true for negative sample " + x);
+            }
+        }
     }
 
     public boolean evaluate(Object x) {
