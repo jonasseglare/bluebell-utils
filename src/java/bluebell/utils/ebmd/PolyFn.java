@@ -173,7 +173,7 @@ public class PolyFn {
             String msg = "Ambiguous polymorphic dispatch, there are " 
                 + candidates.size() + " candidates:";
             for (Impl c: candidates) {
-                msg += "\n  * " + c.toString();
+                msg += "\n  * " + c.getSignature().toString();
             }
             throw new RuntimeException(msg);
         }

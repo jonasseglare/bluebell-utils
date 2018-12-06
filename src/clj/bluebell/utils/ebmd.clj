@@ -151,8 +151,8 @@
 
 (defn arg-spec-samples [x]
   (let [as (resolve-arg-spec x)]
-    (into #{} [(.getPositive as)
-               (.getNegative as)])))
+    (reduce into #{} [(.getPositive as)
+                      (.getNegative as)])))
 
 (defn poly-arg-specs [poly]
   (.getAllArgSpecs (poly ::special ::get)))
