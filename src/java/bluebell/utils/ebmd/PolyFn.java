@@ -207,4 +207,8 @@ public class PolyFn {
         }
         return summary;
     }
+
+    public Set<Integer> getArities() {
+        return _implsPerArity.keySet();
+    }
 }

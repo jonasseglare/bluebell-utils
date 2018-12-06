@@ -25,7 +25,8 @@ public class ReadAndUpdateMachine {
         }
 
         public Integer nextOrNull(Integer i) {
-            if (1 <= i && _threads.contains(_tid)) {
+            if (1 <= i && !_tryIt 
+                && _threads.contains(_tid)) {
                 throw new RuntimeException(
                     "Trying to update on the same thread as you are already reading, which is an error. The state is " + i);
             }

@@ -46,7 +46,8 @@
     (if (contains? arg-spec :pred)
       (throw (ex-info "An arg-spec cannot contain both :pred and :spec"
                       arg-spec))
-      (assoc arg-spec))
+      (assoc arg-spec :pred (partial spec/valid?
+                                     (:spec arg-spec))))
     arg-spec))
 
 (defn make-implementation [args]
@@ -96,6 +97,23 @@
                    arg-specs)]
     (render-text/add-line evals (str sample))))
 
+(declare import-arg-spec)
+
+(defn def-arg-spec-sub [k m]
+  (let [m (if (map? m) (merge m {:key k}) m)]
+    (if (map? m)
+      (let [m (merge m {:key k})]
+        (import-arg-spec m)
+
+        ;; Does not work to use spec/def in a function...
+        #_(when (:reg-spec? m)
+          (println "DEFINE SPEC FOR " k)
+          (spec/def k (or (:spec m)
+                          (:pred m))))
+        m)
+      (do (.registerIndirection registry k m)
+          m))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
 ;;;  Interface
@@ -112,17 +130,10 @@
     k))
 
 (defmacro def-arg-spec [sym m]
-  {:pre [(map? m)]}
-  (let [k (symbol-to-key sym)
-        m (merge m {:key k})]
-    `(let [m# ~m
-           r# (import-arg-spec m#)]
+  (let [k (symbol-to-key sym)]
+    `(let [r# (def-arg-spec-sub ~k ~m)]
        ~@(if (symbol? sym)
            [`(def ~sym ~k)]
-           [])
-       ~@(if (:reg-spec? m)
-           [`(spec/def ~k (or (:spec m#)
-                              (:pred m#)))]
            [])
        ~k)))
 
@@ -131,6 +142,13 @@
     x
     (.resolve registry x)))
 
+(defn import-arg-spec-if-needed [x]
+  (try
+    (resolve-arg-spec x)
+    x
+    (catch Exception e
+      (import-arg-spec x))))
+
 (defn arg-spec-samples [x]
   (let [as (resolve-arg-spec x)]
     (into #{} [(.getPositive as)
@@ -138,6 +156,17 @@
 
 (defn poly-arg-specs [poly]
   (.getAllArgSpecs (poly ::special ::get)))
+
+(defn poly-samples [poly]
+  (transduce
+   (comp (map arg-spec-samples)
+         cat)
+   conj
+   #{}
+   (poly-arg-specs poly)))
+
+(defn poly-arities [poly]
+  (.getArities (poly ::special ::get)))
 
 (defn matches-arg-spec? [arg-spec x]
   (.evaluate (resolve-arg-spec arg-spec) x))
@@ -225,3 +254,19 @@
                                 println
                                 print-arg-spec-comparison-str))
 
+(def-arg-spec any-arg {:pred (constantly true)
+                       :pos [1 2 3 4 :a {:a 3}]
+                       :neg []})
+
+(def common-values [#{1 3} {:a 3} 3 4 :a :b {} #{} [3 45]])
+
+(defn pred
+  ([f]
+   (pred f common-values))
+  ([f vs]
+   {:pred f
+    :pos (vec (filter f vs))
+    :neg (vec (filter (complement f) vs))}))
+
+(defn arg-spec-pred [as]
+  (partial matches-arg-spec? as))
