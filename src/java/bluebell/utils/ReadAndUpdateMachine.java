@@ -5,6 +5,8 @@ import bluebell.utils.IStateTransition;
 import bluebell.utils.ReadAndUpdateMachineSettings;
 import java.util.HashSet;
 import java.lang.Thread;
+import java.util.concurrent.Callable;
+import java.lang.Runnable;
 
 public class ReadAndUpdateMachine {
     private ReadAndUpdateMachineSettings _settings;
@@ -25,7 +27,7 @@ public class ReadAndUpdateMachine {
         public Integer nextOrNull(Integer i) {
             if (1 <= i && _threads.contains(_tid)) {
                 throw new RuntimeException(
-                    "Trying to update on the same thread as you are already reading, which is an error.");
+                    "Trying to update on the same thread as you are already reading, which is an error. The state is " + i);
             }
             boolean perform = (i == 0)
                 || ((i < 0) && _currentThread == _tid);
@@ -150,5 +152,44 @@ public class ReadAndUpdateMachine {
 
     public int getState() {
         return _state.getCurrentState();
+    }
+
+    static public<V> V uncheckedCall(Callable<V> c) {
+        try {
+            return c.call();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public<V> V withRead(Callable<V> c) {
+        beginRead();
+        try {
+            return uncheckedCall(c);
+        } finally {
+            endRead();
+        }
+    }
+    
+    public<V> V withUpdate(Callable<V> c) {
+        beginUpdate();
+        try {
+            return uncheckedCall(c);
+        } finally {
+            endUpdate();
+        }
+    }
+
+    public<V> boolean withTryUpdate(Runnable r) {
+        if (tryBeginUpdate()) {
+            try {
+                r.run();
+            } finally {
+                endUpdate();
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 }

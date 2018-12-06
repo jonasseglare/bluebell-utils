@@ -12,8 +12,14 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.Map;
 import clojure.lang.Symbol;
+import bluebell.utils.ReadAndUpdateMachine;
+import bluebell.utils.ConstantCallable;
+import java.util.concurrent.Callable;
+
+
 
 public class PolyFn {
+    private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine();
     private Registry _reg = null;
     private HashSet<Object> _samples;
     private HashSet<Object> _init = new HashSet<Object>();
@@ -61,18 +67,25 @@ public class PolyFn {
 
     public void addImplementation(
         Impl impl) {
-        Signature sig = impl.getSignature();
-        HashMap<Signature, Impl> impls = getImplsForArity(sig.getArity());
-        Impl existing = impls.get(sig);
-        if (existing == null) {
-            impls.put(sig, impl);
-            _lastRebuilt = -1;
-        } else {
-            existing.setFn(impl.getFn());
-        }
+        _raum.withUpdate(new ConstantCallable<Integer>() {
+                public void run() {
+
+                    Signature sig = impl.getSignature();
+                    HashMap<Signature, Impl> impls 
+                        = getImplsForArity(sig.getArity());
+                    Impl existing = impls.get(sig);
+                    if (existing == null) {
+                        impls.put(sig, impl);
+                        _lastRebuilt = -1;
+                    } else {
+                        existing.setFn(impl.getFn());
+                    }
+                
+                }
+            });
     }
 
-    String shorten(String s) {
+    private String shorten(String s) {
         int n = 30;
         int m = 12;
         if (s.length() <= (n + m)) {
@@ -82,18 +95,23 @@ public class PolyFn {
         }
     }
 
-    private void rebuildIfNeeded() {
-        _reg.rebuildIfNeeded();
+    private void rebuildSub() {
         int rebuiltAt = _reg.getRebuiltAt();
         if (rebuiltAt != _lastRebuilt) {
             _samples = new HashSet<Object>();
             _samples.addAll(_init);
-            for (Map.Entry<Integer, HashMap<Signature, Impl>> entry: 
+            for (Map.Entry<Integer, 
+                     HashMap<Signature, Impl>> 
+                     entry: 
                      _implsPerArity.entrySet()) {
-                HashMap<Signature, Impl> impls = entry.getValue();
-                for (Map.Entry<Signature, Impl> kv: impls.entrySet()) {
+                HashMap<Signature, Impl> impls 
+                    = entry.getValue();
+                for (Map.Entry<Signature, Impl> 
+                         kv: 
+                         impls.entrySet()) {
                     Signature sig = kv.getKey();
-                    sig.accumulateSamples(_reg, _samples);
+                    sig.accumulateSamples(
+                        _reg, _samples);
                     sig.rebuild(_reg);
                 }
             }
@@ -101,8 +119,29 @@ public class PolyFn {
         }
     }
 
-    public Object call(Object[] args) {
-        rebuildIfNeeded();
+    private void rebuildIfNeeded() {
+        ReadAndUpdateMachine regRaum = _reg.getReadAndUpdateMachine();
+        regRaum.withTryUpdate(
+            new Runnable() {
+                public void run() {
+                    _reg.rebuildIfNeeded();
+                }
+            });
+
+        // Once the registry is rebuilt, we can update *this* PolyFn,
+        // if possible
+        regRaum.withRead(new ConstantCallable<Integer>() {
+                public void run() {
+                    _raum.withTryUpdate(new Runnable() {
+                            public void run() {
+                                rebuildSub();
+                            }
+                        });
+                }
+            });
+    }
+
+    private Object callSub(Object[] args) {
         ParetoFrontier<Impl> promotionCostFrontier 
             = new ParetoFrontier<Impl>(
                 new ImplDominatesPromotionCost());
@@ -135,7 +174,21 @@ public class PolyFn {
                 "Ambiguous polymorphic dispatch, there are " 
                 + candidates.size() + " candidates");
         }
-     }
+    }
+
+    public Object call(Object[] args) {
+        rebuildIfNeeded();
+        return _reg.getReadAndUpdateMachine().withRead(
+            new Callable<Object>() {
+                public Object call() {
+                    return _raum.withRead(new Callable<Object>() {
+                            public Object call() {
+                                return callSub(args);
+                            }
+                        });
+                }
+            });
+    }
 
     public String renderPolySummary() {
         String summary = "Polymorphic function '" 

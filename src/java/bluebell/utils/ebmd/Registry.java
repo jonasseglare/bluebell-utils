@@ -8,13 +8,18 @@ import bluebell.utils.ebmd.IndirectArgSpec;
 import bluebell.utils.ebmd.EmptyArgSpec;
 import bluebell.utils.ebmd.Promotion;
 import bluebell.utils.ebmd.PolyFn;
+import bluebell.utils.ReadAndUpdateMachine;
+import bluebell.utils.ReadAndUpdateMachineSettings;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.lang.Runnable;
 
 public class Registry {
+    private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine(ReadAndUpdateMachineSettings.debugSettings());
     private Settings _settings;
     private int _mutationCounter = 0;
     private int _rebuiltAt = -1;
@@ -30,22 +35,32 @@ public class Registry {
     }
 
     public void registerIndirection(Object key, Object target) {
-        registerArgSpec(key, new IndirectArgSpec(target));
+        _raum.withUpdate(new Callable<Integer>() {
+                public Integer call() {
+                    registerArgSpec(key, new IndirectArgSpec(target));
+                    return 0;
+                }
+            });
     }
 
     public void registerArgSpec(Object key, IArgSpec src) {
-        if (src == null) {
-            throw new RuntimeException("Provided null argspec");
-        }
-        _mutationCounter++;
-        ArgSpecVars vars = _registry.get(key);
-        if (vars != null) {
-            vars.argSpec = src;
-        } else {
-            vars = new ArgSpecVars();
-            vars.argSpec = src;
-            _registry.put(key, vars);
-        }
+        _raum.withUpdate(new Callable<Integer>() {
+                public Integer call() {
+                    if (src == null) {
+                        throw new RuntimeException("Provided null argspec");
+                    }
+                    _mutationCounter++;
+                    ArgSpecVars vars = _registry.get(key);
+                    if (vars != null) {
+                        vars.argSpec = src;
+                    } else {
+                        vars = new ArgSpecVars();
+                        vars.argSpec = src;
+                        _registry.put(key, vars);
+                    }
+                    return 0;
+                }
+            });
     }
 
     public ArgSpecVars trackIndirections(
@@ -103,11 +118,16 @@ public class Registry {
         Object dstKey,
         Promotion prom,
         Object srcKey) {
-        _mutationCounter++;
-        getOrMakeArgVarsAtKey(dstKey)
-            .promotions
-            .put(srcKey, prom.withSrcDst(
-                    srcKey, dstKey));
+        _raum.withUpdate(new Callable<Integer>() {
+                public Integer call() {
+                    _mutationCounter++;
+                    getOrMakeArgVarsAtKey(dstKey)
+                        .promotions
+                        .put(srcKey, prom.withSrcDst(
+                                srcKey, dstKey));
+                    return 0;
+                }
+            });
     }
 
     private ArrayList<PromotionPath> listPromotionPathsSub(
@@ -196,5 +216,9 @@ public class Registry {
 
     public Set<Object> getArgSpecKeys() {
         return _registry.keySet();
+    }
+
+    public ReadAndUpdateMachine getReadAndUpdateMachine() {
+        return _raum;
     }
 }
