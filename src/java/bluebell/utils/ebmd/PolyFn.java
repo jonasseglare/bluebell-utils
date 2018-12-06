@@ -170,9 +170,12 @@ public class PolyFn {
             return candidates.get(0).evaluate(
                 _reg.getSettings().check, args);
         } else {
-            throw new RuntimeException(
-                "Ambiguous polymorphic dispatch, there are " 
-                + candidates.size() + " candidates");
+            String msg = "Ambiguous polymorphic dispatch, there are " 
+                + candidates.size() + " candidates:";
+            for (Impl c: candidates) {
+                msg += "\n  * " + c.toString();
+            }
+            throw new RuntimeException(msg);
         }
     }
 
