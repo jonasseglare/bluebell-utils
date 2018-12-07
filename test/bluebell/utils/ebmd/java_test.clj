@@ -106,20 +106,6 @@
    s
    (cljset/difference (set (range 10)) s)))
 
-(deftest domination-test
-  (let [a (as-from-set #{0 1})
-        b (as-from-set #{0})
-        c (as-from-set #{1})]
-    (is (.dominatesOnSamples b #{0 1} a))
-    (is (.dominatesOnSamples b #{1} a))
-    (is (not (.dominatesOnSamples b #{0} a)))
-    (is (not (.dominatesOnSamples a #{0 1} b)))
-
-    (is (not (.dominatesOnSamples b #{0 1} c)))
-    (is (not (.dominatesOnSamples c #{0 1} b)))
-    (is (.dominatesOnSamples c #{0} b))
-    (is (.dominatesOnSamples b #{1} c))))
-
 (deftest arg-spec-dom-test
   (let [reg (Registry. debug-settings)
         dom (ArgSpecDominates. reg #{0 1})

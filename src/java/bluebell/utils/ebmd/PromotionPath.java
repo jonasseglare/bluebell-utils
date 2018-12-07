@@ -6,12 +6,12 @@ public class PromotionPath implements Comparable<PromotionPath> {
     private ArrayList<Promotion> _path = new ArrayList<Promotion>();
 
     private Object _dstKey = null;
-    private ArgSpec _dstSpec = null;
+    private IArgSpec _dstSpec = null;
     double _totalCost = 0.0;
 
     public PromotionPath() {}
 
-    public void setDst(Object dstKey, ArgSpec dstSpec) {
+    public void setDst(Object dstKey, IArgSpec dstSpec) {
         _dstKey = dstKey;
         _dstSpec = dstSpec;
     }

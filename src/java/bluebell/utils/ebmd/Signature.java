@@ -12,7 +12,7 @@ public class Signature {
     private int _hashCode = 0;
 
     private ArrayList<ArrayList<PromotionPath>> _cachedPaths;
-    private ArgSpec _cachedJoint;
+    private IArgSpec _cachedJoint;
 
     public Signature(Object[] argSpecKeys, Object jointPredicate) {
         int n = argSpecKeys.length;
@@ -127,7 +127,7 @@ public class Signature {
         for (int i = 0; i < _allData.length; i++) {
             Object key = _allData[i];
             if (key != null) {
-                ArgSpec as = reg.resolve(key);
+                IArgSpec as = reg.resolve(key);
                 as.accumulateSamples(dst);
             }
         }

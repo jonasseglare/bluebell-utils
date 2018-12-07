@@ -10,22 +10,6 @@ public class ArgSpec implements IArgSpec {
     private Set<Object> _neg;
     private IFn _pred = null;
 
-    public boolean dominatesOnSamples(
-        Set<Object> samples,
-        ArgSpec other) {
-        boolean maybeDom = false;
-        for (Object x: samples) {
-            boolean a = evaluate(x);
-            boolean b = other.evaluate(x);
-            if (!maybeDom && !a && b) {
-                maybeDom = true;
-            } else if (a && !b) {
-                return false;
-            }
-        }
-        return maybeDom;
-    }
-
     public ArgSpec(
         IFn pred, Set<Object> pos, Set<Object> neg) {
         if (pred == null) {
@@ -79,5 +63,9 @@ public class ArgSpec implements IArgSpec {
 
     public Set<Object> getNegative() {
         return _neg;
+    }
+
+    public Object getIndirection() {
+        return null;
     }
 }

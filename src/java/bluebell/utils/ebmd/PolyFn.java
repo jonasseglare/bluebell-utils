@@ -17,7 +17,6 @@ import bluebell.utils.ConstantCallable;
 import java.util.concurrent.Callable;
 
 
-
 public class PolyFn {
     private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine();
     private Registry _reg = null;

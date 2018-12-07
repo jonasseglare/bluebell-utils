@@ -6,7 +6,7 @@ public class Promotion {
     double _cost = 1.0;
     IFn _promoter = null;
     Object _src = null;
-    ArgSpec _srcSpec = null;
+    IArgSpec _srcSpec = null;
     Object _dst = null;
 
     private void validate() {

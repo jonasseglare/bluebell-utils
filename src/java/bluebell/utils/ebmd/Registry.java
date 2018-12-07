@@ -76,19 +76,21 @@ public class Registry {
                 }
                 if (as == null) {
                     throw new RuntimeException(
-                        "Missing arg-spec at key " + key.toString());
-                } else if (as instanceof ArgSpec) {
-                    return vars;
-                } else if (as instanceof IndirectArgSpec) {
-                    key = ((IndirectArgSpec)as).getTarget();
+                        "Missing arg-spec at key " 
+                        + key.toString());
+                } else {
+                    key = as.getIndirection();
+                    if (key == null) {
+                        return vars;
+                    }
                 }
             }
         }
     }
 
 
-    public ArgSpec resolve(Object key) {
-        return (ArgSpec)trackIndirections(key, null).argSpec;
+    public IArgSpec resolve(Object key) {
+        return trackIndirections(key, null).argSpec;
     }
 
     public HashMap<Object, Promotion> getPromotions(Object key) {
@@ -136,7 +138,7 @@ public class Registry {
         if (!visited.contains(dstKey)) {
             visited.add(dstKey);
 
-            ArgSpec sp = resolve(dstKey);
+            IArgSpec sp = resolve(dstKey);
             result.add(new PromotionPath());
 
             HashMap<Object, Promotion> proms = getPromotions(dstKey);
@@ -165,7 +167,7 @@ public class Registry {
         HashSet<Object> visited = new HashSet<Object>();
         ArrayList<PromotionPath> p 
             = listPromotionPathsSub(dstKey, visited);
-        ArgSpec sp = resolve(dstKey);
+        IArgSpec sp = resolve(dstKey);
         for (int i = 0; i < p.size(); i++) {
             p.get(i).setDst(dstKey, sp);
         }
@@ -185,6 +187,18 @@ public class Registry {
                 + dstKey);
         }
         return v.promotionPaths;
+    }
+
+    private void rebuildArgSpecs() {
+        for (HashMap.Entry<Object, ArgSpecVars> kv : 
+                 _registry.entrySet()) {
+            ArgSpecVars x = kv.getValue();
+            x.built = false;
+        }
+        for (HashMap.Entry<Object, ArgSpecVars> kv : 
+                 _registry.entrySet()) {
+            kv.getValue().build(_registry);
+        }
     }
 
     private void rebuildPromotionPaths() {
