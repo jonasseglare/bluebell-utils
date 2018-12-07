@@ -248,9 +248,11 @@ public class Registry {
     }
 
     public void rebuild() {
+        // Set this at the top, so that recursive call will see it as being rebuilt.
+        _rebuiltAt = _mutationCounter;
+
         rebuildArgSpecs();
         rebuildPromotionPaths();
-        _rebuiltAt = _mutationCounter;
     }
 
     public boolean rebuildIfNeeded() {
