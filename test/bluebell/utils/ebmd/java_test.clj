@@ -12,8 +12,7 @@
             PolyFn]
            [java.util HashSet]
            [bluebell.utils IDominates])
-  (:require [bluebell.utils.ebmd.java :refer :all]
-            [clojure.set :as cljset]
+  (:require [clojure.set :as cljset]
             [clojure.test :refer :all]))
 
 (def debug-settings (.debug (Settings.)))
@@ -108,7 +107,7 @@
 
 (deftest arg-spec-dom-test
   (let [reg (Registry. debug-settings)
-        dom (ArgSpecDominates. reg #{0 1})
+        dom (ArgSpecDominates. #{0 1})
         samples (HashSet.)]
     (.registerArgSpec reg :same (ArgSpec. (fn [[a b & r]]
                                             (= a b))
@@ -117,24 +116,32 @@
     (.registerArgSpec reg :a (as-from-set #{0 1}))
     (.registerArgSpec reg :b (as-from-set #{0}))
     (.registerArgSpec reg :c (as-from-set #{1}))
+    (.registerArgSpec reg :numbers (ArgSpec.
+                                    (fn [x]
+                                      (and (sequential? x)
+                                           (every? number? x)))
+                                    #{[1 3 4]}
+                                    #{9 :a}))
     (.rebuild reg)
 
-    (is (.dominates dom :b :a))
-    (is (.dominates dom :c :a))
-    (is (not (.dominates dom :c :b)))
-    (is (not (.dominates dom :b :c)))
-    (is (not (.dominates dom :a :b)))
-    (is (not (.dominates dom :a :c)))
+    ;; (is (.dominates dom :b :a))
+    ;; (is (.dominates dom :c :a))
+    ;; (is (not (.dominates dom :c :b)))
+    ;; (is (not (.dominates dom :b :c)))
+    ;; (is (not (.dominates dom :a :b)))
+    ;; (is (not (.dominates dom :a :c)))
 
-    (is (.dominates dom :b :a))
-    (is (.dominates dom :c :a))
-    (is (not (.dominates dom :c :b)))
-    (is (not (.dominates dom :b :c)))
-    (is (not (.dominates dom :a :b)))
-    (is (not (.dominates dom :a :c)))
+    ;; (is (.dominates dom :b :a))
+    ;; (is (.dominates dom :c :a))
+    ;; (is (not (.dominates dom :c :b)))
+    ;; (is (not (.dominates dom :b :c)))
+    ;; (is (not (.dominates dom :a :b)))
+    ;; (is (not (.dominates dom :a :c)))
 
     (let [ab (Signature. (object-array [:a :b]) nil)
           abs (Signature. (object-array [:a :b]) :same)]
+      (.rebuild ab reg)
+      (.rebuild abs reg)
       (.accumulateSamples ab reg samples)
       (is (= (count samples) 10))
       (.rebuild ab reg)
@@ -194,29 +201,39 @@
               (conj #{(Signature. (object-array [:a :b]) nil)}
                     (Signature. (object-array [:a :b]) +))))
 
-    (is (.dominates (Signature. (object-array [:b :a]) nil)
+    (is (.dominates (doto (Signature. (object-array [:b :a]) nil)
+                      (.rebuild reg))
                     dom
-                    (Signature. (object-array [:a :a]) nil)))
+                    (doto (Signature. (object-array [:a :a]) nil)
+                      (.rebuild reg))))
     
-    (is (not (.dominates (Signature. (object-array [:a :a]) nil)
+    (is (not (.dominates (doto (Signature. (object-array [:a :a]) nil)
+                           (.rebuild reg))
                          dom
-                         (Signature. (object-array [:b :a]) nil))))
+                         (doto (Signature. (object-array [:b :a]) nil)
+                           (.rebuild reg)))))
     
-    (is (not (.dominates (Signature. (object-array [:b :a]) nil)
+    (is (not (.dominates (doto (Signature. (object-array [:b :a]) nil)
+                           (.rebuild reg))
                          dom
-                         (Signature. (object-array [:b :a]) nil))))
+                         (doto (Signature. (object-array [:b :a]) nil)
+                           (.rebuild reg)))))
 
-    (is (.dominates dom :a nil))
+    ;(is (.dominates dom :a nil))
 
-    (is (.dominates (Signature. (object-array [:b :a]) :numbers)
+    (is (.dominates (doto (Signature. (object-array [:b :a]) :numbers)
+                      (.rebuild reg))
                     dom
-                    (Signature. (object-array [:b :a]) nil)))
+                    (doto (Signature. (object-array [:b :a]) nil)
+                      (.rebuild reg))))
     
-    (is (not (.dominates (Signature. (object-array [:b :a])
-                                     nil)
+    (is (not (.dominates (doto (Signature. (object-array [:b :a])
+                                           nil)
+                           (.rebuild reg))
                          dom
-                         (Signature. (object-array [:b :a])
-                                     identity))))))
+                         (doto (Signature. (object-array [:b :a])
+                                           :numbers)
+                           (.rebuild reg)))))))
 
 (deftest pair-key-test
   (let [k0 (PairKey. 0 1)
@@ -301,3 +318,57 @@
                                                (+ a b)])))
     (is (= [:ordered 3] (.call poly (object-array [1 2]))))
     (is (= 3 (.call poly (object-array [2 1]))))))
+
+
+(deftest cycle-test
+  (let [reg (Registry. debug-settings)]
+    (.registerIndirection reg :a :b)
+    (.registerIndirection reg :b :a)
+    (is (thrown? Exception (.rebuild reg))))
+  (let [reg (Registry. debug-settings)]
+    (.registerIndirection reg :a :b)
+    (.registerIndirection reg :b :c)
+    (.registerArgSpec reg :c (ArgSpec. number?
+                                       #{1 2 3 3.4 -3.4}
+                                       #{:a}))
+    (.rebuild reg)))
+
+(deftest union-test
+  (let [reg (Registry. debug-settings)
+        int-spec (ArgSpec. int? #{(int 3)} #{})
+        float-spec (ArgSpec. float? #{(float 3.03)} #{})]
+    (.registerArgSpec reg :float float-spec)
+    (.registerArgSpec reg :int int-spec)
+    (.registerArgSpecUnion reg :int-or-float)
+    (.extendArgSpec reg :int-or-float :float)
+    (.extendArgSpec reg :number :int)
+    (.registerIndirection reg :number :int-or-float)
+    
+    (.registerArgSpecUnion reg :broad-number)
+    (.extendArgSpec reg :broad-number :number)
+    (.extendArgSpec reg :broad-number :clj-number)
+    
+    (.registerArgSpecUnion reg :broad-number2)
+    (.extendArgSpec reg :broad-number2 :clj-number)
+    (.extendArgSpec reg :broad-number2 :int)
+    (.extendArgSpec reg :broad-number2 :float)
+
+    (.registerArgSpecUnion reg :broad-number3)
+    (.extendArgSpec reg :broad-number3 :clj-number)
+    (.extendArgSpec reg :broad-number3 :int-or-float)
+    
+    (.registerArgSpec reg :clj-number (ArgSpec.
+                                       number?
+                                       #{3 4 3/4}
+                                       #{:a}))
+    (is (.rebuildIfNeeded reg))
+    (is (= 2 (count (.getExtensionArgSpecs
+                     (.resolve reg :number)))))
+    (is (= 1 (count (.getExtensionArgSpecs
+                     (.resolve reg :broad-number)))))
+    (is (= 1 (count (.getExtensionArgSpecs
+                     (.resolve reg :broad-number2)))))
+    (is (= 1 (count (.getExtensionArgSpecs
+                     (.resolve reg :broad-number3)))))))
+
+;; (union-test)

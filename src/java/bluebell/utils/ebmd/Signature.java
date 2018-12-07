@@ -10,7 +10,7 @@ import bluebell.utils.ebmd.Registry;
 public class Signature {
     private Object[] _allData;
     private int _hashCode = 0;
-
+    private IArgSpec[] _allArgSpecs;
     private ArrayList<ArrayList<PromotionPath>> _cachedPaths;
     private IArgSpec _cachedJoint;
 
@@ -36,18 +36,21 @@ public class Signature {
     }
 
     public boolean dominates(
-        IDominates<Object> argSpecDominates, 
+        IDominates<IArgSpec> argSpecDominates, 
         Signature other) {
+        if (_allArgSpecs == null) {
+            throw new RuntimeException("Signature has not been built");
+        }
 
-        int n = _allData.length;
-        if (n != other._allData.length) {
+        int n = _allArgSpecs.length;
+        if (n != other._allArgSpecs.length) {
             throw new RuntimeException("Trying to compare signatures of different arities");
         }
 
         boolean maybeDom = false;
         for (int i = 0; i < n; i++) {
-            Object ak = _allData[i];
-            Object bk = other._allData[i];
+            IArgSpec ak = _allArgSpecs[i];
+            IArgSpec bk = other._allArgSpecs[i];
             if (argSpecDominates.dominates(ak, bk)) {
                 maybeDom = true;
             } else if (argSpecDominates.dominates(bk, ak)) {
@@ -91,6 +94,13 @@ public class Signature {
         }
         _cachedJoint = _allData[n] == null? 
             null : reg.resolve(_allData[n]);
+
+        int n1 = _allData.length;
+        _allArgSpecs = new IArgSpec[n1];
+        for (int i = 0; i < n1; i++) {
+            Object k = _allData[i];
+            _allArgSpecs[i] = k == null? null : reg.resolve(k);
+        }
     }
 
 

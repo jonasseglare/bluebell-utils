@@ -5,13 +5,11 @@ import bluebell.utils.ebmd.ArgSpec;
 import bluebell.utils.ebmd.Registry;
 import java.util.Set;
 
-public class ArgSpecDominates implements IDominates<Object> {
+public class ArgSpecDominates implements IDominates<IArgSpec> {
     private Set<Object> _samples;
-    private Registry _reg;
 
-    public ArgSpecDominates(Registry r, Set<Object> s) {
+    public ArgSpecDominates(Set<Object> s) {
         _samples = s;
-        _reg = r;
     }
 
     private boolean dominatesOnSamples(
@@ -29,14 +27,12 @@ public class ArgSpecDominates implements IDominates<Object> {
         return maybeDom;
     }
 
-    public boolean dominates(Object aKey, Object bKey) {
-        if (aKey == null) {
+    public boolean dominates(IArgSpec as, IArgSpec bs) {
+        if (as == null) {
             return false;
-        } else if (bKey == null) {
+        } else if (bs == null) {
             return true;
         }
-        IArgSpec a = _reg.resolve(aKey);
-        IArgSpec b = _reg.resolve(bKey);
-        return dominatesOnSamples(_samples, a, b);
+        return dominatesOnSamples(_samples, as, bs);
     }
 }

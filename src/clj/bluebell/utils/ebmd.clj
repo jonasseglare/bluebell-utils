@@ -270,3 +270,14 @@
 
 (defn arg-spec-pred [as]
   (partial matches-arg-spec? as))
+
+
+
+
+;;;------- Union arg specs -------
+(defn def-arg-spec-union [key]
+  (.registerArgSpecUnion registry key))
+
+(defn extend-arg-spec [dst & extensions]
+  (doseq [e extensions]
+    (.extendArgSpec registry dst e)))

@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Set;
 import bluebell.utils.ebmd.IArgSpec;
 import clojure.lang.IFn;
+import java.util.ArrayList;
+import bluebell.utils.ParetoFrontier;
 
 public class ArgSpec implements IArgSpec {
     private Set<Object> _pos;
@@ -67,5 +69,18 @@ public class ArgSpec implements IArgSpec {
 
     public Object getIndirection() {
         return null;
+    }
+
+    public void build(Object thisKey, Set<IArgSpec> extensions) {
+        if (0 < extensions.size()) {
+            System.out.println(
+                "WARNING: The ArgSpec with key " 
+                + thisKey + " cannot have extensions");
+        }
+    }
+
+    public void accumulateUnion(
+        Set<IArgSpec> dst) {
+        dst.add(this);
     }
 }

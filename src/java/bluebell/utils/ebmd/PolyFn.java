@@ -154,7 +154,7 @@ public class PolyFn {
         ParetoFrontier<Impl> argSpecFrontier 
             = new ParetoFrontier<Impl>(
                 new ImplDominatesSignature(
-                    new ArgSpecDominates(_reg, _samples)));
+                    new ArgSpecDominates(_samples)));
         for (Impl x: promotionCostFrontier.getElements()) {
             argSpecFrontier.insert(x);
         }

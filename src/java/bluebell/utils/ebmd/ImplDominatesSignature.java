@@ -6,9 +6,9 @@ import bluebell.utils.IDominates;
 
 
 public class ImplDominatesSignature implements IDominates<Impl> {
-    private IDominates<Object> _argSpecDominates;
+    private IDominates<IArgSpec> _argSpecDominates;
     
-    public ImplDominatesSignature(IDominates<Object> argSpecDominates) {
+    public ImplDominatesSignature(IDominates<IArgSpec> argSpecDominates) {
         _argSpecDominates = argSpecDominates;
     }
     

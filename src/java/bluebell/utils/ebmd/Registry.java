@@ -16,9 +16,13 @@ import java.util.HashSet;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.lang.Runnable;
+import bluebell.utils.GraphUtils;
+import bluebell.utils.INeighborhoodFunction;
+import java.util.List;
 
 public class Registry {
-    private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine(ReadAndUpdateMachineSettings.debugSettings());
+    private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine(
+        ReadAndUpdateMachineSettings.debugSettings());
     private Settings _settings;
     private int _mutationCounter = 0;
     private int _rebuiltAt = -1;
@@ -34,12 +38,7 @@ public class Registry {
     }
 
     public void registerIndirection(Object key, Object target) {
-        _raum.withUpdate(new Callable<Integer>() {
-                public Integer call() {
-                    registerArgSpec(key, new IndirectArgSpec(target));
-                    return 0;
-                }
-            });
+        registerArgSpec(key, new IndirectArgSpec(target));
     }
 
     public void registerArgSpec(Object key, IArgSpec src) {
@@ -62,30 +61,13 @@ public class Registry {
             });
     }
 
+    public void registerArgSpecUnion(Object key) {
+        registerArgSpec(key, new ArgSpecUnion());
+    }
+
     public ArgSpecVars trackIndirections(
         Object key, ArgSpecVarsVisitor v) {
-        while (true) {
-            ArgSpecVars vars = _registry.get(key);
-            if (vars == null) {
-                throw new RuntimeException("No arg-spec with key " 
-                    + key.toString());
-            } else {
-                IArgSpec as = vars.argSpec;
-                if (v != null) {
-                    v.visit(vars);
-                }
-                if (as == null) {
-                    throw new RuntimeException(
-                        "Missing arg-spec at key " 
-                        + key.toString());
-                } else {
-                    key = as.getIndirection();
-                    if (key == null) {
-                        return vars;
-                    }
-                }
-            }
-        }
+        return ArgSpecVars.trackIndirections(_registry, key, v);
     }
 
 
@@ -113,6 +95,16 @@ public class Registry {
         } else {
             return x;
         }
+    }
+
+    public void extendArgSpec(Object dstKey, Object src) {
+        _raum.withUpdate(new Callable<Integer>() {
+                public Integer call() {
+                    _mutationCounter++;
+                    getOrMakeArgVarsAtKey(dstKey).extensions.add(src);
+                    return 0;
+                }
+            });
     }
 
     public void registerPromotion(
@@ -189,15 +181,61 @@ public class Registry {
         return v.promotionPaths;
     }
 
+    private void checkForCycles() {
+        ArrayList<Object> vertices = new ArrayList<Object>();
+        vertices.addAll(_registry.keySet());
+        INeighborhoodFunction<Object> neigh = new INeighborhoodFunction<Object>() {
+                public List<Object> getNeighbors(Object k) {
+                    ArgSpecVars v = _registry.get(k);
+                    if (v == null) {
+                        throw new RuntimeException(
+                            "Missing arg-spec at key " 
+                            + k.toString());
+                    }
+                    ArrayList<Object> dst = new ArrayList<Object>();
+                    Object ind = v.argSpec.getIndirection();
+                    if (ind != null) {
+                        dst.add(ind);
+                    }
+                    dst.addAll(v.extensions);
+                    return dst;
+                }
+            };
+        List<Object> cycles = GraphUtils.findCycles(vertices, neigh);
+        if (!cycles.isEmpty()) {
+            String msg = "The following arg-spec keys are part of cycles:";
+            for (Object k: cycles) {
+                msg += " " + k.toString();
+            }
+            throw new RuntimeException(msg);
+        }
+    }
+
     private void rebuildArgSpecs() {
+        checkForCycles();
+        
+        // Clean up all the vars
         for (HashMap.Entry<Object, ArgSpecVars> kv : 
                  _registry.entrySet()) {
             ArgSpecVars x = kv.getValue();
-            x.built = false;
+            x.reset();
         }
+
+        // Build indirections
         for (HashMap.Entry<Object, ArgSpecVars> kv : 
                  _registry.entrySet()) {
-            kv.getValue().build(_registry);
+            ArgSpecVars v = kv.getValue();
+            Object indirection = v.argSpec.getIndirection();
+            ArgSpecVars dst = _registry.get(indirection);
+            if (dst != null) {
+                dst.referents.add(kv.getKey());
+            }
+        }
+
+        // Build the arg specs
+        for (HashMap.Entry<Object, ArgSpecVars> kv : 
+                 _registry.entrySet()) {
+            kv.getValue().build(kv.getKey(), _registry);
         }
     }
 
@@ -210,6 +248,7 @@ public class Registry {
     }
 
     public void rebuild() {
+        rebuildArgSpecs();
         rebuildPromotionPaths();
         _rebuiltAt = _mutationCounter;
     }

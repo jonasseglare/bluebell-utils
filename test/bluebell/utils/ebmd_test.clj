@@ -527,3 +527,38 @@
                                 :neg [:a]
                                 :reg-spec? true})
 
+
+
+;;;------- Extensions -------
+
+(def-arg-spec-union ::real-numbers)
+
+(def-arg-spec ::clj-number {:pred number?
+                            :pos [3 4 3.4 3/4]
+                            :neg [:a :b {:a 3}]})
+
+(extend-arg-spec ::real-numbers ::clj-number)
+(extend-arg-spec ::real-numbers ::dot-count)
+
+(declare-poly tag-real-numbers)
+
+(def-poly tag-real-numbers [any-arg x]
+  [:not-a-number x])
+
+(def-poly tag-real-numbers [::real-numbers x]
+  [:real-number x])
+
+(defn dot-count? [x]
+  (and (string? x)
+       (every? (partial = \.) x)))
+
+(def-arg-spec ::dot-count {:pred dot-count?
+                           :pos #{"" "..." "......"}
+                           :neg #{"adsf" #{3 4} :a}})
+
+(deftest union-test
+  (is (= [:real-number 9.0] (tag-real-numbers 9.0)))
+  (is (= [:not-a-number :a] (tag-real-numbers :a)))
+  (is (= [:real-number "..."] (tag-real-numbers "..."))))
+
+
