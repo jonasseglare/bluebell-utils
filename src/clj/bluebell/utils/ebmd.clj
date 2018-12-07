@@ -275,9 +275,13 @@
 
 
 ;;;------- Union arg specs -------
-(defn def-arg-spec-union [key]
-  (.registerArgSpecUnion registry key))
-
 (defn extend-arg-spec [dst & extensions]
   (doseq [e extensions]
     (.extendArgSpec registry dst e)))
+
+(defn def-arg-spec-union [key & extensions]
+  (.registerArgSpecUnion registry key)
+  (doseq [e extensions]
+    (.extendArgSpec registry key e)))
+
+
