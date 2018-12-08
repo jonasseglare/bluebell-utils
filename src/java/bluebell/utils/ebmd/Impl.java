@@ -72,4 +72,14 @@ public class Impl {
         }
         return _fn.applyTo(ArraySeq.create(tmp));
     }
+
+    public int hashCode() {
+        return _sig.hashCode();
+    }
+
+    public boolean equals(Object other) {
+        return (other != null) 
+            && (other instanceof Impl) 
+            && _sig.equals(((Impl)other).getSignature());
+    }
 }

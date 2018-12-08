@@ -15,15 +15,17 @@ import clojure.lang.Symbol;
 import bluebell.utils.ReadAndUpdateMachine;
 import bluebell.utils.ConstantCallable;
 import java.util.concurrent.Callable;
+import bluebell.utils.MemoizedDominates;
+import bluebell.utils.IDominates;
 
 
 public class PolyFn {
     private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine();
     private Registry _reg = null;
-    private HashSet<Object> _samples;
-    private HashSet<Object> _init = new HashSet<Object>();
-    private HashMap<Integer, HashMap<Signature, Impl>> _implsPerArity 
+    private HashMap<Integer, HashMap<Signature, Impl>> 
+        _implsPerArity 
         = new HashMap<Integer, HashMap<Signature, Impl>>();
+    private IDominates<Impl> _implDominates;
     private int _lastRebuilt = -1;
     private Symbol _sym = null;
 
@@ -34,10 +36,6 @@ public class PolyFn {
         }
         _sym = sym;
         _reg = r;
-    }
-
-    public void provideSamples(Set<Object> samples) {
-        _init.addAll(samples);
     }
 
     public HashSet<Object> getAllArgSpecs() {
@@ -96,9 +94,10 @@ public class PolyFn {
 
     private void rebuildSub() {
         int rebuiltAt = _reg.getRebuiltAt();
+        _implDominates = new MemoizedDominates<Impl>(
+            new ImplDominatesSignature(
+                _reg.getArgSpecDominates()));
         if (rebuiltAt != _lastRebuilt) {
-            _samples = new HashSet<Object>();
-            _samples.addAll(_init);
             for (Map.Entry<Integer, 
                      HashMap<Signature, Impl>> 
                      entry: 
@@ -109,8 +108,6 @@ public class PolyFn {
                          kv: 
                          impls.entrySet()) {
                     Signature sig = kv.getKey();
-                    sig.accumulateSamples(
-                        _reg, _samples);
                     sig.rebuild(_reg);
                 }
             }
@@ -152,9 +149,7 @@ public class PolyFn {
             }
         }
         ParetoFrontier<Impl> argSpecFrontier 
-            = new ParetoFrontier<Impl>(
-                new ImplDominatesSignature(
-                    new ArgSpecDominates(_samples)));
+            = new ParetoFrontier<Impl>(_implDominates);
         for (Impl x: promotionCostFrontier.getElements()) {
             argSpecFrontier.insert(x);
         }

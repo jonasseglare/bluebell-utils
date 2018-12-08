@@ -19,6 +19,9 @@ import java.lang.Runnable;
 import bluebell.utils.GraphUtils;
 import bluebell.utils.INeighborhoodFunction;
 import java.util.List;
+import bluebell.utils.MemoizedDominates;
+import bluebell.utils.ebmd.ArgSpecDominates;
+import bluebell.utils.IDominates;
 
 public class Registry {
     private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine(
@@ -28,6 +31,8 @@ public class Registry {
     private int _rebuiltAt = -1;
     private HashMap<Object, ArgSpecVars> _registry 
         = new HashMap<Object, ArgSpecVars>();
+    private HashSet<Object> _allSamples;
+    private MemoizedDominates<IArgSpec> _argSpecDominates;
 
     public Registry(Settings s) {
         _settings = s;
@@ -211,7 +216,12 @@ public class Registry {
         }
     }
 
+    public IDominates<IArgSpec> getArgSpecDominates() {
+        return _argSpecDominates;
+    }
+
     private void rebuildArgSpecs() {
+        _allSamples = new HashSet<Object>();
         checkForCycles();
         
         // Clean up all the vars
@@ -219,7 +229,10 @@ public class Registry {
                  _registry.entrySet()) {
             ArgSpecVars x = kv.getValue();
             x.reset();
+            x.argSpec.accumulateOwnSamples(_allSamples);
         }
+        _argSpecDominates = new MemoizedDominates<IArgSpec>(
+            new ArgSpecDominates(_allSamples));
 
         // Build indirections
         for (HashMap.Entry<Object, ArgSpecVars> kv : 
@@ -235,8 +248,13 @@ public class Registry {
         // Build the arg specs
         for (HashMap.Entry<Object, ArgSpecVars> kv : 
                  _registry.entrySet()) {
-            kv.getValue().build(kv.getKey(), _registry);
+            kv.getValue().build(
+                kv.getKey(), _argSpecDominates, _registry);
         }
+    }
+
+    public HashSet<Object> getAllSamples() {
+        return _allSamples;
     }
 
     private void rebuildPromotionPaths() {

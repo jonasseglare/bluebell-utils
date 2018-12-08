@@ -6,6 +6,7 @@ import bluebell.utils.ebmd.IArgSpec;
 import clojure.lang.IFn;
 import java.util.ArrayList;
 import bluebell.utils.ParetoFrontier;
+import bluebell.utils.IDominates;
 
 public class ArgSpec implements IArgSpec {
     private Set<Object> _pos;
@@ -50,7 +51,7 @@ public class ArgSpec implements IArgSpec {
         }
     }
 
-    public void accumulateSamples(Set<Object> dst) {
+    public void accumulateOwnSamples(Set<Object> dst) {
         dst.addAll(_pos);
         dst.addAll(_neg);
     }
@@ -71,7 +72,10 @@ public class ArgSpec implements IArgSpec {
         return null;
     }
 
-    public void build(Object thisKey, Set<IArgSpec> extensions) {
+    public void build(
+        Object thisKey, 
+        IDominates<IArgSpec> dom, 
+        Set<IArgSpec> extensions) {
         if (0 < extensions.size()) {
             System.out.println(
                 "WARNING: The ArgSpec with key " 

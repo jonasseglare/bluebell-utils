@@ -5,9 +5,10 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 import bluebell.utils.ParetoFrontier;
-import bluebell.utils.ebmd.ArgSpecDominatesGreater;
 import java.util.Collections;
 import java.util.Comparator;
+import bluebell.utils.IDominates;
+import bluebell.utils.ReverseDominates;
 
 public class ArgSpecUnion implements IArgSpec {
     HashSet<Object> _samples;
@@ -39,10 +40,7 @@ public class ArgSpecUnion implements IArgSpec {
         }
     }
 
-    public void accumulateSamples(Set<Object> dst) {
-        checkInitialized();
-        dst.addAll(_samples);
-    }
+    public void accumulateOwnSamples(Set<Object> dst) {}
 
     public void accumulateUnion(Set<IArgSpec> dst) {
         checkInitialized();
@@ -70,19 +68,23 @@ public class ArgSpecUnion implements IArgSpec {
         return counter;
     }
 
-    public void build(Object thisKey, Set<IArgSpec> extensions) {
+    public void build(
+        Object thisKey, 
+        IDominates<IArgSpec> argSpecDominates,
+        Set<IArgSpec> extensions) {
         _samples = new HashSet<Object>();
         _union = new HashSet<IArgSpec>();
 
         // Accumulate samples and arg-specs from extensions
         for (IArgSpec e: extensions) {
-            e.accumulateSamples(_samples);
             e.accumulateUnion(_union);
         }
 
         // Remove redundant arg-specs that are covered by other ones
-        ParetoFrontier<IArgSpec> frontier = new ParetoFrontier<IArgSpec>(
-            new ArgSpecDominatesGreater(_samples));
+        ParetoFrontier<IArgSpec> frontier 
+            = new ParetoFrontier<IArgSpec>(
+                new ReverseDominates<IArgSpec>(
+                    argSpecDominates));
         for (IArgSpec s: _union) {
             frontier.insert(s);
         }

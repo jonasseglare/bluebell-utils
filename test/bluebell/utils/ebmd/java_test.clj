@@ -107,8 +107,7 @@
 
 (deftest arg-spec-dom-test
   (let [reg (Registry. debug-settings)
-        dom (ArgSpecDominates. #{0 1})
-        samples (HashSet.)]
+        dom (ArgSpecDominates. #{0 1})]
     (.registerArgSpec reg :same (ArgSpec. (fn [[a b & r]]
                                             (= a b))
                                           #{[0 0] [1 1]}
@@ -142,8 +141,8 @@
           abs (Signature. (object-array [:a :b]) :same)]
       (.rebuild ab reg)
       (.rebuild abs reg)
-      (.accumulateSamples ab reg samples)
-      (is (= (count samples) 10))
+      ;(.accumulateSamples ab reg samples)
+      ;(is (= (count samples) 10))
       (.rebuild ab reg)
       (.rebuild abs reg)
       (is (nil? (.evaluatePromotionPaths

@@ -1,6 +1,7 @@
 (ns bluebell.utils.pareto-java-test
   (:require [clojure.test :refer :all])
-  (:import [bluebell.utils ParetoFrontier IDominates]))
+  (:import [bluebell.utils ParetoFrontier IDominates
+            MemoizedDominates]))
 
 (defn less-pair? [[a b]]
   (< a b))
@@ -22,8 +23,11 @@
       (assert (vector? b))
       (boolean (vector-dominates a b)))))
 
-(deftest pareto-experiment
-  (let [f (ParetoFrontier. (vector-dominates-proxy))]
+(defn memoized-dominates [dom]
+  (MemoizedDominates. dom))
+
+(defn run-tests-with-dom [dom]
+  (let [f (ParetoFrontier. dom)]
     (is (empty? (.getElements f)))
     (.insert f [1 2])
     (is (= (.getElements f)
@@ -45,3 +49,11 @@
             [-2 0]
             [-3 1]
             [-4 2]]))))
+
+(deftest pareto-experiment
+  (run-tests-with-dom (vector-dominates-proxy))
+  (let [a (vector-dominates-proxy)
+        m (memoized-dominates a)]
+    (run-tests-with-dom m)
+    ;(.disp m)
+    ))

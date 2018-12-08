@@ -133,16 +133,6 @@ public class Signature {
         return dst;
     }
 
-    public void accumulateSamples(Registry reg, Set<Object> dst) {
-        for (int i = 0; i < _allData.length; i++) {
-            Object key = _allData[i];
-            if (key != null) {
-                IArgSpec as = reg.resolve(key);
-                as.accumulateSamples(dst);
-            }
-        }
-    }
-
     public String toString() {
         boolean space = false;
         String dst = "";

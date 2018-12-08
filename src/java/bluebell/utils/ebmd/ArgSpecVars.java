@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import bluebell.utils.ebmd.ArgSpecVarsVisitor;
+import bluebell.utils.IDominates;
 
 public class ArgSpecVars {
     public HashMap<Object, Promotion> promotions 
@@ -63,7 +64,10 @@ public class ArgSpecVars {
         }
     }
 
-    public void build(Object thisKey, HashMap<Object, ArgSpecVars> vars) {
+    public void build(
+        Object thisKey, 
+        IDominates<IArgSpec> dom,
+        HashMap<Object, ArgSpecVars> vars) {
         if (!built) {
             HashSet<Object> extKeys = new HashSet<Object>();
             getAllExtensions(vars, extKeys);
@@ -73,11 +77,11 @@ public class ArgSpecVars {
             // First build all its dependencies
             for (Object e: extKeys) {
                 ArgSpecVars v = trackIndirections(vars, e, null);
-                v.build(e, vars);
+                v.build(e, dom, vars);
                 exts.add(v.argSpec);
             }
             
-            argSpec.build(thisKey, exts);
+            argSpec.build(thisKey, dom, exts);
             built = true;
         }
     }
