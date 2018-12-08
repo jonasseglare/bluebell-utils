@@ -98,6 +98,7 @@ public class Registry {
     private ArgSpecVars getOrMakeArgVarsAtKey(Object k) {
         ArgSpecVars x = _registry.get(k);
         if (x == null) {
+            _mutationCounter++;
             x = new ArgSpecVars();
             _registry.put(k, x);
             return x;
@@ -109,8 +110,9 @@ public class Registry {
     public void extendArgSpec(Object dstKey, Object src) {
         _raum.withUpdate(new Callable<Integer>() {
                 public Integer call() {
-                    _mutationCounter++;
-                    getOrMakeArgVarsAtKey(dstKey).extensions.add(src);
+                    if (getOrMakeArgVarsAtKey(dstKey).extensions.add(src)) {
+                        _mutationCounter++;
+                    }
                     return 0;
                 }
             });
