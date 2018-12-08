@@ -1,6 +1,7 @@
 package bluebell.utils.ebmd;
 
 import clojure.lang.IFn;
+import java.util.Objects;
 
 public class Promotion {
     double _cost = 1.0;
@@ -37,7 +38,7 @@ public class Promotion {
         return _promoter.invoke(x);
     }
 
-    Promotion withSrcDst(Object src, Object dst) {
+    public Promotion withSrcDst(Object src, Object dst) {
         Promotion p = new Promotion(_promoter, _cost);
         p._src = src;
         p._dst = dst;
@@ -65,5 +66,16 @@ public class Promotion {
         }
         return _src.toString() + "--(" + _cost 
             + ")-->" + _dst.toString();
+    }
+
+    public boolean equals(Object other) {
+        if (other instanceof Promotion) {
+            Promotion x = (Promotion)other;
+            return Objects.equals(_src, x._src)
+                && Objects.equals(_dst, x._dst)
+                && Objects.equals(_promoter, x._promoter)
+                && Objects.equals(_cost, x._cost);
+        }
+        return false;
     }
 }

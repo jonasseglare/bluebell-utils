@@ -22,6 +22,7 @@ import java.util.List;
 import bluebell.utils.MemoizedDominates;
 import bluebell.utils.ebmd.ArgSpecDominates;
 import bluebell.utils.IDominates;
+import java.util.Objects;
 
 public class Registry {
     private ReadAndUpdateMachine _raum = new ReadAndUpdateMachine(
@@ -124,11 +125,12 @@ public class Registry {
         Object srcKey) {
         _raum.withUpdate(new Callable<Integer>() {
                 public Integer call() {
-                    _mutationCounter++;
-                    getOrMakeArgVarsAtKey(dstKey)
-                        .promotions
-                        .put(srcKey, prom.withSrcDst(
-                                srcKey, dstKey));
+                    HashMap<Object, Promotion> promotions = getOrMakeArgVarsAtKey(dstKey).promotions;
+                    Promotion complete = prom.withSrcDst(srcKey, dstKey);
+                    if (!Objects.equals(promotions.get(srcKey), complete)) {
+                        _mutationCounter++;
+                        promotions.put(srcKey, complete);
+                    }
                     return 0;
                 }
             });
