@@ -9,6 +9,7 @@
             Impl
             Signature
             Settings
+            ArgSpecUnion
             PolyFn]
            [java.util HashSet]
            [bluebell.utils IDominates])
@@ -254,6 +255,70 @@
     (is (= 2 (.getEvalCounter cd)))
     (is (not (.dominates cd 1 0)))
     (is (= 2 (.getEvalCounter cd)))))
+
+(deftest arg-spec-equivalence
+  (is (.equivalentOnSamples (ArgSpec. number?
+                                      #{1 2 3}
+                                      #{:a})
+                            #{4 7 8}
+                            (ArgSpec. number?
+                                      #{1 2 3}
+                                      #{:a})))
+  (is (not (.equivalentOnSamples (ArgSpec. number?
+                                           #{1 2}
+                                           #{:a})
+                                 #{4 7 8}
+                                 (ArgSpec. number?
+                                           #{1 2 3}
+                                           #{:a}))))
+  (is (.equivalentOnSamples (ArgSpec. number?
+                                      #{1 2 3.3}
+                                      #{:a})
+                            #{4 7 8}
+                            (ArgSpec. number?
+                                      #{1 2 3.3}
+                                      #{:a})))
+  (is (not (.equivalentOnSamples (ArgSpec. int?
+                                           #{1 2}
+                                           #{:a})
+                                 #{4 7 8 9.7}
+                                 (ArgSpec. number?
+                                           #{1 2}
+                                           #{:a}))))
+  (is (not (.equivalentOnSamples (ArgSpecUnion.)
+                                 #{4 7 8 9.7}
+                                 (ArgSpec. number?
+                                           #{1 2}
+                                           #{:a}))))
+  (is (.equivalentOnSamples (ArgSpecUnion.)
+                            #{4 7 8 9.7}
+                            (ArgSpecUnion.)))
+  (is (.equivalentOnSamples (IndirectArgSpec. :a)
+                            #{4 7 8 9.7}
+                            (IndirectArgSpec. :a)))
+  (is (not (.equivalentOnSamples (IndirectArgSpec. :a)
+                                 #{4 7 8 9.7}
+                                 (IndirectArgSpec. :b))))
+  (is (not (.equivalentOnSamples (IndirectArgSpec. :a)
+                                 #{4 7 8 9.7}
+                                 (ArgSpecUnion.)))))
+
+(deftest mut-counter-test
+  (let [r (Registry. debug-settings)]
+    (is (= 0 (.getMutationCounter r)))
+    (.registerArgSpec r :a (ArgSpec. number? #{1 2} #{}))
+    (is (= 1 (.getMutationCounter r)))
+    (.registerArgSpec r :b (ArgSpec. number? #{1 2} #{}))
+    (is (= 2 (.getMutationCounter r)))
+    (.registerArgSpec r :b (ArgSpec. number? #{1 2 4} #{:a}))
+    (is (= 3 (.getMutationCounter r)))
+    (.registerArgSpec r :b (ArgSpec. number? #{1 2 4} #{:a}))
+    (is (= 4 (.getMutationCounter r)))
+    (.rebuild r)
+    (.registerArgSpec r :b (ArgSpec. number? #{1 2 4} #{:a}))
+    (is (= 4 (.getMutationCounter r)))
+    (.registerArgSpec r :b (ArgSpec. number? #{1 2 4} #{:a :b}))
+    (is (= 5 (.getMutationCounter r)))))
 
 (deftest basic-poly-fns
   (let [reg (Registry. debug-settings)

@@ -8,6 +8,7 @@ import bluebell.utils.ParetoFrontier;
 import java.util.Collections;
 import java.util.Comparator;
 import bluebell.utils.IDominates;
+import bluebell.utils.ebmd.Registry;
 import bluebell.utils.ReverseDominates;
 
 public class ArgSpecUnion implements IArgSpec {
@@ -68,9 +69,15 @@ public class ArgSpecUnion implements IArgSpec {
         return counter;
     }
 
+    public boolean equivalentOnSamples(
+        Set<Object> samples, IArgSpec other) {
+        return other instanceof ArgSpecUnion;
+    }
+
+
     public void build(
         Object thisKey, 
-        IDominates<IArgSpec> argSpecDominates,
+        Registry r,
         Set<IArgSpec> extensions) {
         _samples = new HashSet<Object>();
         _union = new HashSet<IArgSpec>();
@@ -84,7 +91,7 @@ public class ArgSpecUnion implements IArgSpec {
         ParetoFrontier<IArgSpec> frontier 
             = new ParetoFrontier<IArgSpec>(
                 new ReverseDominates<IArgSpec>(
-                    argSpecDominates));
+                    r.getArgSpecDominates()));
         for (IArgSpec s: _union) {
             frontier.insert(s);
         }

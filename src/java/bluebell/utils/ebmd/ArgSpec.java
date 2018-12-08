@@ -7,6 +7,8 @@ import clojure.lang.IFn;
 import java.util.ArrayList;
 import bluebell.utils.ParetoFrontier;
 import bluebell.utils.IDominates;
+import bluebell.utils.ebmd.Registry;
+import java.util.HashSet;
 
 public class ArgSpec implements IArgSpec {
     private Set<Object> _pos;
@@ -72,9 +74,36 @@ public class ArgSpec implements IArgSpec {
         return null;
     }
 
+    public Set<Object> filter(Set<Object> c) {
+        HashSet<Object> dst = new HashSet<Object>();
+        for (Object o: c) {
+            if (evaluate(o)) {
+                dst.add(o);
+            }
+        }
+        return dst;
+    }
+
+    public boolean equivalentOnSamples(
+        Set<Object> samples, IArgSpec other) {
+        if (other instanceof ArgSpec) {
+            ArgSpec as = (ArgSpec)other;
+            boolean eq = _pos.equals(as._pos) 
+                && _neg.equals(as._neg)
+                && filter(samples).equals(as.filter(samples));
+            if (eq) {
+                // Consider renaming 'equivalentOnSamples'
+                // to include the word 'update'
+                _pred = as._pred;
+            }
+            return eq;
+        }
+        return false;
+    }
+
     public void build(
         Object thisKey, 
-        IDominates<IArgSpec> dom, 
+        Registry r, 
         Set<IArgSpec> extensions) {
         if (0 < extensions.size()) {
             System.out.println(

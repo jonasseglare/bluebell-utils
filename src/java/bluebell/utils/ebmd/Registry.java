@@ -52,14 +52,18 @@ public class Registry {
                     if (src == null) {
                         throw new RuntimeException("Provided null argspec");
                     }
-                    _mutationCounter++;
                     ArgSpecVars vars = _registry.get(key);
                     if (vars != null) {
-                        vars.argSpec = src;
+                        IArgSpec old = vars.argSpec;
+                        if (_allSamples == null || !vars.argSpec.equivalentOnSamples(_allSamples, src)) {
+                            vars.argSpec = src;
+                            _mutationCounter++;
+                        }
                     } else {
                         vars = new ArgSpecVars();
                         vars.argSpec = src;
                         _registry.put(key, vars);
+                        _mutationCounter++;
                     }
                     return 0;
                 }
@@ -249,7 +253,7 @@ public class Registry {
         for (HashMap.Entry<Object, ArgSpecVars> kv : 
                  _registry.entrySet()) {
             kv.getValue().build(
-                kv.getKey(), _argSpecDominates, _registry);
+                kv.getKey(), this, _registry);
         }
     }
 
@@ -286,6 +290,10 @@ public class Registry {
             rebuild();
             return true;
         }
+    }
+
+    public int getMutationCounter() {
+        return _mutationCounter;
     }
 
     public int getRebuiltAt() {

@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import bluebell.utils.ebmd.IArgSpec;
 import bluebell.utils.ebmd.Promotion;
 import bluebell.utils.IDominates;
+import bluebell.utils.ebmd.Registry;
+import java.util.Objects;
 
 public class IndirectArgSpec implements IArgSpec {
     Object _target = null;
@@ -30,6 +32,15 @@ public class IndirectArgSpec implements IArgSpec {
 
     public void build(
         Object thisKey, 
-        IDominates<IArgSpec> dom, 
+        Registry r, 
         Set<IArgSpec> extensions) {}
+
+    public boolean equivalentOnSamples(
+        Set<Object> samples, IArgSpec other) {
+        if (other instanceof IndirectArgSpec) {
+            return Objects.equals(
+                _target, ((IndirectArgSpec)other)._target);
+        }
+        return false;
+    }
 }
