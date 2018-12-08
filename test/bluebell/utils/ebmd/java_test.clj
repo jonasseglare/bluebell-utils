@@ -332,7 +332,13 @@
     (.extendArgSpec r :u :a)
     (is (= 7 (.getMutationCounter r)))
     (.extendArgSpec r :u :b)
-    (is (= 8 (.getMutationCounter r)))))
+    (is (= 8 (.getMutationCounter r)))
+    (.registerPromotion r :b (Promotion. identity 2.3) :a)
+    (is (= 9 (.getMutationCounter r)))
+    (.registerPromotion r :b (Promotion. identity 2.3) :a)
+    (is (= 9 (.getMutationCounter r)))
+    (.registerPromotion r :b (Promotion. identity 2.4) :a)
+    (is (= 10 (.getMutationCounter r)))))
 
 (deftest basic-poly-fns
   (let [reg (Registry. debug-settings)
