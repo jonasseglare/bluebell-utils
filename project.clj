@@ -13,4 +13,4 @@
                    "leiningen.release/bump-version" "release"]
                   ["vcs" "commit"]
                   ["vcs" "tag"]
-                  ["deploy" "clojars"]])
+                  ["deploy"]])
