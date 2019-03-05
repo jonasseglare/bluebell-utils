@@ -7,4 +7,10 @@
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:deprecation"]
   :dependencies [[org.clojure/clojure "1.10.0"]
-                 [org.clojure/core.async "0.3.443"]])
+                 [org.clojure/core.async "0.3.443"]]
+  :release-tasks [["vcs" "assert-committed"]
+                  ["change" "version"
+                   "leiningen.release/bump-version" "release"]
+                  ["vcs" "commit"]
+                  ["vcs" "tag"]
+                  ["deploy" "clojars"]])
