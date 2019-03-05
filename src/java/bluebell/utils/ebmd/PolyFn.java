@@ -17,6 +17,7 @@ import bluebell.utils.ConstantCallable;
 import java.util.concurrent.Callable;
 import bluebell.utils.MemoizedDominates;
 import bluebell.utils.IDominates;
+import java.util.Objects;
 
 
 public class PolyFn {
@@ -155,9 +156,12 @@ public class PolyFn {
         }
         ArrayList<Impl> candidates = argSpecFrontier.getElements();
         if (candidates.size() == 0) {
-            String msg = "No matching call for these arguments";
+            String msg = String.format(
+                "No matching call to polymorphic function %s for these arguments",
+                Objects.toString(_sym));
             for (int i = 0; i < args.length; i++) {
-                msg += "\n  " + i + ": " + shorten(args[i].toString());
+                msg += "\n  " + i + ": " 
+                    + shorten(Objects.toString(args[i]));
             }
             throw new RuntimeException(msg);
         } else if (candidates.size() == 1) {
