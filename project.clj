@@ -6,5 +6,6 @@
   :source-paths ["src/clj"]
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:deprecation"]
+  :aot :all
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/core.async "0.3.443"]])
