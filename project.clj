@@ -1,4 +1,4 @@
-(defproject bluebell/utils "0.1.11-SNAPSHOT"
+(defproject bluebell/utils "0.1.11"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"

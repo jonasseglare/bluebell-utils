@@ -562,3 +562,14 @@
   (is (= [:real-number "..."] (tag-real-numbers "..."))))
 
 
+(declare-poly do-something)
+
+(def-poly do-something [::any x]
+  x)
+
+(def-poly do-something [::type/fn f]
+  (f))
+
+(deftest fn-type-test
+  (is (= 9 (do-something #(* 3 3))))
+  (is (= 9 (do-something 9))))

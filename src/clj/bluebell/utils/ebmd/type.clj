@@ -8,6 +8,8 @@
 
 ;;;------- Common arg types -------
 
+;; NOTE: Providing as first argument a symbol
+;; also results in a keyword being bound to the arg spec.
 (def-arg-spec any any-arg)
 
 (def-arg-spec number (pred number?))
@@ -31,3 +33,6 @@
 (def-arg-spec empty (pred (fn [x] (and (coll? x)
                                        (empty? x)))))
 
+(def-arg-spec ::fn {:pred fn?
+                    :pos [identity]
+                    :neg [3]})
