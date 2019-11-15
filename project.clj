@@ -8,5 +8,4 @@
   :javac-options ["-Xlint:unchecked" "-Xlint:deprecation"
                   "-target" "1.8" "-source" "1.8"]
   :aot :all
-  :dependencies [[org.clojure/clojure "1.10.0"]
-                 [org.clojure/core.async "0.3.443"]])
+  :dependencies [[org.clojure/clojure "1.10.0"]])
