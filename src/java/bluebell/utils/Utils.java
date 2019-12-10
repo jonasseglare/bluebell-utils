@@ -6,4 +6,8 @@ public class Utils {
             throw new RuntimeException(msg);
         }
     }
+
+    public static void error(String msg) {
+        throw new RuntimeException(msg);
+    }
 }
