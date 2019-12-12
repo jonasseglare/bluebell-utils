@@ -24,4 +24,9 @@ public class BasicErrorValue {
     public Object getMessage() {
         return _msg;
     }
+
+    public String toString() {
+        return "BasicErrorValue(key=" + _k.toString() + ", msg=" + 
+            _msg + ", data=" + _data.toString() + ")";
+    }
 }

@@ -1,17 +1,34 @@
 package bluebell.utils;
 
-public class BasicErrorContext implements IErrorContext {
+import clojure.lang.IFn;
+
+public class BasicErrorContext extends AErrorContext {
+    public IFn _is_error = null;
     private Object _error = null;
 
-    public boolean ok() {return _error == null;}
-    public Object getError() {return _error;}
+    synchronized private Object getOrSet(
+        boolean set, Object new_value) {
+        if (set) {
+            _error = new_value;
+        }
+        return _error;
+    }
+
+    public BasicErrorContext(IFn is_error) {
+        _is_error = is_error;
+    }
+
+    public boolean ok() {return getError() == null;}
+
+    public Object getError() {return getOrSet(false, null);}
 
     public Object handleError(Object e) {
         assert(e != null); 
-        _error = e;
+        getOrSet(true, e);
         return null;
     }
-    public boolean shouldCatch(Exception e) {
-        return false;
+
+    public boolean isError(Object o) {
+        return _is_error != null && (Boolean)(_is_error.invoke(o));
     }
 }

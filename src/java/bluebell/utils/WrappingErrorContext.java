@@ -2,15 +2,15 @@ package bluebell.utils;
 
 import clojure.lang.IFn;
 
-public class WrappingErrorContext implements IErrorContext {
+public class WrappingErrorContext extends AErrorContext {
     private IErrorContext _inner;
     private IFn _handleError = null;
-    private IFn _catchPred = null;
+    private IFn _errorPred = null;
 
-    public WrappingErrorContext(IErrorContext inner, IFn h, IFn c) {
+    public WrappingErrorContext(IErrorContext inner, IFn h, IFn e) {
         _inner = inner;
         _handleError = h;
-        _catchPred = c;
+        _errorPred = e;
     }
 
     public boolean ok() {
@@ -27,9 +27,9 @@ public class WrappingErrorContext implements IErrorContext {
             _handleError.invoke(_inner, o);
     }
 
-    public boolean shouldCatch(Exception e) {
-        return _catchPred == null? 
-            _inner.shouldCatch(e) :
-            ((Boolean)_catchPred.invoke(_inner, e));
+    public boolean isError(Object o) {
+        return _errorPred == null?
+            _inner.isError(o) :
+            (Boolean)_errorPred.invoke(_inner, o);
     }
 }
