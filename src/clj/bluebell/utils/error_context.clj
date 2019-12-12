@@ -66,6 +66,9 @@
      (or (some #(instance? % e) ex)
          (.isError c e)))))
 
+(defn catch-exception [c]
+  (catch-ex c Exception))
+
 (defn maperr
   "Map all errors to other errors using f"
   [c f & args]

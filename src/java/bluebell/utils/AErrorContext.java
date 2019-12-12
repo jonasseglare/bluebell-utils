@@ -33,7 +33,12 @@ public abstract class AErrorContext implements IErrorContext, IFn {
         if (RT.seq(arglist) == null) {
             return invoke();
         } else {
-            return ((IFn)arglist.first()).applyTo(arglist.next());
+            return invokeSub(new Callable() {
+                    public Object call() {
+                        return ((IFn)arglist.first()).applyTo(
+                            arglist.next());
+                    }
+                });
         }
     }
 

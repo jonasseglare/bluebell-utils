@@ -201,3 +201,9 @@
                  (describe "Slurp-error")))
             (slurp "Mjao"))]
     (is (error-value? :description r))))
+
+(deftest apply-test
+  (is (nil? (apply (catch-exception (context))
+                   [/ 8 0])))
+  (is (= 4 (apply (catch-exception (context))
+                  [/ 8 2]))))
