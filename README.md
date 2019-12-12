@@ -45,6 +45,12 @@ It is practical for factoring out error-handling business and does not need macr
 
 See the unittests `bluebell.utils.error-context-test` for examples.
 
+Why *error context* over exceptions?:
+    * Makes error handling more explicit by requiring the use of a context to control execution based on whether an error occurred, without cluttering the code with `if-let` forms.
+    * Isolate error handling to parts of the code and then wrap it up in the end, with a call to `export`.
+    * Handle situations where it would be a bit brutal to throw an exception, e.g. situations such as `spec/conform` returning `spec/invalid`.
+    * Factor out the details about error handling in functions.
+
 
 ## License
 
