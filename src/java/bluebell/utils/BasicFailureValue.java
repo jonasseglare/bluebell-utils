@@ -2,12 +2,12 @@ package bluebell.utils;
 
 import clojure.lang.Keyword;
 
-public class BasicErrorValue {
+public class BasicFailureValue {
     private Keyword _k;
     private Object _data;
     private String _msg;
 
-    public BasicErrorValue(Keyword k, String msg, Object data) {
+    public BasicFailureValue(Keyword k, String msg, Object data) {
         _k = k;
         _data = data;
         _msg = msg;
@@ -26,7 +26,7 @@ public class BasicErrorValue {
     }
 
     public String toString() {
-        return "BasicErrorValue(key=" + _k.toString() + ", msg=" + 
+        return "BasicFailureValue(key=" + _k.toString() + ", msg=" + 
             _msg + ", data=" + _data.toString() + ")";
     }
 }

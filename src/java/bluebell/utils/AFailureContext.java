@@ -5,19 +5,19 @@ import clojure.lang.ISeq;
 import java.util.concurrent.Callable;
 import clojure.lang.RT;
 
-public abstract class AErrorContext implements IErrorContext, IFn {
+public abstract class AFailureContext implements IFailureContext, IFn {
     private Object invokeSub(Callable c) {
         if (ok()) {
             try {
                 Object y = c.call();
-                if (isError(y)) {
-                    return handleError(y);
+                if (isFailure(y)) {
+                    return handleFailure(y);
                 } else {
                     return y;
                 }
             } catch (Exception e) {
-                if (isError(e)) {
-                    return handleError(e);
+                if (isFailure(e)) {
+                    return handleFailure(e);
                 } else {
                     throw new RuntimeException(e);
                 }
@@ -48,11 +48,11 @@ public abstract class AErrorContext implements IErrorContext, IFn {
         return null; //invoke();
     }
 
-    public Object reportError(Object o) {
-        return ok()? handleError(o) : null;
+    public Object reportFailure(Object o) {
+        return ok()? handleFailure(o) : null;
     }
 
-    public Object invoke() {return getError();}
+    public Object invoke() {return getFailure();}
 
 
 

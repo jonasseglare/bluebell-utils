@@ -1,5 +1,5 @@
-(ns bluebell.utils.error-context-test
-  (:require [bluebell.utils.error-context :refer :all]
+(ns bluebell.utils.failure-context-test
+  (:require [bluebell.utils.failure-context :refer :all]
             [clojure.test :refer :all]
             [clojure.spec.alpha :as spec])
   (:refer-clojure :exclude [do]))
@@ -25,17 +25,17 @@
     (is (= 7 ( c + 3 ( c / 8 2))))
     (is (nil? ( c + 3 ( c / 8 0))))
     (is (instance? ArithmeticException
-                   (get-error c)))))
+                   (get-failure c)))))
 
-(deftest error-mapping
+(deftest failure-mapping
   (let [c (-> (context)
               (catch-ex ArithmeticException)
-              (maperr (constantly :bad)))]
+              (mapfail (constantly :bad)))]
     (is (= 7 ( c + 3 4)))
     (is (ok? c))
-    (is (nil? (get-error c)))
+    (is (nil? (get-failure c)))
     (is (nil? ( c / 8 0)))
-    (is (= :bad (get-error c)))))
+    (is (= :bad (get-failure c)))))
 
 (deftest partial-test
   (let [c (-> (context)
@@ -45,23 +45,23 @@
     (is (nil? (safediv 3 0)))
     (is (not (ok? c)))))
 
-(deftest basic-error-test
-  (let [e (error-value :mjao "Mjao!!!")]
-    (is (error-value? e))))
+(deftest basic-failure-test
+  (let [e (failure-value :mjao "Mjao!!!")]
+    (is (failure-value? e))))
 
 (defn my-div [a b]
   (if (= 0 b)
-    (error-value :div-by-0 "Division by zero")
+    (failure-value :div-by-0 "Division by zero")
     (/ a b)))
 
-(deftest error-value-test
-  (is (error-value? (my-div 3 0)))
+(deftest failure-value-test
+  (is (failure-value? (my-div 3 0)))
   (is (= 7 (my-div 14 2)))
   (let [c (context)]
     (is (= 14 ( c my-div 28 2)))
     (is (= 119 (export c 119)))
     (is (nil? ( c my-div 9 0)))
-    (is (error-value? (export c 7)))))
+    (is (failure-value? (export c 7)))))
 
 (deftest function-syntax
   (is (= 7 ((context) + 3 4)))
@@ -79,7 +79,7 @@
 (defn add-args [a b]
   (let [c (context)
         
-        a (expect (constant-error c :bad-a)
+        a (expect (constant-failure c :bad-a)
 
                   not-invalid?
                   (spec/conform ::arg a))
@@ -88,7 +88,7 @@
                   (spec/conform ::arg b)
                   (constantly :bad-b))
         
-        _ (check (constant-error c :different-types)
+        _ (check (constant-failure c :different-types)
                  = (:type a) (:type b))]
     
     (with-export c
@@ -101,18 +101,18 @@
   (is (= :bad-b (add-args [:x 3] [4])))
   (is (= :different-types (add-args [:x 3] [:y 4]))))
 
-;; We can factor out the details about errors...
+;; We can factor out the details about failures...
 (defn stacked-ex-context []
   (-> (context)
-      (maperr-when (partial instance? Exception)
+      (mapfail-when (partial instance? Exception)
                    (constantly :exception))
-      (maperr-when (partial instance? ArithmeticException)
+      (mapfail-when (partial instance? ArithmeticException)
                    (constantly :arithmetic-exception))))
 
 
 
 ;; ..and then reuse it.
-(deftest maperr-when-test
+(deftest mapfail-when-test
   (is (= 7 (with-export (stacked-ex-context)
 
                       7)))
@@ -164,7 +164,7 @@
              "I don't think th1s file 3xists")))
   (is (nil? ((-> (context)
                  (catch-ex Exception)
-                 (maperr (constantly :bad-slurp)))
+                 (mapfail (constantly :bad-slurp)))
              slurp
              "I don't think th1s file 3xists")))
   (is (= :bad-slurp
@@ -176,7 +176,7 @@
                        c (throw
                           (ex-info
                            "This exception is sort of innocent" {})))))
-           (with-export (maperr c (constantly :bad-slurp))
+           (with-export (mapfail c (constantly :bad-slurp))
 
              (slurp "I don't th1nk th1s file 3xists"))))))
 
@@ -193,14 +193,14 @@
   (is (= 7 (let [c (div-by-zero-as-zero)]
              (c + 3 (c / 8 2))))))
 
-(deftest slurp-test-error-describe
+(deftest slurp-test-failure-describe
   (let [r (with-export
             (-> (context)
                 (catch-ex Exception)
-                (maperr 
-                 (describe "Slurp-error")))
+                (mapfail 
+                 (describe "Slurp-failure")))
             (slurp "Mjao"))]
-    (is (error-value? :description r))))
+    (is (failure-value? :description r))))
 
 (deftest apply-test
   (is (nil? (apply (catch-exception (context))

@@ -2,7 +2,7 @@ package bluebell.utils;
 
 import clojure.lang.IFn;
 
-public class BasicErrorContext extends AErrorContext {
+public class BasicFailureContext extends AFailureContext {
     public IFn _is_error = null;
     private Object _error = null;
 
@@ -14,21 +14,21 @@ public class BasicErrorContext extends AErrorContext {
         return _error;
     }
 
-    public BasicErrorContext(IFn is_error) {
+    public BasicFailureContext(IFn is_error) {
         _is_error = is_error;
     }
 
-    public boolean ok() {return getError() == null;}
+    public boolean ok() {return getFailure() == null;}
 
-    public Object getError() {return getOrSet(false, null);}
+    public Object getFailure() {return getOrSet(false, null);}
 
-    public Object handleError(Object e) {
+    public Object handleFailure(Object e) {
         assert(e != null); 
         getOrSet(true, e);
         return null;
     }
 
-    public boolean isError(Object o) {
+    public boolean isFailure(Object o) {
         return _is_error != null && (Boolean)(_is_error.invoke(o));
     }
 }
