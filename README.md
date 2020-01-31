@@ -50,6 +50,8 @@ Why *error context* over exceptions?:
     * Isolate error handling to parts of the code and then wrap it up in the end, with a call to `export`.
     * Handle situations where it would be a bit brutal to throw an exception, e.g. situations such as `spec/conform` returning `spec/invalid`.
     * Factor out the details about error handling in functions.
+    * Decouple error values and control flow.
+    * Usecases: Trying to compute mean of an empty array
 
 
 ## License

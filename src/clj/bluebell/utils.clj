@@ -81,7 +81,9 @@
       (dec y)
       y)))
 
-(defn rotate [src steps]
+(defn rotate
+  "Rotate a collection"
+  [src steps]
   (let [src (vec src)
         n (count src)]
     (mapv (fn [index] (nth src (mod (+ steps index) n)))
@@ -197,3 +199,11 @@
     (if (coll? x)
       (nested-map f x)
       (f x))))
+
+(defn copy-keys [dst ks src]
+  (merge dst (select-keys src ks)))
+
+(defn replace-first [dst-collection pref]
+  (reduce into (empty dst-collection)
+          [pref
+           (drop (count pref) dst-collection)]))
