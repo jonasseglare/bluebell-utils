@@ -1,6 +1,10 @@
 (ns bluebell.utils
   (:require [clojure.spec.alpha :as spec]))
 
+(defn error
+  ([msg] (error msg nil))
+  ([msg data] (throw (ex-info msg (or data {})))))
+
 (defmacro check [& args]
   (cond
     (empty? args) (throw (ex-info "No arguments to check" {}))
